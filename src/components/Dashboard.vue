@@ -1,92 +1,116 @@
 <template>
-  <div class="time-spent-dashboard bg-gray-950 text-gray-100 p-5 md:p-7 min-h-full flex flex-col gap-6">
+  <div class="time-spent-dashboard bg-gray-950 text-gray-100 p-5 md:p-8 min-h-full flex flex-col gap-8 md:gap-10">
     
     <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
-    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b border-gray-800">
-      <!-- Title & Live Status -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-black text-lg">
-          ⏱
+    <header class="flex flex-col gap-6 pb-6 border-b border-gray-800/80">
+      
+      <!-- Top Row: Brand & Close Button -->
+      <div class="flex justify-between items-center w-full">
+        <!-- Title & Live Status -->
+        <div class="flex items-center gap-4">
+          <!-- 放大图标尺寸，显示原 icon 纯净透明底色 -->
+          <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0 bg-transparent">
+            <img :src="iconUrl" alt="源时记" class="w-full h-full object-contain drop-shadow-xl select-none" />
+          </div>
+          <div class="flex flex-col justify-center">
+            <div class="flex flex-wrap items-center gap-3">
+              <h1 class="text-2xl sm:text-3xl font-black tracking-wide text-white">
+                源时记
+              </h1>
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950/90 border border-indigo-500/40 text-indigo-300 font-medium shadow-sm">
+                时间分布与专注看板
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1.5 leading-relaxed">
+              全自动深度工作追踪 · 智能防挂机 · 多维日历复盘
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-xl font-bold tracking-wide text-white flex items-center gap-2">
-            源时记
-            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 font-normal">
-              时间分布与专注看板
-            </span>
-          </h1>
-          <p class="text-xs text-gray-400 mt-0.5">全自动深度工作追踪 · 智能防挂机 · 多维日历复盘</p>
-        </div>
+
+        <!-- Header Right Close Button -->
+        <button @click="emit('close')" 
+                class="p-2.5 text-gray-400 hover:text-white hover:bg-gray-800/80 rounded-xl transition-colors shrink-0" 
+                title="关闭看板">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <!-- Scope Switcher Tabs & Period Navigator & Action Button -->
-      <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-        <!-- Date Navigator -->
-        <div class="flex items-center bg-gray-900 border border-gray-700/80 rounded-xl p-1 shadow-inner">
-          <button @click="navigatePeriod(-1)" 
-                  class="p-1.5 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
-                  title="上一周期">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      <!-- Bottom Row: Date Navigator & Mode Switcher & AI Export (具有充足拉大的垂直距离) -->
+      <div class="flex flex-wrap items-center justify-between gap-4 w-full pt-3 border-t border-gray-900">
+        <!-- Left: Date Navigator & Period Label -->
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Date Navigator -->
+          <div class="flex items-center bg-gray-900 border border-gray-700/80 rounded-xl p-1 shadow-inner">
+            <button @click="navigatePeriod(-1)" 
+                    class="p-1.5 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
+                    title="上一周期">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button @click="jumpToToday" 
+                    class="px-3 py-1 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800">
+              今天
+            </button>
+
+            <button @click="navigatePeriod(1)" 
+                    class="p-1.5 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
+                    title="下一周期">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Period Display Label -->
+          <div class="text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-sm font-mono">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            {{ currentPeriodLabel }}
+          </div>
+        </div>
+
+        <!-- Right: Mode Tabs: Day / Week / Month & AI Export Button -->
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Mode Tabs -->
+          <div class="flex bg-gray-900 border border-gray-700/80 p-1 rounded-xl shadow-inner">
+            <button @click="switchMode('day')" 
+                    class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all"
+                    :class="calendarMode === 'day' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
+              日视图
+            </button>
+            <button @click="switchMode('week')" 
+                    class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all"
+                    :class="calendarMode === 'week' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
+              周视图
+            </button>
+            <button @click="switchMode('month')" 
+                    class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all"
+                    :class="calendarMode === 'month' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
+              月视图
+            </button>
+          </div>
+
+          <!-- AI Export Button -->
+          <button @click="exportForAI" 
+                  class="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-          </button>
-          
-          <button @click="jumpToToday" 
-                  class="px-3 py-1 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800">
-            今天
-          </button>
-
-          <button @click="navigatePeriod(1)" 
-                  class="p-1.5 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
-                  title="下一周期">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
+            导出 {{ modeName }} AI 总结
           </button>
         </div>
-
-        <!-- Period Display Label -->
-        <div class="text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3 py-2 rounded-xl flex items-center gap-2 shadow-sm font-mono">
-          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          {{ currentPeriodLabel }}
-        </div>
-
-        <!-- Mode Tabs: Day / Week / Month -->
-        <div class="flex bg-gray-900 border border-gray-700/80 p-1 rounded-xl shadow-inner">
-          <button @click="switchMode('day')" 
-                  class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                  :class="calendarMode === 'day' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
-            日视图
-          </button>
-          <button @click="switchMode('week')" 
-                  class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                  :class="calendarMode === 'week' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
-            周视图
-          </button>
-          <button @click="switchMode('month')" 
-                  class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                  :class="calendarMode === 'month' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
-            月视图
-          </button>
-        </div>
-
-        <!-- AI Export Button -->
-        <button @click="exportForAI" 
-                class="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          导出 {{ modeName }} AI 总结
-        </button>
       </div>
     </header>
 
 
     <!-- ==================== UNIFIED TOP VISUAL OVERVIEW ==================== -->
-    <section class="top-visual-overview flex flex-col gap-4">
+    <section class="top-visual-overview flex flex-col my-2">
       
-      <!-- KPI Metric Cards Grid -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <!-- KPI Metric Cards Grid (底部拉大边距，与图表彻底拉开间距) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 md:mb-10">
         <!-- KPI 1: Total Focused Time -->
         <div class="kpi-card bg-gray-900/90 border border-gray-800 hover:border-indigo-500/50 p-4 rounded-xl shadow-md transition-all">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
@@ -158,21 +182,23 @@
         </div>
       </div>
 
-      <!-- Overview Visual Charts -->
-      <Charts :logs="activeLogs" 
-              :scope-type="calendarMode" 
-              :scope-date-title="currentPeriodLabel" 
-              :day-map="scopeDayMap"
-              :day-labels="scopeDayLabels" />
+      <!-- Overview Visual Charts (顶部显式加上大呼吸间距) -->
+      <div class="charts-container mt-2 pt-1">
+        <Charts :logs="activeLogs" 
+                :scope-type="calendarMode" 
+                :scope-date-title="currentPeriodLabel" 
+                :day-map="scopeDayMap"
+                :day-labels="scopeDayLabels" />
+      </div>
     </section>
 
 
     <!-- ==================== MAIN CALENDAR VIEW ==================== -->
-    <section class="calendar-main-section flex flex-col gap-3">
+    <section class="calendar-main-section flex flex-col gap-4 mt-6 pt-3 border-t border-gray-800/80">
       <div class="flex justify-between items-center px-1">
         <h2 class="text-sm font-bold text-gray-300 tracking-wide flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-          日历视图 ({{ modeName }})
+          {{ calendarSectionTitle }}
         </h2>
         <span class="text-xs text-gray-400">
           <template v-if="calendarMode === 'month'">点击任意日期可切换进入该日视图</template>
@@ -209,8 +235,12 @@ import type { TimeLog } from '../models/TimeLog';
 import { usePlugin } from '../main';
 import { AIExportManager } from '../utils/ai-export';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
+import iconUrl from '../../icon.png';
 
 const plugin = usePlugin();
+const emit = defineEmits<{
+  (e: 'close'): void;
+}>();
 
 // State
 const calendarMode = ref<'day' | 'week' | 'month'>('week');
@@ -244,7 +274,16 @@ const modeName = computed(() => {
   return '月';
 });
 
-// Period Label
+// 计算指定日期的周序号（ISO/标准周）
+const getWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+};
+
+// 顶部周期标签
 const currentPeriodLabel = computed(() => {
   const d = currentDate.value;
   const year = d.getFullYear();
@@ -255,7 +294,6 @@ const currentPeriodLabel = computed(() => {
     const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     return `${year}年${month}月${date}日 ${weekNames[d.getDay()]}`;
   } else if (calendarMode.value === 'week') {
-    // Get Monday of current week
     const dayOfWeek = d.getDay();
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(d);
@@ -268,6 +306,33 @@ const currentPeriodLabel = computed(() => {
     return `${year}年 (周度 ${mStr} - ${sStr})`;
   } else {
     return `${year}年 ${month}月`;
+  }
+});
+
+// 日历视图区块标题 (日视图体现日期，周视图体现第几周，月视图体现第几个月)
+const calendarSectionTitle = computed(() => {
+  const d = currentDate.value;
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const date = d.getDate();
+
+  if (calendarMode.value === 'day') {
+    const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    return `日历视图 (${year}年${month}月${date}日 ${weekNames[d.getDay()]})`;
+  } else if (calendarMode.value === 'week') {
+    const weekNum = getWeekNumber(d);
+    const dayOfWeek = d.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const mStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
+    const sStr = `${sunday.getMonth() + 1}/${sunday.getDate()}`;
+    return `日历视图 (${year}年 第${weekNum}周 · ${mStr} - ${sStr})`;
+  } else {
+    return `日历视图 (${year}年 第${month}月)`;
   }
 });
 

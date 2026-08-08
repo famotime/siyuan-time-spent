@@ -100,6 +100,8 @@ export default defineConfig(({
       // boolean | 'terser' | 'esbuild'
       // 不压缩，用于调试
       minify: !isWatch,
+      // 允许不超过 100KB 的图片资源直接 inline 为 base64
+      assetsInlineLimit: 102400,
 
       lib: {
         // Could also be a dictionary or array of multiple entry points
