@@ -1,13 +1,14 @@
 import {
   Plugin,
   getFrontend,
-  SyFrontendTypes
 } from "siyuan";
 import "@/index.css";
 import PluginInfoString from '@/../plugin.json'
 import { destroy, init } from '@/main'
 import { TimeTracker } from './utils/tracker';
 import { StorageManager } from './utils/storage';
+
+export type SyFrontendTypes = "desktop" | "desktop-window" | "mobile" | "browser-desktop" | "browser-mobile";
 
 let PluginInfo = {
   version: '',
