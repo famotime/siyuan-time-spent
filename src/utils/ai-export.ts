@@ -15,7 +15,7 @@ export class AIExportManager {
         const scopeLabel = scopeLabels[scopeType] || '时间追踪';
 
         if (logs.length === 0) {
-            return `# 思源笔记时间追踪数据 (${scopeTitle} - ${scopeLabel})\n\n该统计周期内暂无活动记录。`;
+            return `# ⏱️ 源时记 · 专注与时间复盘报告 (${scopeTitle} - ${scopeLabel})\n\n该统计周期内暂无活动记录。`;
         }
 
         const totalSeconds = logs.reduce((acc, log) => acc + log.duration, 0);
@@ -35,7 +35,7 @@ export class AIExportManager {
         const sortedDocs = Object.entries(aggregated).sort((a, b) => b[1].duration - a[1].duration);
         const topDoc = sortedDocs.length > 0 ? sortedDocs[0] : null;
 
-        let md = `# 📊 思源笔记时间追踪报告 (${scopeTitle})\n\n`;
+        let md = `# 📊 源时记 · 深度工作与时间复盘报告 (${scopeTitle})\n\n`;
         md += `**统计维度**: ${scopeLabel}\n\n`;
         
         md += `## 1. 核心概览 (Overview)\n`;
@@ -50,7 +50,7 @@ export class AIExportManager {
 
         md += `## 2. 文档分布详情 (Document Distribution)\n`;
         md += `| 文档名称 | 专注时长 | 会话次数 | 占比 |\n`;
-        md += `| :--- | :--- | :--- | :--- |\n`;
+        md += `| :--- | :--- | :--- | :--- | \n`;
         sortedDocs.forEach(([docName, stats]) => {
             const pct = totalSeconds > 0 ? ((stats.duration / totalSeconds) * 100).toFixed(1) : '0';
             md += `| ${docName} | ${this.formatDuration(stats.duration)} | ${stats.sessions} 次 | ${pct}% |\n`;
@@ -58,7 +58,7 @@ export class AIExportManager {
         md += `\n`;
 
         md += `## 3. 智能分析提示词 (Prompt for AI Coach)\n`;
-        md += `> "你是一位高效能个人时间管理与深度工作教练。以上是我在思源笔记中【${scopeTitle}】(${scopeLabel})的时间投入数据。请根据我的专注时长分布、文档投入比例和会话频次进行深度复盘：\n`;
+        md += `> "你是一位高效能个人时间管理与深度工作教练。以上是我在思源笔记中使用【源时记】记录的【${scopeTitle}】(${scopeLabel})时间投入数据。请根据我的专注时长分布、文档投入比例和会话频次进行深度复盘：\n`;
         md += `> 1. 分析我的时间分配是否存在碎片化或偏离核心目标的情况；\n`;
         md += `> 2. 评估我的专注节奏与深度工作效率；\n`;
         md += `> 3. 为我接下来的时间规划提供 3 条可立即落地的优化建议。"\n`;

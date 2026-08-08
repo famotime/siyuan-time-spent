@@ -1,3 +1,5 @@
 {
-  "addTopBarIcon": "PluginSampleViteVue"
+  "addTopBarIcon": "Time Spent Dashboard",
+  "title": "Time Spent",
+  "dashboardTitle": "Time Spent Dashboard"
 }

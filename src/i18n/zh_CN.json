@@ -1,3 +1,5 @@
 {
-  "addTopBarIcon": "PluginSampleViteVue"
+  "addTopBarIcon": "打开源时记看板",
+  "title": "源时记",
+  "dashboardTitle": "源时记 · 时间分布与专注看板"
 }

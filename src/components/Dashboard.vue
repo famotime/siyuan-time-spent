@@ -10,12 +10,12 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-wide text-white flex items-center gap-2">
-            时间分布看板
+            源时记
             <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-900/60 border border-indigo-500/40 text-indigo-300 font-normal">
-              实时追踪
+              时间分布与专注看板
             </span>
           </h1>
-          <p class="text-xs text-gray-400 mt-0.5">专注沉浸分析与可视化概览</p>
+          <p class="text-xs text-gray-400 mt-0.5">全自动深度工作追踪 · 智能防挂机 · 多维日历复盘</p>
         </div>
       </div>
 
