@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+.plugin-sample-vite-vue-app {
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100vh;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 1000;
+}

@@ -1,0 +1,36 @@
+{
+  "name": "siyuan-time-spent",
+  "author": "Quincy Zou",
+  "url": "https://github.com/famotime/plugin-sample-vite-vue",
+  "version": "0.0.1",
+  "minAppVersion": "3.7.3",
+  "disabledInPublish": true,
+  "backends": [
+    "all"
+  ],
+  "frontends": [
+    "all"
+  ],
+  "kernels": [
+    "all"
+  ],
+  "displayName": {
+    "default": "siyuan-time-spent",
+    "en-US": "统计时间统计",
+    "zh-CN": "统计时间统计"
+  },
+  "description": {
+    "default": "统计时间统计",
+    "en-US": "统计时间统计",
+    "zh-CN": "统计时间统计"
+  },
+  "readme": {
+    "default": "README.md",
+    "en-US": "README.md",
+    "zh-CN": "README_zh_CN.md"
+  },
+  "funding": {
+    "custom": []
+  },
+  "keywords": []
+}
