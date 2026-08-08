@@ -16,6 +16,8 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 import type { TimeLog } from '../models/TimeLog';
+import { watch } from 'vue';
+import { docTitles, fetchDocTitle } from '../utils/title-cache';
 
 use([
   CanvasRenderer,
@@ -29,16 +31,20 @@ const props = defineProps<{
   logs: TimeLog[]
 }>();
 
+watch(() => props.logs, (newLogs) => {
+  newLogs.forEach(log => fetchDocTitle(log.docId));
+}, { immediate: true, deep: true });
+
 const option = computed(() => {
   // Aggregate by docId for demo (in full version, it should aggregate by Notebook/Tag based on DocumentMeta)
   const aggregated: Record<string, number> = {};
   
   props.logs.forEach(log => {
-    const docId = log.docId || 'Unknown';
-    if (!aggregated[docId]) {
-      aggregated[docId] = 0;
+    const title = docTitles.value[log.docId] || log.docId || '未知文档';
+    if (!aggregated[title]) {
+      aggregated[title] = 0;
     }
-    aggregated[docId] += log.duration;
+    aggregated[title] += log.duration;
   });
   
   const data = Object.keys(aggregated).map(key => ({
@@ -61,7 +67,7 @@ const option = computed(() => {
     },
     series: [
       {
-        name: 'Time Spent',
+        name: '专注时长',
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -85,7 +91,7 @@ const option = computed(() => {
         labelLine: {
           show: false
         },
-        data: data.length > 0 ? data : [{ name: 'No Data', value: 0 }]
+        data: data.length > 0 ? data : [{ name: '暂无数据', value: 0 }]
       }
     ]
   };

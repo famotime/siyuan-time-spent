@@ -22,6 +22,18 @@ export class StorageManager {
         return await this.loadLogsByFile(filename);
     }
     
+    public async loadWeekLogs(): Promise<TimeLog[]> {
+        let allLogs: TimeLog[] = [];
+        // Load logs from 6 days ago up to today
+        for (let i = 6; i >= 0; i--) {
+            const dateStr = this.getDateStringFromDaysAgo(i);
+            const filename = `${dateStr}.json`;
+            const logs = await this.loadLogsByFile(filename);
+            allLogs = allLogs.concat(logs);
+        }
+        return allLogs;
+    }
+    
     public async saveTodayLogs(logs: TimeLog[]): Promise<void> {
         const filename = `${this.getTodayString()}.json`;
         await this.plugin.saveData(filename, logs);
@@ -47,6 +59,15 @@ export class StorageManager {
 
     private getDateStringFromTimestamp(timestamp: number): string {
         const d = new Date(timestamp);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    private getDateStringFromDaysAgo(daysAgo: number): string {
+        const d = new Date();
+        d.setDate(d.getDate() - daysAgo);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');

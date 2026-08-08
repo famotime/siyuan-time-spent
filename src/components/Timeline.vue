@@ -1,7 +1,7 @@
 <template>
   <div class="timeline-container relative pl-4 border-l-2 border-gray-700 max-h-96 overflow-y-auto">
     <div v-if="logs.length === 0" class="text-gray-500 italic text-sm py-4">
-      No activity recorded today.
+      今日无活动记录。
     </div>
     
     <div v-for="log in sortedLogs" :key="log.id" class="timeline-item relative mb-6">
@@ -9,14 +9,14 @@
       
       <div class="group block p-3 rounded-lg bg-gray-800 border border-gray-700 hover:border-indigo-500 hover:bg-gray-750 transition-colors duration-200 cursor-pointer">
         <div class="flex justify-between items-center mb-1">
-          <span class="text-sm font-semibold text-gray-200">{{ log.docId || 'Unknown Document' }}</span>
-          <span class="text-xs text-gray-400">{{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}</span>
+          <span class="text-sm font-semibold text-gray-200 truncate pr-2">{{ docTitles[log.docId] || log.docId || '未知文档' }}</span>
+          <span class="text-xs text-gray-400 whitespace-nowrap">{{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}</span>
         </div>
         <div class="text-xs text-indigo-300 font-medium mt-1">
-          Duration: {{ formatDuration(log.duration) }}
+          专注时长: {{ formatDuration(log.duration) }}
         </div>
         <div class="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          Idle deducted: {{ log.idleTime }}s
+          扣除闲置: {{ log.idleTime }}s
         </div>
       </div>
     </div>
@@ -24,12 +24,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import type { TimeLog } from '../models/TimeLog';
+import { docTitles, fetchDocTitle } from '../utils/title-cache';
 
 const props = defineProps<{
   logs: TimeLog[]
 }>();
+
+watch(() => props.logs, (newLogs) => {
+  newLogs.forEach(log => {
+    fetchDocTitle(log.docId);
+  });
+}, { immediate: true, deep: true });
 
 const sortedLogs = computed(() => {
   return [...props.logs].sort((a, b) => b.startTime - a.startTime);
@@ -43,7 +50,7 @@ const formatTime = (ts: number) => {
 const formatDuration = (seconds: number) => {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}m ${s}s`;
+  return `${m}分 ${s}秒`;
 };
 </script>
 
