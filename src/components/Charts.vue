@@ -99,6 +99,26 @@ const sortedDocs = computed(() => {
     .sort((a, b) => b.value - a.value);
 });
 
+// 处理饼图展示数据：当文档超过 10 个时，仅展示前 10 个，剩余合并为 '...'
+const pieData = computed(() => {
+  const all = sortedDocs.value;
+  if (all.length <= 10) {
+    return all;
+  }
+  const top10 = all.slice(0, 10);
+  const rest = all.slice(10);
+  const restDuration = rest.reduce((sum, item) => sum + item.value, 0);
+
+  return [
+    ...top10,
+    {
+      name: '...',
+      value: restDuration,
+      itemStyle: { color: '#64748b' }
+    }
+  ];
+});
+
 // Modern Color Palette
 const palette = [
   '#6366f1', // Indigo
@@ -110,11 +130,11 @@ const palette = [
   '#ec4899', // Pink
   '#14b8a6', // Teal
   '#f97316', // Orange
-  '#64748b'  // Slate
+  '#06b6d4'  // Cyan
 ];
 
 const pieOption = computed(() => {
-  const data = sortedDocs.value;
+  const data = pieData.value;
   const hasData = data.length > 0;
 
   return {
@@ -127,6 +147,11 @@ const pieOption = computed(() => {
       textStyle: { color: '#f3f4f6', fontSize: 12 },
       formatter: (params: any) => {
         const dur = formatDuration(params.value);
+        if (params.name === '...') {
+          const restCount = sortedDocs.value.length - 10;
+          return `<div class="font-sans font-semibold">剩余 ${restCount} 个文档</div>
+                  <div class="text-xs text-indigo-300 mt-0.5">总时长: ${dur} (${params.percent}%)</div>`;
+        }
         return `<div class="font-sans font-semibold">${params.name}</div>
                 <div class="text-xs text-indigo-300 mt-0.5">时长: ${dur} (${params.percent}%)</div>`;
       }
@@ -134,12 +159,13 @@ const pieOption = computed(() => {
     legend: {
       orient: 'vertical',
       right: '2%',
-      top: 'center',
-      itemWidth: 10,
-      itemHeight: 10,
-      itemGap: 8,
+      top: 'middle',
+      itemWidth: 8,
+      itemHeight: 8,
+      itemGap: 4,
       textStyle: { color: '#9ca3af', fontSize: 11 },
       formatter: (name: string) => {
+        if (name === '...') return '...';
         return name.length > 10 ? name.substring(0, 10) + '...' : name;
       }
     },
@@ -147,12 +173,12 @@ const pieOption = computed(() => {
       {
         name: '文档专注',
         type: 'pie',
-        radius: ['45%', '75%'],
-        center: ['35%', '50%'],
+        radius: ['45%', '72%'],
+        center: ['30%', '50%'],
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 6,
-          borderColor: '#1f2937',
+          borderColor: '#111827',
           borderWidth: 2
         },
         label: { show: false },
