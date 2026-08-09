@@ -28,12 +28,14 @@
             <!-- Time Blocks -->
             <div class="absolute left-16 right-4 top-0 bottom-0 pointer-events-none">
               <div v-for="block in dayBlocks" :key="block.log.id"
-                   class="absolute left-1 right-2 rounded-lg shadow-lg overflow-hidden cursor-pointer pointer-events-auto hover:ring-2 hover:ring-white/90 hover:z-30 transition-all group border border-black/30 backdrop-blur-sm"
+                   class="absolute rounded-lg shadow-lg overflow-hidden cursor-pointer pointer-events-auto hover:ring-2 hover:ring-white/90 hover:z-40 transition-all group border border-black/30 backdrop-blur-sm"
                    :style="{
                      top: `${block.top}px`,
                      height: `${block.height}px`,
+                     left: `calc(${block.leftPercent}% + 2px)`,
+                     width: `calc(${block.widthPercent}% - 4px)`,
                      backgroundColor: getDocColor(block.log.docId),
-                     zIndex: block.height < 32 ? 15 : 10
+                     zIndex: block.colIndex + (block.height < 32 ? 15 : 10)
                    }"
                    @click="openDoc(block.log.docId)"
                    :title="`${block.title}\n${formatTime(block.log.startTime)} - ${formatTime(block.log.endTime)}\n时长: ${formatDuration(block.log.duration)}\n闲置扣除: ${block.log.idleTime}秒`">
@@ -138,12 +140,14 @@
 
             <!-- Time Blocks -->
             <div v-for="block in getBlocksForDate(day.dateStr)" :key="block.log.id"
-                 class="absolute w-[92%] mx-[4%] rounded-md shadow-md overflow-hidden text-xs cursor-pointer hover:ring-2 hover:ring-white/90 hover:z-20 transition-all group border border-black/30"
+                 class="absolute rounded-md shadow-md overflow-hidden text-xs cursor-pointer hover:ring-2 hover:ring-white/90 hover:z-30 transition-all group border border-black/30"
                  :style="{
                    top: `${block.top}px`,
                    height: `${block.height}px`,
+                   left: `calc(${block.leftPercent}% + 1px)`,
+                   width: `calc(${block.widthPercent}% - 2px)`,
                    backgroundColor: getDocColor(block.log.docId),
-                   zIndex: block.height < 28 ? 12 : 6
+                   zIndex: block.colIndex + (block.height < 28 ? 12 : 6)
                  }"
                  @click="openDoc(block.log.docId)"
                  :title="`${block.title}\n${formatTime(block.log.startTime)} - ${formatTime(block.log.endTime)}\n时长: ${formatDuration(block.log.duration)}`">
@@ -338,26 +342,134 @@ interface BlockDisplay {
   log: TimeLog;
   top: number;
   height: number;
+  leftPercent: number;
+  widthPercent: number;
+  colIndex: number;
+  totalCols: number;
   title: string;
 }
 
-const dayBlocks = computed<BlockDisplay[]>(() => {
-  return currentDayLogs.value.map(log => {
+/**
+ * 智能重叠并排布局算法 (Google Calendar 风格)
+ * 1. 计算所有记录的几何区间 [top, top + height]
+ * 2. 识别有交叉重叠的记录聚类为冲突群组 (Clusters)
+ * 3. 贪心算法为各记录分配列索引 (colIndex) 并计算最大并发列数 (totalCols)
+ * 4. 动态计算 leftPercent 和 widthPercent
+ */
+const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] => {
+  if (!logs || logs.length === 0) return [];
+
+  interface TempBlock {
+    log: TimeLog;
+    top: number;
+    height: number;
+    end: number;
+    title: string;
+    colIndex: number;
+    totalCols: number;
+  }
+
+  // 1. 基础尺寸与位置计算
+  const rawBlocks: TempBlock[] = logs.map(log => {
     const d = new Date(log.startTime);
     const startHour = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
-    const durationHours = Math.max(log.duration / 3600, 0.2); // minimum height
+    const durationHours = Math.max(log.duration / 3600, 0.1);
     
     const top = startHour * hourHeight;
     let height = durationHours * hourHeight;
-    if (height < 24) height = 24;
+    if (height < minHeight) height = minHeight;
 
     return {
       log,
       top,
       height,
-      title: docTitles.value[log.docId] || ''
+      end: top + height,
+      title: docTitles.value[log.docId] || '',
+      colIndex: 0,
+      totalCols: 1
     };
   });
+
+  // 2. 排序：按 top 升序；若 top 相同，按 height 降序（较长优先排左）；再按 startTime 升序
+  rawBlocks.sort((a, b) => {
+    if (Math.abs(a.top - b.top) > 0.001) {
+      return a.top - b.top;
+    }
+    if (Math.abs(b.height - a.height) > 0.001) {
+      return b.height - a.height;
+    }
+    return a.log.startTime - b.log.startTime;
+  });
+
+  // 3. 聚类分组（连通的重叠时间群组）
+  const clusters: TempBlock[][] = [];
+  let currentCluster: TempBlock[] = [];
+  let clusterEnd = -1;
+
+  for (const block of rawBlocks) {
+    if (currentCluster.length === 0) {
+      currentCluster.push(block);
+      clusterEnd = block.end;
+    } else {
+      // 若当前块起点在上一个群组的结束位置之前，说明有交叉重叠
+      if (block.top < clusterEnd) {
+        currentCluster.push(block);
+        clusterEnd = Math.max(clusterEnd, block.end);
+      } else {
+        clusters.push(currentCluster);
+        currentCluster = [block];
+        clusterEnd = block.end;
+      }
+    }
+  }
+  if (currentCluster.length > 0) {
+    clusters.push(currentCluster);
+  }
+
+  // 4. 贪心分配列并计算百分比
+  const result: BlockDisplay[] = [];
+
+  for (const cluster of clusters) {
+    const columns: number[] = []; // 记录各列当前底部的 y 坐标 (end)
+
+    for (const block of cluster) {
+      let placed = false;
+      for (let c = 0; c < columns.length; c++) {
+        // 如果该列当前空闲
+        if (columns[c] <= block.top) {
+          block.colIndex = c;
+          columns[c] = block.end;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        block.colIndex = columns.length;
+        columns.push(block.end);
+      }
+    }
+
+    const totalCols = columns.length;
+    for (const block of cluster) {
+      block.totalCols = totalCols;
+      result.push({
+        log: block.log,
+        top: block.top,
+        height: block.height,
+        leftPercent: (block.colIndex / totalCols) * 100,
+        widthPercent: (1 / totalCols) * 100,
+        colIndex: block.colIndex,
+        totalCols,
+        title: block.title
+      });
+    }
+  }
+
+  return result;
+};
+
+const dayBlocks = computed<BlockDisplay[]>(() => {
+  return computeLayoutBlocks(currentDayLogs.value, 24);
 });
 
 // ==================== WEEK VIEW COMPUTED ====================
@@ -394,22 +506,7 @@ const weekDays = computed(() => {
 
 const getBlocksForDate = (dateStr: string): BlockDisplay[] => {
   const logs = props.dayMap[dateStr] || props.logs.filter(log => formatDateKey(new Date(log.startTime)) === dateStr);
-  return logs.map(log => {
-    const d = new Date(log.startTime);
-    const startHour = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
-    const durationHours = Math.max(log.duration / 3600, 0.2);
-    
-    let top = startHour * hourHeight;
-    let height = durationHours * hourHeight;
-    if (height < 22) height = 22;
-
-    return {
-      log,
-      top,
-      height,
-      title: docTitles.value[log.docId] || ''
-    };
-  });
+  return computeLayoutBlocks(logs, 20);
 };
 
 // ==================== MONTH VIEW COMPUTED ====================
