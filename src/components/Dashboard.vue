@@ -1,27 +1,27 @@
 <template>
-  <div class="time-spent-dashboard bg-gray-950 text-gray-100 p-5 md:p-8 min-h-full flex flex-col gap-8 md:gap-10">
+  <div class="time-spent-dashboard bg-gray-950 text-gray-100 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5">
     
     <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
-    <header class="flex flex-col gap-6 pb-6 border-b border-gray-800/80">
+    <header class="flex flex-col gap-3.5 pb-3.5 border-b border-gray-800/80">
       
       <!-- Top Row: Brand & Close Button -->
       <div class="flex justify-between items-center w-full">
         <!-- Title & Live Status -->
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3.5">
           <!-- 放大图标尺寸，显示原 icon 纯净透明底色 -->
-          <div class="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0 bg-transparent">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shrink-0 bg-transparent">
             <img :src="iconUrl" alt="源时记" class="w-full h-full object-contain drop-shadow-xl select-none" />
           </div>
           <div class="flex flex-col justify-center">
-            <div class="flex flex-wrap items-center gap-3">
-              <h1 class="text-2xl sm:text-3xl font-black tracking-wide text-white">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <h1 class="text-xl sm:text-2xl font-black tracking-wide text-white">
                 源时记
               </h1>
               <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950/90 border border-indigo-500/40 text-indigo-300 font-medium shadow-sm">
                 时间分布与专注看板
               </span>
             </div>
-            <p class="text-xs sm:text-sm text-gray-400 mt-1.5 leading-relaxed">
+            <p class="text-xs text-gray-400 mt-1 leading-relaxed">
               全自动深度工作追踪 · 智能防挂机 · 多维日历复盘
             </p>
           </div>
@@ -29,22 +29,22 @@
 
         <!-- Header Right Close Button -->
         <button @click="emit('close')" 
-                class="p-2.5 text-gray-400 hover:text-white hover:bg-gray-800/80 rounded-xl transition-colors shrink-0" 
+                class="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer" 
                 title="关闭看板">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      <!-- Bottom Row: Date Navigator & Mode Switcher & AI Export (具有充足拉大的垂直距离) -->
-      <div class="flex flex-wrap items-center justify-between gap-4 w-full pt-3 border-t border-gray-900">
+      <!-- Bottom Row: Date Navigator & Mode Switcher & AI Export -->
+      <div class="flex flex-wrap items-center justify-between gap-3 w-full pt-2.5 border-t border-gray-900">
         <!-- Left: Date Navigator & Period Label -->
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
           <!-- Date Navigator -->
-          <div class="flex items-center bg-gray-900 border border-gray-700/80 rounded-xl p-1 shadow-inner">
+          <div class="inline-flex items-center bg-gray-900/90 border border-gray-800 rounded-xl p-1 shadow-inner gap-1">
             <button @click="navigatePeriod(-1)" 
-                    class="p-1.5 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
+                    class="w-7 h-7 flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     title="上一周期">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -52,12 +52,12 @@
             </button>
             
             <button @click="jumpToToday" 
-                    class="px-3 py-1 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800">
+                    class="px-3 h-7 flex items-center justify-center text-xs font-semibold bg-transparent text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800/80 cursor-pointer">
               今天
             </button>
 
             <button @click="navigatePeriod(1)" 
-                    class="p-1.5 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
+                    class="w-7 h-7 flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     title="下一周期">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -66,36 +66,36 @@
           </div>
 
           <!-- Period Display Label -->
-          <div class="text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-sm font-mono">
+          <div class="h-9 text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-sm font-mono">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
             {{ currentPeriodLabel }}
           </div>
         </div>
 
         <!-- Right: Mode Tabs: Day / Week / Month & AI Export Button -->
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
           <!-- Mode Tabs -->
-          <div class="flex bg-gray-900 border border-gray-700/80 p-1 rounded-xl shadow-inner">
+          <div class="inline-flex items-center bg-gray-900/90 border border-gray-800 p-1 rounded-xl shadow-inner gap-1">
             <button @click="switchMode('day')" 
-                    class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all"
-                    :class="calendarMode === 'day' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
+                    class="h-7 px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    :class="calendarMode === 'day' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               日视图
             </button>
             <button @click="switchMode('week')" 
-                    class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all"
-                    :class="calendarMode === 'week' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
+                    class="h-7 px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    :class="calendarMode === 'week' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               周视图
             </button>
             <button @click="switchMode('month')" 
-                    class="px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all"
-                    :class="calendarMode === 'month' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200'">
+                    class="h-7 px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               月视图
             </button>
           </div>
 
           <!-- AI Export Button -->
           <button @click="exportForAI" 
-                  class="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                  class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -107,12 +107,12 @@
 
 
     <!-- ==================== UNIFIED TOP VISUAL OVERVIEW ==================== -->
-    <section class="top-visual-overview flex flex-col my-2">
+    <section class="top-visual-overview flex flex-col">
       
-      <!-- KPI Metric Cards Grid (底部拉大边距，与图表彻底拉开间距) -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 md:mb-10">
+      <!-- KPI Metric Cards Grid (显式充足的底部间距，彻底与图表拉开清晰层级) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-6 sm:mb-8">
         <!-- KPI 1: Total Focused Time -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800 hover:border-indigo-500/50 p-4 rounded-xl shadow-md transition-all">
+        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-indigo-500/50 p-3.5 rounded-xl shadow-md transition-all">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>{{ modeName }}总专注</span>
             <span class="text-indigo-400 font-mono">Total</span>
@@ -126,7 +126,7 @@
         </div>
 
         <!-- KPI 2: Daily Average or Pace -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl shadow-md transition-all">
+        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-cyan-500/50 p-3.5 rounded-xl shadow-md transition-all">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>{{ averageMetricLabel }}</span>
             <span class="text-cyan-400 font-mono">Avg</span>
@@ -140,7 +140,7 @@
         </div>
 
         <!-- KPI 3: Total Sessions -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800 hover:border-emerald-500/50 p-4 rounded-xl shadow-md transition-all">
+        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-emerald-500/50 p-3.5 rounded-xl shadow-md transition-all">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>专注会话数</span>
             <span class="text-emerald-400 font-mono">Sessions</span>
@@ -154,7 +154,7 @@
         </div>
 
         <!-- KPI 4: Idle Time Deducted -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800 hover:border-amber-500/50 p-4 rounded-xl shadow-md transition-all">
+        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-amber-500/50 p-3.5 rounded-xl shadow-md transition-all">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>闲置扣除时长</span>
             <span class="text-amber-400 font-mono">Idle Filter</span>
@@ -168,7 +168,7 @@
         </div>
 
         <!-- KPI 5: Top Focus Target -->
-        <div class="kpi-card col-span-2 sm:col-span-1 bg-gray-900/90 border border-gray-800 hover:border-purple-500/50 p-4 rounded-xl shadow-md transition-all">
+        <div class="kpi-card col-span-2 sm:col-span-1 bg-gray-900/90 border border-gray-800/90 hover:border-purple-500/50 p-3.5 rounded-xl shadow-md transition-all">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>主攻专注重心</span>
             <span class="text-purple-400 font-mono">Top Focus</span>
@@ -182,8 +182,8 @@
         </div>
       </div>
 
-      <!-- Overview Visual Charts (顶部显式加上大呼吸间距) -->
-      <div class="charts-container mt-2 pt-1">
+      <!-- Overview Visual Charts -->
+      <div class="charts-container">
         <Charts :logs="activeLogs" 
                 :scope-type="calendarMode" 
                 :scope-date-title="currentPeriodLabel" 
@@ -194,7 +194,7 @@
 
 
     <!-- ==================== MAIN CALENDAR VIEW ==================== -->
-    <section class="calendar-main-section flex flex-col gap-4 mt-6 pt-3 border-t border-gray-800/80">
+    <section class="calendar-main-section flex flex-col gap-3 pt-3 border-t border-gray-800/80">
       <div class="flex justify-between items-center px-1">
         <h2 class="text-sm font-bold text-gray-300 tracking-wide flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
@@ -235,6 +235,7 @@ import type { TimeLog } from '../models/TimeLog';
 import { usePlugin } from '../main';
 import { AIExportManager } from '../utils/ai-export';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
+import Logger from '../utils/logger';
 import iconUrl from '../../icon.png';
 
 const plugin = usePlugin();
@@ -531,7 +532,7 @@ const exportForAI = async () => {
     await navigator.clipboard.writeText(md);
     showToast(`✅ ${modeName.value}度 AI 总结已成功复制到剪贴板！`);
   } catch (err) {
-    console.error('Failed to copy AI summary: ', err);
+    Logger.error('Failed to copy AI summary: ', err);
     showToast('❌ 复制失败，请检查剪贴板权限');
   }
 };

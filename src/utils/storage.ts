@@ -1,5 +1,6 @@
 import { Plugin } from "siyuan";
 import { TimeLog } from "../models/TimeLog";
+import Logger from "./logger";
 
 export class StorageManager {
     private plugin: Plugin;
@@ -106,7 +107,7 @@ export class StorageManager {
             const data = await this.plugin.loadData(filename);
             return Array.isArray(data) ? data : [];
         } catch (e) {
-            console.error(`[StorageManager] Failed to load data from ${filename}`, e);
+            Logger.error(`Failed to load data from ${filename}`, e);
             return [];
         }
     }

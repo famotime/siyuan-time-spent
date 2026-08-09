@@ -2,8 +2,27 @@
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+@source "../src";
 
-.plugin-sample-vite-vue-app {
+@layer base {
+  /* Reset default button styles inside dashboard to prevent host SiYuan theme interference */
+  .time-spent-dashboard button {
+    background-color: transparent;
+    background-image: none;
+    border-style: none;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    box-shadow: none;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+.siyuan-time-spent-app {
   width: 100vw;
   height: 100dvh;
   max-height: 100vh;
@@ -14,3 +33,4 @@
   box-sizing: border-box;
   z-index: 1000;
 }
+

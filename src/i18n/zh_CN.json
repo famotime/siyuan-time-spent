@@ -1,5 +1,9 @@
 {
   "addTopBarIcon": "打开源时记看板",
   "title": "源时记",
-  "dashboardTitle": "源时记 · 时间分布与专注看板"
+  "dashboardTitle": "源时记 · 时间分布与专注看板",
+  "settingEnableLogTitle": "日志打印",
+  "settingEnableLogDesc": "开启后在开发者工具控制台输出时间追踪与调试日志（默认关闭）",
+  "settingLogEnabledMsg": "已开启控制台日志打印",
+  "settingLogDisabledMsg": "已关闭控制台日志打印"
 }

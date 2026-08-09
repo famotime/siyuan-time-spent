@@ -1,29 +1,29 @@
 <template>
-  <div class="charts-grid grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+  <div class="charts-grid grid grid-cols-1 lg:grid-cols-2 gap-3.5 w-full">
     <!-- Chart 1: Document Proportion Donut -->
-    <div class="chart-card bg-gray-800/80 backdrop-blur border border-gray-700/80 rounded-xl p-4 shadow-lg flex flex-col">
-      <div class="chart-header flex justify-between items-center mb-3">
-        <span class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+    <div class="chart-card bg-gray-900/90 border border-gray-800/90 rounded-xl p-3.5 shadow-md flex flex-col">
+      <div class="chart-header flex justify-between items-center mb-2.5">
+        <span class="text-xs sm:text-sm font-semibold text-gray-300 flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
           文档投入分布
         </span>
         <span class="text-xs text-gray-400 font-mono">{{ sortedDocs.length }} 个文档</span>
       </div>
-      <div class="chart-wrapper h-56 w-full">
+      <div class="chart-wrapper h-52 sm:h-56 w-full">
         <v-chart class="chart" :option="pieOption" autoresize />
       </div>
     </div>
 
     <!-- Chart 2: Dynamic Trend & Time Slot Distribution -->
-    <div class="chart-card bg-gray-800/80 backdrop-blur border border-gray-700/80 rounded-xl p-4 shadow-lg flex flex-col">
-      <div class="chart-header flex justify-between items-center mb-3">
-        <span class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+    <div class="chart-card bg-gray-900/90 border border-gray-800/90 rounded-xl p-3.5 shadow-md flex flex-col">
+      <div class="chart-header flex justify-between items-center mb-2.5">
+        <span class="text-xs sm:text-sm font-semibold text-gray-300 flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block shadow-[0_0_8px_rgba(34,211,238,0.6)]"></span>
           {{ trendTitle }}
         </span>
         <span class="text-xs text-gray-400 font-mono">{{ trendSubtitle }}</span>
       </div>
-      <div class="chart-wrapper h-56 w-full">
+      <div class="chart-wrapper h-52 sm:h-56 w-full">
         <v-chart class="chart" :option="barOption" autoresize />
       </div>
     </div>

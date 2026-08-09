@@ -1,5 +1,9 @@
 {
   "addTopBarIcon": "Time Spent Dashboard",
   "title": "Time Spent",
-  "dashboardTitle": "Time Spent Dashboard"
+  "dashboardTitle": "Time Spent Dashboard",
+  "settingEnableLogTitle": "Console Logging",
+  "settingEnableLogDesc": "Output time tracking and debug logs in the developer console (disabled by default)",
+  "settingLogEnabledMsg": "Console logging enabled",
+  "settingLogDisabledMsg": "Console logging disabled"
 }

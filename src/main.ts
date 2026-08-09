@@ -1,41 +1,45 @@
 import {
   Plugin,
 } from "siyuan";
-import { createApp } from 'vue'
-import App from './App.vue'
+import { createApp } from 'vue';
+import App from './App.vue';
+import Logger from './utils/logger';
 
-let plugin = null
+let plugin: Plugin | null = null;
+
 export function usePlugin(pluginProps?: Plugin): Plugin {
-  console.log('usePlugin', pluginProps, plugin)
+  Logger.log('usePlugin', pluginProps, plugin);
   if (pluginProps) {
-    plugin = pluginProps
+    plugin = pluginProps;
   }
   if (!plugin && !pluginProps) {
-    console.error('need bind plugin')
+    Logger.error('need bind plugin');
   }
-  return plugin;
+  return plugin!;
 }
 
+let app: any = null;
 
-let app = null
-export function init(plugin: Plugin) {
+export function init(pluginInstance: Plugin) {
   // bind plugin hook
-  usePlugin(plugin);
+  usePlugin(pluginInstance);
 
-  const div = document.createElement('div')
-  div.classList.toggle('plugin-sample-vite-vue-app')
-  div.id = plugin.name
-  app = createApp(App)
-  app.mount(div)
-  document.body.appendChild(div)
+  const div = document.createElement('div');
+  div.classList.toggle('siyuan-time-spent-app');
+  div.id = pluginInstance.name;
+  app = createApp(App);
+  app.mount(div);
+  document.body.appendChild(div);
 }
 
 export function destroy() {
-  app.unmount()
+  if (app) {
+    app.unmount();
+  }
   if (plugin) {
-    const div = document.getElementById(plugin.name)
+    const div = document.getElementById(plugin.name);
     if (div) {
-      document.body.removeChild(div)
+      document.body.removeChild(div);
     }
   }
 }

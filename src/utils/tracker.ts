@@ -2,6 +2,7 @@ import { Plugin } from "siyuan";
 import { IdleWatcher } from "./idle-watcher";
 import { TimeLog } from "../models/TimeLog";
 import { StorageManager } from "./storage";
+import Logger from "./logger";
 
 export class TimeTracker {
     private plugin: Plugin;
@@ -43,7 +44,7 @@ export class TimeTracker {
             // Woke up from idle, add the idle duration to the current session's idle time
             // Note: The idleWatcher reports idleDuration in milliseconds, convert to seconds
             this.currentSessionIdleTime += Math.floor(idleDurationMs / 1000);
-            console.log(`[TimeTracker] Woke up from idle. Added ${Math.floor(idleDurationMs / 1000)}s of idle time.`);
+            Logger.log(`Woke up from idle. Added ${Math.floor(idleDurationMs / 1000)}s of idle time.`);
         }
     }
 
@@ -72,7 +73,7 @@ export class TimeTracker {
         this.currentDocId = newDocId;
         this.currentSessionStart = Date.now();
         this.currentSessionIdleTime = 0;
-        console.log(`[TimeTracker] Started tracking document: ${newDocId}`);
+        Logger.log(`Started tracking document: ${newDocId}`);
     }
 
     private finishCurrentSession() {
@@ -105,9 +106,9 @@ export class TimeTracker {
     }
     
     private saveLog(log: TimeLog) {
-        console.log(`[TimeTracker] Saved log: `, log);
+        Logger.log(`Saved log: `, log);
         this.storageManager.appendLog(log).catch(e => {
-            console.error(`[TimeTracker] Failed to save log`, e);
+            Logger.error(`Failed to save log`, e);
         });
     }
 }
