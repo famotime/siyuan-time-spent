@@ -37,59 +37,160 @@
         </button>
       </div>
 
-      <!-- Focus Goal Section (专注目标区域) -->
-      <div class="focus-goal-card bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-indigo-950/40 border border-gray-800/90 hover:border-indigo-500/40 rounded-xl p-3 sm:p-3.5 transition-all shadow-sm flex flex-col gap-2.5">
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
-          <!-- 目标标题徽章 -->
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="w-7 h-7 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm shadow-inner">
-              🎯
-            </span>
-            <span class="text-xs font-bold text-gray-200 tracking-wide">
-              专注目标
-            </span>
+      <!-- Focus Goal Hero Section (专注目标 Hero 卡片) -->
+      <div class="focus-goal-card bg-gray-900/90 border border-gray-800/90 hover:border-gray-700/80 rounded-xl p-3 sm:p-4 transition-all shadow-sm">
+        <!-- Mode 1: Display Mode (已设定目标且非编辑态) -->
+        <div v-if="focusGoal && !isEditingFocusGoal" class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
+          <!-- Left & Center: Badge + Statement (点击整块可快速进入编辑) -->
+          <div 
+            @click="startEditingGoal"
+            class="flex items-center gap-3.5 cursor-pointer group flex-1 min-w-0"
+            title="点击修改专注目标"
+          >
+            <!-- 40px 精致靶心线框徽章 (深色底，靛蓝强调，纯线框设计) -->
+            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gray-800/90 border border-gray-700/80 group-hover:border-indigo-500/50 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner transition-colors">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+            </div>
+
+            <!-- 目标标题微标签与显著放大加粗宣言 -->
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-400">
+                  FOCUS GOAL
+                </span>
+                <span class="text-[11px] text-gray-500">·</span>
+                <span class="text-[11px] text-gray-400 font-medium">当前专注目标</span>
+              </div>
+              <div class="text-base sm:text-lg md:text-xl font-bold text-white group-hover:text-indigo-200 transition-colors truncate tracking-wide mt-0.5" :title="focusGoal">
+                {{ focusGoal }}
+              </div>
+            </div>
           </div>
 
-          <!-- 输入框与清空按钮 -->
-          <div class="relative flex-1 flex items-center">
-            <input 
-              type="text" 
-              v-model="focusGoal" 
-              @blur="saveFocusGoal"
-              @keydown.enter="saveFocusGoal"
-              placeholder="设定专注目标，如：今天专注1小时，处理12篇笔记文档..."
-              class="w-full h-8 pl-3 pr-8 text-xs bg-gray-950/80 border border-gray-800 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/50 rounded-lg text-gray-100 placeholder-gray-500 transition-all outline-none"
-            />
+          <!-- Right Action Buttons & Saved Tip -->
+          <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <!-- 保存成功提示 -->
+            <span v-if="focusGoalSavedTip" class="text-[11px] text-emerald-400 font-medium flex items-center gap-1 animate-fadeIn mr-1">
+              <svg class="w-3.5 h-3.5 text-emerald-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>已保存</span>
+            </span>
+
+            <!-- 编辑按钮 (显式线框) -->
             <button 
-              v-if="focusGoal" 
-              @click="clearFocusGoal" 
-              class="absolute right-2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
-              title="清除目标">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              @click.stop="startEditingGoal"
+              class="h-8.5 px-3 flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white bg-gray-800/80 hover:bg-gray-700 border border-gray-700/60 rounded-lg transition-all cursor-pointer shadow-sm"
+              title="编辑目标"
+            >
+              <svg class="w-3.5 h-3.5 text-gray-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>编辑</span>
+            </button>
+
+            <!-- 清除按钮 (显式线框) -->
+            <button 
+              @click.stop="clearFocusGoal"
+              class="h-8.5 w-8.5 flex items-center justify-center text-gray-400 hover:text-red-400 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/60 rounded-lg transition-all cursor-pointer shadow-sm"
+              title="清除目标"
+            >
+              <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
           </div>
-
-          <!-- 保存状态提示 -->
-          <div v-if="focusGoalSavedTip" class="shrink-0 text-[11px] text-emerald-400 font-medium flex items-center gap-1 animate-fadeIn">
-            <span>✓ 已保存</span>
-          </div>
         </div>
 
-        <!-- 目标预设快捷选择标签 -->
-        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-          <span class="text-[11px] text-gray-400 shrink-0 select-none">
-            快速选择：
-          </span>
-          <button 
-            v-for="(candidate, index) in goalCandidates" 
-            :key="index"
-            @click="selectGoalCandidate(candidate)"
-            class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-800/80 hover:bg-indigo-600/30 text-gray-300 hover:text-indigo-200 border border-gray-700/60 hover:border-indigo-500/40 transition-all cursor-pointer flex items-center gap-1"
-            :class="{ 'bg-indigo-950/90 border-indigo-500/70 text-indigo-300 font-semibold shadow-sm': focusGoal === candidate }">
-            {{ candidate }}
-          </button>
+        <!-- Mode 2: Edit / Empty Mode (未设定目标或正在编辑) -->
+        <div v-else class="flex flex-col gap-2.5 w-full">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
+            <!-- 目标标题徽章 (显式线框靶心) -->
+            <div class="flex items-center gap-2.5 shrink-0">
+              <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-800 border border-gray-700/80 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+                <svg class="w-5 h-5 text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="6" />
+                  <circle cx="12" cy="12" r="2" />
+                </svg>
+              </span>
+              <div class="flex flex-col">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-indigo-400">
+                  Focus Goal
+                </span>
+                <span class="text-xs font-bold text-gray-200 tracking-wide">
+                  设定专注目标
+                </span>
+              </div>
+            </div>
+
+            <!-- 输入框与一键清空 -->
+            <div class="relative flex-1 flex items-center">
+              <input 
+                ref="goalInputRef"
+                type="text" 
+                v-model="editGoalInput" 
+                @keydown.enter="confirmGoalEdit"
+                @keydown.esc="cancelGoalEdit"
+                :placeholder="currentGoalPlaceholder"
+                class="w-full h-10 pl-3.5 pr-8 text-sm sm:text-base bg-gray-950/90 border border-gray-800 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/50 rounded-lg text-gray-100 placeholder-gray-500 transition-all outline-none"
+              />
+              <button 
+                v-if="editGoalInput" 
+                @click="editGoalInput = ''" 
+                class="absolute right-2.5 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+                title="清空输入">
+                <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+              <button 
+                @click="confirmGoalEdit"
+                class="h-10 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold rounded-lg transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                title="保存目标 (Enter)"
+              >
+                <svg class="w-4 h-4" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>保存</span>
+              </button>
+
+              <button 
+                v-if="focusGoal"
+                @click="cancelGoalEdit"
+                class="h-10 px-3.5 text-xs sm:text-sm text-gray-400 hover:text-gray-200 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/60 rounded-lg transition-all cursor-pointer"
+                title="取消修改 (Esc)"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+
+          <!-- 目标预设快捷选择标签 (根据当前日历周期智能联动推荐) -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-gray-800/60">
+            <span class="text-[11px] text-gray-400 shrink-0 select-none flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              {{ calendarMode === 'day' ? '今日推荐：' : calendarMode === 'week' ? '本周推荐：' : '本月推荐：' }}
+            </span>
+            <button 
+              v-for="(candidate, index) in currentGoalCandidates" 
+              :key="index"
+              @click="selectGoalCandidate(candidate)"
+              class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-800/70 hover:bg-indigo-950/80 text-gray-300 hover:text-indigo-200 border border-gray-700/50 hover:border-indigo-500/40 transition-all cursor-pointer flex items-center gap-1"
+              :class="{ 'bg-indigo-950/90 border-indigo-500/70 text-indigo-300 font-semibold shadow-sm': editGoalInput === candidate }">
+              {{ candidate }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -296,7 +397,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import CalendarView from './CalendarView.vue';
 import Charts from './Charts.vue';
 import AiSummaryModal from './AiSummaryModal.vue';
@@ -319,19 +420,51 @@ const activeLogs = ref<TimeLog[]>([]);
 const scopeDayMap = ref<Record<string, TimeLog[]>>({});
 const toastMessage = ref<string>('');
 
-// Focus Goal State
+// Focus Goal State (双模式与智能周期候选)
 const STORAGE_KEY_FOCUS_GOAL = 'siyuan_time_spent_focus_goal';
 const focusGoal = ref<string>(localStorage.getItem(STORAGE_KEY_FOCUS_GOAL) || '');
 const focusGoalSavedTip = ref<boolean>(false);
+const isEditingFocusGoal = ref<boolean>(false);
+const editGoalInput = ref<string>('');
+const goalInputRef = ref<HTMLInputElement | null>(null);
 let focusGoalTipTimer: ReturnType<typeof setTimeout> | null = null;
 
-const goalCandidates = [
-  '今天专注1小时，处理12篇笔记文档',
-  '今天专注2小时，深度推进核心课题',
-  '最近一周平均每天专注2小时',
-  '最近一周每天完成4个番茄钟',
-  '本月累计深度工作50小时'
-];
+// 周期动态预设候选
+const currentGoalCandidates = computed(() => {
+  if (calendarMode.value === 'day') {
+    return [
+      '今天专注1小时，处理12篇笔记文档',
+      '今天专注2小时，深度推进核心课题',
+      '今天完成4个番茄钟深度工作',
+      '今天专注阅读与提炼1.5小时'
+    ];
+  } else if (calendarMode.value === 'week') {
+    return [
+      '本周平均每天专注2小时',
+      '本周累计完成20个番茄钟',
+      '本周主攻核心知识库重构 (10小时)',
+      '最近一周每天保持深度专注'
+    ];
+  } else {
+    return [
+      '本月累计深度工作50小时',
+      '本月攻克核心学习专题 (30小时)',
+      '本月平均每周专注12小时',
+      '本月养成每日深度工作习惯'
+    ];
+  }
+});
+
+// 动态输入框占位符
+const currentGoalPlaceholder = computed(() => {
+  if (calendarMode.value === 'day') {
+    return '设定今日专注目标，如：今天专注2小时，深度推进核心课题...';
+  } else if (calendarMode.value === 'week') {
+    return '设定本周专注目标，如：本周平均每天专注2小时...';
+  } else {
+    return '设定本月专注目标，如：本月累计深度工作50小时...';
+  }
+});
 
 // AI Summary Modal State
 const isAiModalVisible = ref(false);
@@ -630,14 +763,41 @@ const saveFocusGoal = () => {
   }, 2000);
 };
 
+const startEditingGoal = () => {
+  editGoalInput.value = focusGoal.value;
+  isEditingFocusGoal.value = true;
+  nextTick(() => {
+    goalInputRef.value?.focus();
+    goalInputRef.value?.select();
+  });
+};
+
+const confirmGoalEdit = () => {
+  focusGoal.value = editGoalInput.value.trim();
+  saveFocusGoal();
+  isEditingFocusGoal.value = false;
+};
+
+const cancelGoalEdit = () => {
+  isEditingFocusGoal.value = false;
+  editGoalInput.value = focusGoal.value;
+};
+
 const selectGoalCandidate = (candidate: string) => {
   focusGoal.value = candidate;
+  editGoalInput.value = candidate;
   saveFocusGoal();
+  isEditingFocusGoal.value = false;
 };
 
 const clearFocusGoal = () => {
   focusGoal.value = '';
+  editGoalInput.value = '';
   saveFocusGoal();
+  isEditingFocusGoal.value = true;
+  nextTick(() => {
+    goalInputRef.value?.focus();
+  });
 };
 
 // AI Summary
@@ -692,5 +852,10 @@ watch([calendarMode, currentDate], () => {
 <style scoped>
 .time-spent-dashboard {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 确保思源主题样式不会将线框图标的 fill 覆盖为 solid 色块 */
+.focus-goal-card svg {
+  fill: none !important;
 }
 </style>
