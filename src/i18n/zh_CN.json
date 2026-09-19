@@ -5,5 +5,9 @@
   "settingEnableLogTitle": "日志打印",
   "settingEnableLogDesc": "开启后在开发者工具控制台输出时间追踪与调试日志（默认关闭）",
   "settingLogEnabledMsg": "已开启控制台日志打印",
-  "settingLogDisabledMsg": "已关闭控制台日志打印"
+  "settingLogDisabledMsg": "已关闭控制台日志打印",
+  "settingOpenInTabTitle": "在页签打开",
+  "settingOpenInTabDesc": "开启后点击顶栏图标将在新页签中打开看板，关闭后以弹窗形式打开（默认开启）",
+  "settingOpenInTabEnabledMsg": "已设置为在页签打开",
+  "settingOpenInTabDisabledMsg": "已设置为以弹窗打开"
 }

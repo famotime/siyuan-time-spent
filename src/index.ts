@@ -1,15 +1,20 @@
 import {
   Plugin,
   getFrontend,
+  openTab,
 } from "siyuan";
+import { createApp } from "vue";
 import "@/index.css";
 import PluginInfoString from '@/../plugin.json';
-import { destroy, init } from '@/main';
+import { destroy, init, openOverlay } from '@/main';
+import Dashboard from './components/Dashboard.vue';
 import { TimeTracker } from './utils/tracker';
 import { StorageManager } from './utils/storage';
 import { SettingManager } from './utils/setting';
 import Logger from './utils/logger';
 import { DEFAULT_SETTINGS, PluginSettings } from './models/Settings';
+
+const TAB_TYPE = "dashboard_tab";
 
 export type SyFrontendTypes = "desktop" | "desktop-window" | "mobile" | "browser-desktop" | "browser-mobile";
 
@@ -75,11 +80,47 @@ export default class TimeSpentPlugin extends Plugin {
 
     // 3. 初始化 Vue 挂载容器
     init(this);
+
+    // 4. 注册思源自定义看板页签 (Tab)
+    this.addTab({
+      type: TAB_TYPE,
+      init(this: any) {
+        this.element.innerHTML = "";
+        this.element.style.height = "100%";
+        this.element.style.width = "100%";
+        this.element.style.overflow = "auto";
+        this.element.style.backgroundColor = "rgb(3 7 18)";
+
+        const app = createApp(Dashboard, {
+          inTab: true,
+          onClose: () => {
+            this.tab.close();
+          },
+        });
+        app.mount(this.element);
+        this._vueApp = app;
+      },
+      destroy(this: any) {
+        if (this._vueApp) {
+          this._vueApp.unmount();
+          this._vueApp = null;
+        }
+      },
+    });
+
+    // 5. 注册思源顶栏图标
+    this.addTopBar({
+      icon: "iconClock",
+      title: this.i18n.title || "源时记",
+      callback: () => {
+        this.openDashboard();
+      },
+    });
     
-    // 4. 初始化数据存储管理器
+    // 6. 初始化数据存储管理器
     this.storageManager = new StorageManager(this);
     
-    // 5. 初始化并启动时间追踪器
+    // 7. 初始化并启动时间追踪器
     this.timeTracker = new TimeTracker(this, this.storageManager);
     this.timeTracker.start();
   }
@@ -89,6 +130,24 @@ export default class TimeSpentPlugin extends Plugin {
       this.timeTracker.stop();
     }
     destroy();
+  }
+
+  /**
+   * 打开源时记看板（根据设置在页签或弹窗中打开）
+   */
+  public async openDashboard() {
+    if (this.settings.openInTab) {
+      await openTab({
+        app: this.app,
+        custom: {
+          id: this.name + TAB_TYPE,
+          icon: "iconClock",
+          title: this.i18n.title || "源时记",
+        },
+      });
+    } else {
+      openOverlay();
+    }
   }
 
   /**

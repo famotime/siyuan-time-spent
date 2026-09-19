@@ -5,5 +5,9 @@
   "settingEnableLogTitle": "Console Logging",
   "settingEnableLogDesc": "Output time tracking and debug logs in the developer console (disabled by default)",
   "settingLogEnabledMsg": "Console logging enabled",
-  "settingLogDisabledMsg": "Console logging disabled"
+  "settingLogDisabledMsg": "Console logging disabled",
+  "settingOpenInTabTitle": "Open in Tab",
+  "settingOpenInTabDesc": "Open dashboard in a new tab when clicking the top bar icon, otherwise open in a modal dialog (enabled by default)",
+  "settingOpenInTabEnabledMsg": "Set to open in tab",
+  "settingOpenInTabDisabledMsg": "Set to open in modal dialog"
 }

@@ -43,6 +43,31 @@ export class SettingManager {
           const tip = isChecked
             ? this.plugin.i18n.settingLogEnabledMsg || "已开启控制台日志打印"
             : this.plugin.i18n.settingLogDisabledMsg || "已关闭控制台日志打印";
+        showMessage(tip, 2000, "info");
+        });
+        return checkbox;
+      },
+    });
+
+    // 2. 在页签打开开关项
+    this.setting.addItem({
+      title: this.plugin.i18n.settingOpenInTabTitle || "在页签打开",
+      description:
+        this.plugin.i18n.settingOpenInTabDesc ||
+        "开启后点击顶栏图标将在新页签中打开看板，关闭后以弹窗形式打开（默认开启）",
+      createActionElement: () => {
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "b3-switch fn__flex-center";
+        checkbox.checked = settings.openInTab ?? true;
+        checkbox.addEventListener("change", async () => {
+          const isChecked = checkbox.checked;
+          settings.openInTab = isChecked;
+          await this.plugin.saveSettings();
+
+          const tip = isChecked
+            ? this.plugin.i18n.settingOpenInTabEnabledMsg || "已设置为在页签打开"
+            : this.plugin.i18n.settingOpenInTabDisabledMsg || "已设置为以弹窗打开";
           showMessage(tip, 2000, "info");
         });
         return checkbox;

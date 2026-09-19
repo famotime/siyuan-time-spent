@@ -9,11 +9,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { usePlugin } from './main';
+import { ref } from 'vue';
 import Dashboard from './components/Dashboard.vue';
 
-const plugin = usePlugin();
 const isVisible = ref(false);
 
 const openDashboard = () => {
@@ -24,14 +22,10 @@ const closeDashboard = () => {
   isVisible.value = false;
 };
 
-onMounted(() => {
-  plugin.addTopBar({
-    icon: 'iconClock',
-    title: '源时记',
-    callback: () => {
-      openDashboard();
-    },
-  });
+defineExpose({
+  openDashboard,
+  closeDashboard,
+  isVisible,
 });
 </script>
 

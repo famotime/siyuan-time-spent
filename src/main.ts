@@ -19,6 +19,7 @@ export function usePlugin(pluginProps?: Plugin): Plugin {
 }
 
 let app: any = null;
+let overlayVm: any = null;
 
 export function init(pluginInstance: Plugin) {
   // bind plugin hook
@@ -28,13 +29,27 @@ export function init(pluginInstance: Plugin) {
   div.classList.toggle('siyuan-time-spent-app');
   div.id = pluginInstance.name;
   app = createApp(App);
-  app.mount(div);
+  overlayVm = app.mount(div);
   document.body.appendChild(div);
+}
+
+export function openOverlay() {
+  if (overlayVm?.openDashboard) {
+    overlayVm.openDashboard();
+  }
+}
+
+export function closeOverlay() {
+  if (overlayVm?.closeDashboard) {
+    overlayVm.closeDashboard();
+  }
 }
 
 export function destroy() {
   if (app) {
     app.unmount();
+    app = null;
+    overlayVm = null;
   }
   if (plugin) {
     const div = document.getElementById(plugin.name);

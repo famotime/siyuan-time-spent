@@ -226,8 +226,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { openTab } from 'siyuan';
 import type { TimeLog } from '../models/TimeLog';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
+import { usePlugin } from '../main';
 
 const props = withDefaults(defineProps<{
   logs: TimeLog[];
@@ -303,8 +305,23 @@ const formatDateKey = (d: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+const plugin = usePlugin();
+
 const openDoc = (docId: string) => {
   if (docId) {
+    try {
+      if (plugin?.app) {
+        openTab({
+          app: plugin.app,
+          doc: {
+            id: docId,
+          },
+        });
+        return;
+      }
+    } catch {
+      // 降级使用 URI Scheme
+    }
     window.location.href = `siyuan://blocks/${docId}`;
   }
 };
