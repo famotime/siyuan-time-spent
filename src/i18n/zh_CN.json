@@ -33,5 +33,9 @@
   "settingsAiTemperatureDescription": "采样温度（0-2），值越高输出越随机和有创造性，默认为 0.7。",
   "settingsAiMaxTokensTitle": "最大 Token 数",
   "settingsAiMaxTokensDescription": "模型生成内容时限制的最大 Token 数量，默认为 4096。",
-  "settingsAiControlledHint": "💡 通用 AI API 已由 <strong>API 旋钮 (siyuan-api-switch)</strong> 接管{profile}。相关输入框已置灰只读，如需修改请前往 API 旋钮面板。"
+  "settingsAiControlledHint": "💡 通用 AI API 已由 <strong>API 旋钮 (siyuan-api-switch)</strong> 接管{profile}。相关输入框已置灰只读，如需修改请前往 API 旋钮面板。",
+  "focusGoalTitle": "专注目标",
+  "focusGoalPlaceholder": "设定专注目标，如：今天专注1小时，处理12篇笔记文档...",
+  "aiSummaryBtn": "AI 总结",
+  "aiSummaryModalTitle": "AI 深度复盘与建议"
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="calendar-component flex flex-col bg-gray-900 border border-gray-700/80 rounded-xl overflow-hidden shadow-2xl">
+  <div class="calendar-component isolate relative z-0 flex flex-col bg-gray-900 border border-gray-700/80 rounded-xl overflow-hidden shadow-2xl">
     
     <!-- ==================== DAY VIEW ==================== -->
     <div v-if="mode === 'day'" class="day-view-container grid grid-cols-1 lg:grid-cols-12 h-[680px]">
@@ -13,7 +13,7 @@
           <span class="text-xs text-gray-400 font-mono">共 {{ currentDayLogs.length }} 条记录</span>
         </div>
         
-        <div class="flex-grow overflow-y-auto relative bg-[#131920]" ref="dayScrollContainer">
+        <div class="flex-grow overflow-y-auto relative isolate bg-[#131920]" ref="dayScrollContainer">
           <div class="relative" :style="{ height: `${24 * hourHeight}px` }">
             <!-- Hour Lines & Labels -->
             <div v-for="h in 24" :key="h" 
@@ -28,14 +28,14 @@
             <!-- Time Blocks -->
             <div class="absolute left-16 right-4 top-0 bottom-0 pointer-events-none">
               <div v-for="block in dayBlocks" :key="block.log.id"
-                   class="absolute rounded-lg shadow-lg overflow-hidden cursor-pointer pointer-events-auto hover:ring-2 hover:ring-white/90 hover:z-40 transition-all group border border-black/30 backdrop-blur-sm"
+                   class="absolute rounded-lg shadow-lg overflow-hidden cursor-pointer pointer-events-auto hover:ring-2 hover:ring-white/90 hover:z-10 transition-all group border border-black/30 backdrop-blur-sm"
                    :style="{
                      top: `${block.top}px`,
                      height: `${block.height}px`,
                      left: `calc(${block.leftPercent}% + 2px)`,
                      width: `calc(${block.widthPercent}% - 4px)`,
                      backgroundColor: getDocColor(block.log.docId),
-                     zIndex: block.colIndex + (block.height < 32 ? 15 : 10)
+                     zIndex: block.colIndex + (block.height < 32 ? 4 : 2)
                    }"
                    @click="openDoc(block.log.docId)"
                    :title="`${block.title}\n${formatTime(block.log.startTime)} - ${formatTime(block.log.endTime)}\n时长: ${formatDuration(block.log.duration)}\n闲置扣除: ${block.log.idleTime}秒`">
@@ -51,7 +51,7 @@
             </div>
 
             <!-- Current Time Line (if viewing today) -->
-            <div v-if="isToday" class="absolute left-0 right-0 z-20 pointer-events-none"
+            <div v-if="isToday" class="absolute left-0 right-0 z-[5] pointer-events-none"
                  :style="{ top: `${currentTimeTop}px` }">
               <div class="flex items-center">
                 <span class="w-14 text-right pr-2 text-[10px] font-bold text-red-400 font-mono -mt-2 bg-[#131920]/90 rounded-sm">
@@ -118,7 +118,7 @@
       </div>
 
       <!-- 7 Day 24h Grid Body -->
-      <div class="flex-grow overflow-y-auto relative bg-[#131920]" ref="weekScrollContainer">
+      <div class="flex-grow overflow-y-auto relative isolate bg-[#131920]" ref="weekScrollContainer">
         <div class="grid grid-cols-8 relative" :style="{ height: `${24 * hourHeight}px` }">
           <!-- Time Labels Column -->
           <div class="col-span-1 relative border-r border-gray-700/80 bg-[#161c24] select-none">
@@ -140,14 +140,14 @@
 
             <!-- Time Blocks -->
             <div v-for="block in getBlocksForDate(day.dateStr)" :key="block.log.id"
-                 class="absolute rounded-md shadow-md overflow-hidden text-xs cursor-pointer hover:ring-2 hover:ring-white/90 hover:z-30 transition-all group border border-black/30"
+                 class="absolute rounded-md shadow-md overflow-hidden text-xs cursor-pointer hover:ring-2 hover:ring-white/90 hover:z-10 transition-all group border border-black/30"
                  :style="{
                    top: `${block.top}px`,
                    height: `${block.height}px`,
                    left: `calc(${block.leftPercent}% + 1px)`,
                    width: `calc(${block.widthPercent}% - 2px)`,
                    backgroundColor: getDocColor(block.log.docId),
-                   zIndex: block.colIndex + (block.height < 28 ? 12 : 6)
+                   zIndex: block.colIndex + (block.height < 28 ? 3 : 1)
                  }"
                  @click="openDoc(block.log.docId)"
                  :title="`${block.title}\n${formatTime(block.log.startTime)} - ${formatTime(block.log.endTime)}\n时长: ${formatDuration(block.log.duration)}`">
@@ -160,7 +160,7 @@
             </div>
 
             <!-- Red Time Dot for Today -->
-            <div v-if="day.isToday" class="absolute left-0 right-0 z-20 pointer-events-none"
+            <div v-if="day.isToday" class="absolute left-0 right-0 z-[5] pointer-events-none"
                  :style="{ top: `${currentTimeTop}px` }">
               <div class="border-t-2 border-red-500 relative">
                 <div class="w-2 h-2 rounded-full bg-red-500 absolute -top-[4px] -left-1 shadow-[0_0_6px_rgba(239,68,68,0.8)]"></div>

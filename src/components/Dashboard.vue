@@ -1,5 +1,5 @@
 <template>
-  <div class="time-spent-dashboard bg-gray-950 text-gray-100 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5">
+  <div class="time-spent-dashboard isolate relative z-0 bg-gray-950 text-gray-100 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5">
     
     <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
     <header class="flex flex-col gap-3.5 pb-3.5 border-b border-gray-800/80">
@@ -37,7 +37,63 @@
         </button>
       </div>
 
-      <!-- Bottom Row: Date Navigator & Mode Switcher & AI Export -->
+      <!-- Focus Goal Section (专注目标区域) -->
+      <div class="focus-goal-card bg-gradient-to-r from-gray-900/90 via-gray-900/70 to-indigo-950/40 border border-gray-800/90 hover:border-indigo-500/40 rounded-xl p-3 sm:p-3.5 transition-all shadow-sm flex flex-col gap-2.5">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
+          <!-- 目标标题徽章 -->
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="w-7 h-7 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm shadow-inner">
+              🎯
+            </span>
+            <span class="text-xs font-bold text-gray-200 tracking-wide">
+              专注目标
+            </span>
+          </div>
+
+          <!-- 输入框与清空按钮 -->
+          <div class="relative flex-1 flex items-center">
+            <input 
+              type="text" 
+              v-model="focusGoal" 
+              @blur="saveFocusGoal"
+              @keydown.enter="saveFocusGoal"
+              placeholder="设定专注目标，如：今天专注1小时，处理12篇笔记文档..."
+              class="w-full h-8 pl-3 pr-8 text-xs bg-gray-950/80 border border-gray-800 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/50 rounded-lg text-gray-100 placeholder-gray-500 transition-all outline-none"
+            />
+            <button 
+              v-if="focusGoal" 
+              @click="clearFocusGoal" 
+              class="absolute right-2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+              title="清除目标">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- 保存状态提示 -->
+          <div v-if="focusGoalSavedTip" class="shrink-0 text-[11px] text-emerald-400 font-medium flex items-center gap-1 animate-fadeIn">
+            <span>✓ 已保存</span>
+          </div>
+        </div>
+
+        <!-- 目标预设快捷选择标签 -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span class="text-[11px] text-gray-400 shrink-0 select-none">
+            快速选择：
+          </span>
+          <button 
+            v-for="(candidate, index) in goalCandidates" 
+            :key="index"
+            @click="selectGoalCandidate(candidate)"
+            class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-800/80 hover:bg-indigo-600/30 text-gray-300 hover:text-indigo-200 border border-gray-700/60 hover:border-indigo-500/40 transition-all cursor-pointer flex items-center gap-1"
+            :class="{ 'bg-indigo-950/90 border-indigo-500/70 text-indigo-300 font-semibold shadow-sm': focusGoal === candidate }">
+            {{ candidate }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Row: Date Navigator & Mode Switcher & AI Summary -->
       <div class="flex flex-wrap items-center justify-between gap-3 w-full pt-2.5 border-t border-gray-900">
         <!-- Left: Date Navigator & Period Label -->
         <div class="flex flex-wrap items-center gap-2.5">
@@ -73,7 +129,7 @@
           </div>
         </div>
 
-        <!-- Right: Mode Tabs: Day / Week / Month & AI Export Button -->
+        <!-- Right: Mode Tabs: Day / Week / Month & AI Summary Button -->
         <div class="flex flex-wrap items-center gap-2.5">
           <!-- Mode Tabs -->
           <div class="h-9 inline-flex items-center bg-gray-900/90 border border-gray-800 p-1 rounded-xl shadow-inner gap-1 box-border">
@@ -94,13 +150,13 @@
             </button>
           </div>
 
-          <!-- AI Export Button -->
-          <button @click="exportForAI" 
+          <!-- AI Summary Button -->
+          <button @click="openAiSummaryModal" 
                   class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer box-border">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <svg class="w-3.5 h-3.5 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            导出 {{ modeName }} AI 总结
+            AI 总结
           </button>
         </div>
       </div>
@@ -225,6 +281,17 @@
       {{ toastMessage }}
     </div>
 
+    <!-- AI Summary Modal (AI 深度复盘与建议弹窗) -->
+    <AiSummaryModal 
+      :visible="isAiModalVisible"
+      :plugin="(plugin as any)"
+      :logs="activeLogs"
+      :scope-title="currentPeriodLabel"
+      :scope-type="calendarMode"
+      :focus-goal="focusGoal"
+      @close="isAiModalVisible = false"
+    />
+
   </div>
 </template>
 
@@ -232,6 +299,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import CalendarView from './CalendarView.vue';
 import Charts from './Charts.vue';
+import AiSummaryModal from './AiSummaryModal.vue';
 import type { TimeLog } from '../models/TimeLog';
 import { usePlugin } from '../main';
 import { AIExportManager } from '../utils/ai-export';
@@ -250,6 +318,23 @@ const currentDate = ref<Date>(new Date());
 const activeLogs = ref<TimeLog[]>([]);
 const scopeDayMap = ref<Record<string, TimeLog[]>>({});
 const toastMessage = ref<string>('');
+
+// Focus Goal State
+const STORAGE_KEY_FOCUS_GOAL = 'siyuan_time_spent_focus_goal';
+const focusGoal = ref<string>(localStorage.getItem(STORAGE_KEY_FOCUS_GOAL) || '');
+const focusGoalSavedTip = ref<boolean>(false);
+let focusGoalTipTimer: ReturnType<typeof setTimeout> | null = null;
+
+const goalCandidates = [
+  '今天专注1小时，处理12篇笔记文档',
+  '今天专注2小时，深度推进核心课题',
+  '最近一周平均每天专注2小时',
+  '最近一周每天完成4个番茄钟',
+  '本月累计深度工作50小时'
+];
+
+// AI Summary Modal State
+const isAiModalVisible = ref(false);
 
 // Formatter
 const formatDateKey = (d: Date): string => {
@@ -527,7 +612,40 @@ const handleSelectDate = (d: Date) => {
   loadDataForCurrentScope();
 };
 
-// AI Export
+// Focus Goal Management
+const saveFocusGoal = () => {
+  const val = focusGoal.value.trim();
+  try {
+    localStorage.setItem(STORAGE_KEY_FOCUS_GOAL, val);
+    if (plugin && (plugin as any).saveData) {
+      (plugin as any).saveData('focus_goal.json', { goal: val });
+    }
+  } catch (e) {
+    // 忽略异常
+  }
+  focusGoalSavedTip.value = true;
+  if (focusGoalTipTimer) clearTimeout(focusGoalTipTimer);
+  focusGoalTipTimer = setTimeout(() => {
+    focusGoalSavedTip.value = false;
+  }, 2000);
+};
+
+const selectGoalCandidate = (candidate: string) => {
+  focusGoal.value = candidate;
+  saveFocusGoal();
+};
+
+const clearFocusGoal = () => {
+  focusGoal.value = '';
+  saveFocusGoal();
+};
+
+// AI Summary
+const openAiSummaryModal = () => {
+  isAiModalVisible.value = true;
+};
+
+// AI Export (保留剪贴板导出备用)
 const exportForAI = async () => {
   const md = AIExportManager.generateMarkdownSummary(
     activeLogs.value, 
@@ -551,8 +669,19 @@ const showToast = (msg: string) => {
   }, 3500);
 };
 
-onMounted(() => {
+onMounted(async () => {
   loadDataForCurrentScope();
+  // 载入持久化的专注目标
+  if (plugin && (plugin as any).loadData) {
+    try {
+      const data = await (plugin as any).loadData('focus_goal.json');
+      if (data && data.goal && !focusGoal.value) {
+        focusGoal.value = data.goal;
+      }
+    } catch (err) {
+      // 忽略异常
+    }
+  }
 });
 
 watch([calendarMode, currentDate], () => {

@@ -34,3 +34,10 @@
   z-index: 1000;
 }
 
+/* 强制隔离看板与日历内部层叠上下文，防止内部绝对定位元素逃逸穿透到上层弹窗或设置页 */
+.time-spent-dashboard,
+.calendar-component {
+  isolation: isolate;
+  contain: layout;
+}
+

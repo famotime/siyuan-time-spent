@@ -13,17 +13,18 @@ export class AIExportManager {
             month: '本月 / 月度'
         };
         const scopeLabel = scopeLabels[scopeType] || '时间追踪';
+        const safeLogs = logs || [];
 
-        if (logs.length === 0) {
+        if (safeLogs.length === 0) {
             return `# ⏱️ 源时记 · 专注与时间复盘报告 (${scopeTitle} - ${scopeLabel})\n\n该统计周期内暂无活动记录。`;
         }
 
-        const totalSeconds = logs.reduce((acc, log) => acc + log.duration, 0);
-        const totalIdle = logs.reduce((acc, log) => acc + log.idleTime, 0);
+        const totalSeconds = safeLogs.reduce((acc, log) => acc + log.duration, 0);
+        const totalIdle = safeLogs.reduce((acc, log) => acc + log.idleTime, 0);
 
         // Aggregate by document
         const aggregated: Record<string, { duration: number, sessions: number }> = {};
-        logs.forEach(log => {
+        safeLogs.forEach(log => {
             const title = docTitles.value[log.docId] || log.docId || '未知文档';
             if (!aggregated[title]) {
                 aggregated[title] = { duration: 0, sessions: 0 };
@@ -40,7 +41,7 @@ export class AIExportManager {
         
         md += `## 1. 核心概览 (Overview)\n`;
         md += `- **总专注时长**: ${this.formatDuration(totalSeconds)}\n`;
-        md += `- **专注会话总数**: ${logs.length} 次\n`;
+        md += `- **专注会话总数**: ${safeLogs.length} 次\n`;
         md += `- **闲置扣除时长**: ${this.formatDuration(totalIdle)}\n`;
         if (topDoc) {
             const percent = totalSeconds > 0 ? Math.round((topDoc[1].duration / totalSeconds) * 100) : 0;
@@ -58,10 +59,9 @@ export class AIExportManager {
         md += `\n`;
 
         md += `## 3. 智能分析提示词 (Prompt for AI Coach)\n`;
-        md += `> "你是一位高效能个人时间管理与深度工作教练。以上是我在思源笔记中使用【源时记】记录的【${scopeTitle}】(${scopeLabel})时间投入数据。请根据我的专注时长分布、文档投入比例和会话频次进行深度复盘：\n`;
-        md += `> 1. 分析我的时间分配是否存在碎片化或偏离核心目标的情况；\n`;
-        md += `> 2. 评估我的专注节奏与深度工作效率；\n`;
-        md += `> 3. 为我接下来的时间规划提供 3 条可立即落地的优化建议。"\n`;
+        md += `> "你是一位专注效率与深度工作教练。根据以上【源时记】在【${scopeTitle}】(${scopeLabel})记录的专注数据，请极其精练、直击要点地提供复盘（严禁寒暄废话，控制在300字内）：\n`;
+        md += `> 1. 核心专注亮点与碎片化诊断（2条简短要点）；\n`;
+        md += `> 2. 下一步针对性改进建议（2~3条具体行动，每条不超过两句话）。"\n`;
 
         return md;
     }

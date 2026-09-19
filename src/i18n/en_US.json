@@ -33,5 +33,9 @@
   "settingsAiTemperatureDescription": "Sampling temperature (0-2), higher values mean more creative output, default is 0.7.",
   "settingsAiMaxTokensTitle": "Max Tokens",
   "settingsAiMaxTokensDescription": "Max tokens limit for generating content, default is 4096.",
-  "settingsAiControlledHint": "💡 General AI API is currently controlled by <strong>API Switcher (siyuan-api-switch)</strong>{profile}. Related inputs are read-only. Please configure in API Switcher."
+  "settingsAiControlledHint": "💡 General AI API is currently controlled by <strong>API Switcher (siyuan-api-switch)</strong>{profile}. Related inputs are read-only. Please configure in API Switcher.",
+  "focusGoalTitle": "Focus Goal",
+  "focusGoalPlaceholder": "Set a focus goal, e.g., Focus 1 hour today, process 12 note docs...",
+  "aiSummaryBtn": "AI Summary",
+  "aiSummaryModalTitle": "AI Deep Review & Recommendations"
 }
