@@ -159,6 +159,22 @@ export default class TimeSpentPlugin extends Plugin {
   }
 
   /**
+   * 当工作空间同步或外部文件被改写时触发热更新，避免宿主触发全量白屏重载
+   */
+  async onDataChanged(reason?: "sync" | "overwrite"): Promise<void> {
+    Logger.log("[siyuan-time-spent] onDataChanged triggered with reason:", reason);
+    try {
+      await this.loadSettings();
+      Logger.setEnableLog(this.settings.enableLog);
+      if (this.storageManager) {
+        this.storageManager.clearCache();
+      }
+    } catch (err) {
+      Logger.error("[siyuan-time-spent] Error refreshing data on data changed:", err);
+    }
+  }
+
+  /**
    * 打开源时记看板（根据设置在页签或弹窗中打开）
    */
   public async openDashboard() {

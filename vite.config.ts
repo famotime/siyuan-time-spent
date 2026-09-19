@@ -59,11 +59,11 @@ export default defineConfig(({
             dest: "./",
           },
           {
-            src: "./icon.png",
+            src: "./icon.webp",
             dest: "./",
           },
           {
-            src: "./preview.png",
+            src: "./preview.webp",
             dest: "./",
           },
           {
@@ -107,7 +107,6 @@ export default defineConfig(({
         // Could also be a dictionary or array of multiple entry points
         entry: {
           index: resolve(__dirname, "src/index.ts"),
-          kernel: resolve(__dirname, "src/kernel.ts"),
         },
         formats: ["cjs"],
       },

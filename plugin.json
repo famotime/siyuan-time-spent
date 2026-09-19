@@ -1,36 +1,31 @@
 {
   "name": "siyuan-time-spent",
   "author": "Quincy Zou",
-  "url": "https://github.com/famotime/plugin-sample-vite-vue",
-  "version": "0.0.1",
+  "url": "https://github.com/famotime/plugin-time-spent",
+  "version": "0.8.0",
   "minAppVersion": "3.7.3",
   "disabledInPublish": true,
+  "icon": "icon.webp",
+  "preview": "preview.webp",
   "backends": [
-    "all"
+    "windows"
   ],
   "frontends": [
-    "all"
-  ],
-  "kernels": [
-    "all"
+    "desktop",
+    "browser-desktop",
+    "desktop-window"
   ],
   "displayName": {
     "default": "源时记",
-    "en-US": "Time Spent Dashboard",
-    "zh-CN": "源时记"
+    "en-US": "Time Spent Dashboard"
   },
   "description": {
     "default": "源时记：思源笔记全自动时间追踪与深度工作专注分析看板。智能识别文档切换，精准剥离闲置挂机，支持日/周/月多维日历透视、可视化图表与一键 AI 总结复盘。",
-    "en-US": "Time Spent Dashboard: Automatic time tracking and deep work analytics for SiYuan. Features zero-friction auto logging, smart idle filtering, multi-dimensional calendar, and one-click AI review.",
-    "zh-CN": "源时记：思源笔记全自动时间追踪与深度工作专注分析看板。智能识别文档切换，精准剥离闲置挂机，支持日/周/月多维日历透视、可视化图表与一键 AI 总结复盘。"
+    "en-US": "Automatic time tracking and deep work analytics for SiYuan with smart idle filtering, calendar dashboard, and AI review."
   },
   "readme": {
     "default": "README.md",
-    "en-US": "README.md",
     "zh-CN": "README_zh_CN.md"
-  },
-  "funding": {
-    "custom": []
   },
   "keywords": [
     "time-tracking",

@@ -406,7 +406,7 @@ import { usePlugin } from '../main';
 import { AIExportManager } from '../utils/ai-export';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
 import Logger from '../utils/logger';
-import iconUrl from '../../icon.png';
+import iconUrl from '../../icon.webp';
 
 const plugin = usePlugin();
 const emit = defineEmits<{

@@ -163,6 +163,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { showMessage } from 'siyuan';
 import type TimeSpentPlugin from '../index';
 import type { TimeLog } from '../models/TimeLog';
 import { AIService } from '../utils/ai-service';
@@ -245,6 +246,7 @@ const copySummary = async () => {
     }, 2000);
   } catch (err) {
     console.error('Failed to copy summary:', err);
+    showMessage('复制总结失败，请手动选中文本复制', 3000, 'error');
   }
 };
 

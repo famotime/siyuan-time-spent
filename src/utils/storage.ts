@@ -121,4 +121,12 @@ export class StorageManager {
         d.setDate(d.getDate() - daysAgo);
         return this.formatDate(d);
     }
+
+    /**
+     * 清理内存中的日志缓存（在数据同步或外部改写时调用）
+     */
+    public clearCache(): void {
+        this.cache.clear();
+    }
 }
+

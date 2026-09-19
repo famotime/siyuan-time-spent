@@ -227,11 +227,6 @@ export class SettingManager {
           settings.enableLog = isChecked;
           Logger.setEnableLog(isChecked);
           await this.plugin.saveSettings();
-
-          const tip = isChecked
-            ? this.plugin.i18n.settingLogEnabledMsg || "已开启控制台日志打印"
-            : this.plugin.i18n.settingLogDisabledMsg || "已关闭控制台日志打印";
-          showMessage(tip, 2000, "info");
         });
         return checkbox;
       },
@@ -253,11 +248,6 @@ export class SettingManager {
           const isChecked = checkbox.checked;
           settings.openInTab = isChecked;
           await this.plugin.saveSettings();
-
-          const tip = isChecked
-            ? this.plugin.i18n.settingOpenInTabEnabledMsg || "已设置为在页签打开"
-            : this.plugin.i18n.settingOpenInTabDisabledMsg || "已设置为以弹窗打开";
-          showMessage(tip, 2000, "info");
         });
         return checkbox;
       },
