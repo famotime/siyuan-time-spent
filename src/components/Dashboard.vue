@@ -42,9 +42,9 @@
         <!-- Left: Date Navigator & Period Label -->
         <div class="flex flex-wrap items-center gap-2.5">
           <!-- Date Navigator -->
-          <div class="inline-flex items-center bg-gray-900/90 border border-gray-800 rounded-xl p-1 shadow-inner gap-1">
+          <div class="h-9 inline-flex items-center bg-gray-900/90 border border-gray-800 rounded-xl p-1 shadow-inner gap-1 box-border">
             <button @click="navigatePeriod(-1)" 
-                    class="w-7 h-7 flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                    class="w-7 h-[26px] flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     title="上一周期">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -52,12 +52,13 @@
             </button>
             
             <button @click="jumpToToday" 
-                    class="px-3 h-7 flex items-center justify-center text-xs font-semibold bg-transparent text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800/80 cursor-pointer">
-              今天
+                    class="px-3 h-[26px] flex items-center justify-center text-xs font-semibold bg-transparent text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800/80 cursor-pointer"
+                    :title="`跳转至当前${calendarMode === 'day' ? '日期' : calendarMode === 'week' ? '周' : '月份'}`">
+              {{ todayButtonLabel }}
             </button>
 
             <button @click="navigatePeriod(1)" 
-                    class="w-7 h-7 flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                    class="w-7 h-[26px] flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     title="下一周期">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -66,7 +67,7 @@
           </div>
 
           <!-- Period Display Label -->
-          <div class="h-9 text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-sm font-mono">
+          <div class="h-9 text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3.5 rounded-xl flex items-center gap-2 shadow-sm font-mono box-border">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
             {{ currentPeriodLabel }}
           </div>
@@ -75,19 +76,19 @@
         <!-- Right: Mode Tabs: Day / Week / Month & AI Export Button -->
         <div class="flex flex-wrap items-center gap-2.5">
           <!-- Mode Tabs -->
-          <div class="inline-flex items-center bg-gray-900/90 border border-gray-800 p-1 rounded-xl shadow-inner gap-1">
+          <div class="h-9 inline-flex items-center bg-gray-900/90 border border-gray-800 p-1 rounded-xl shadow-inner gap-1 box-border">
             <button @click="switchMode('day')" 
-                    class="h-7 px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
                     :class="calendarMode === 'day' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               日视图
             </button>
             <button @click="switchMode('week')" 
-                    class="h-7 px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
                     :class="calendarMode === 'week' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               周视图
             </button>
             <button @click="switchMode('month')" 
-                    class="h-7 px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
                     :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               月视图
             </button>
@@ -95,7 +96,7 @@
 
           <!-- AI Export Button -->
           <button @click="exportForAI" 
-                  class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
+                  class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer box-border">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -273,6 +274,12 @@ const modeName = computed(() => {
   if (calendarMode.value === 'day') return '日';
   if (calendarMode.value === 'week') return '周';
   return '月';
+});
+
+const todayButtonLabel = computed(() => {
+  if (calendarMode.value === 'day') return '今日';
+  if (calendarMode.value === 'week') return '本周';
+  return '本月';
 });
 
 // 计算指定日期的周序号（ISO/标准周）
