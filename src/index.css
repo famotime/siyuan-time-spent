@@ -4,6 +4,44 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 @source "../src";
 
+:root {
+  /* ==================== 设计系统语义 Token（双模自适应） ==================== */
+  /* 基础与表面层级 */
+  --st-surface-overlay: rgba(15, 23, 42, 0.55);
+  --st-surface-backdrop-blur: 8px;
+  
+  --st-bg-base: var(--b3-theme-background, #0d1117);
+  --st-bg-surface: var(--b3-theme-surface, #161b22);
+  --st-bg-elevated: var(--b3-theme-surface-lighter, #21262d);
+  --st-bg-subtle: rgba(148, 163, 184, 0.08);
+  --st-bg-hover: rgba(148, 163, 184, 0.16);
+
+  /* 文本与对比度 (WCAG 2.2 AA 标准) */
+  --st-text-primary: var(--b3-theme-on-background, #f0f6fc);
+  --st-text-secondary: var(--b3-theme-on-surface, #8b949e);
+  --st-text-tertiary: var(--b3-empty-color, #6e7681);
+  --st-text-disabled: #484f58;
+
+  /* 边框与分割线 */
+  --st-border-subtle: var(--b3-border-color, rgba(240, 246, 252, 0.1));
+  --st-border-strong: rgba(240, 246, 252, 0.2);
+
+  /* 品牌色 */
+  --st-primary: var(--b3-theme-primary, #6366f1);
+  --st-primary-hover: #4f46e5;
+  --st-primary-subtle: rgba(99, 102, 241, 0.14);
+  --st-primary-border: rgba(99, 102, 241, 0.4);
+
+  /* 状态指示色 */
+  --st-success: #10b981;
+  --st-warning: #f59e0b;
+  --st-danger: #ef4444;
+  --st-info: #06b6d4;
+
+  /* 焦点光晕 */
+  --st-focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
+}
+
 @layer base {
   /* Reset default button styles inside dashboard to prevent host SiYuan theme interference */
   .time-spent-dashboard button {
@@ -41,3 +79,46 @@
   contain: layout;
 }
 
+/* ==================== 显式线框防御铁律 ==================== */
+/* 彻底清除思源笔记全局样式强制对 svg 注入的 fill 颜色，确保所有线框图标呈现纯粹的镂空轮廓 */
+.time-spent-dashboard svg,
+.plugin-time-spent-overlay svg,
+.sy-wire-icon,
+svg[style*="fill: none"] {
+  fill: none !important;
+}
+
+/* ==================== 数字等宽类 (根治刷新抖动) ==================== */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, "Segoe UI Mono", Menlo, Consolas, monospace;
+}
+
+/* ==================== 现代桌面级精致细滚动条 ==================== */
+.time-spent-dashboard *::-webkit-scrollbar,
+.calendar-component *::-webkit-scrollbar,
+.plugin-time-spent-overlay *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.time-spent-dashboard *::-webkit-scrollbar-track,
+.calendar-component *::-webkit-scrollbar-track,
+.plugin-time-spent-overlay *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.time-spent-dashboard *::-webkit-scrollbar-thumb,
+.calendar-component *::-webkit-scrollbar-thumb,
+.plugin-time-spent-overlay *::-webkit-scrollbar-thumb {
+  background-color: var(--st-border-strong, rgba(148, 163, 184, 0.25));
+  border-radius: 9999px;
+  border: 1px solid transparent;
+}
+
+.time-spent-dashboard *::-webkit-scrollbar-thumb:hover,
+.calendar-component *::-webkit-scrollbar-thumb:hover,
+.plugin-time-spent-overlay *::-webkit-scrollbar-thumb:hover {
+  background-color: var(--st-text-tertiary, rgba(148, 163, 184, 0.45));
+}

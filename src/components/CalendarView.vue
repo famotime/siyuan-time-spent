@@ -1,34 +1,38 @@
 <template>
-  <div class="calendar-component isolate relative z-0 flex flex-col bg-gray-900 border border-gray-700/80 rounded-xl overflow-hidden shadow-2xl">
+  <div class="calendar-component isolate relative z-0 flex flex-col sy-calendar-container rounded-xl overflow-hidden shadow-xl">
     
     <!-- ==================== DAY VIEW ==================== -->
     <div v-if="mode === 'day'" class="day-view-container grid grid-cols-1 lg:grid-cols-12 h-[680px]">
-      <!-- 24-Hour Vertical Grid Schedule (7 cols on lg) -->
-      <div class="lg:col-span-8 flex flex-col border-r border-gray-700/80 bg-gray-850 overflow-hidden">
-        <div class="p-3 bg-gray-800/90 border-b border-gray-700 flex justify-between items-center text-sm font-semibold text-gray-200">
+      <!-- 24-Hour Vertical Grid Schedule (7-8 cols on lg) -->
+      <div class="lg:col-span-8 flex flex-col border-r sy-divider sy-grid-bg overflow-hidden">
+        <div class="p-3 sy-section-header border-b sy-divider flex justify-between items-center text-xs sm:text-sm font-semibold sy-text-primary">
           <span class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
             24小时活动时间槽 ({{ formattedSelectedDate }})
           </span>
-          <span class="text-xs text-gray-400 font-mono">共 {{ currentDayLogs.length }} 条记录</span>
+          <span class="text-xs sy-text-secondary font-mono font-tabular">共 {{ currentDayLogs.length }} 条记录</span>
         </div>
         
-        <div class="flex-grow overflow-y-auto relative isolate bg-[#131920]" ref="dayScrollContainer">
+        <div class="flex-grow overflow-y-auto relative isolate sy-timeline-canvas" ref="dayScrollContainer">
           <div class="relative" :style="{ height: `${24 * hourHeight}px` }">
             <!-- Hour Lines & Labels -->
             <div v-for="h in 24" :key="h" 
-                 class="absolute w-full border-b border-gray-700/40 flex items-start text-xs text-gray-400 select-none"
+                 class="absolute w-full border-b sy-hour-border flex items-start text-xs sy-text-tertiary select-none"
                  :style="{ top: `${(h - 1) * hourHeight}px`, height: `${hourHeight}px` }">
-              <span class="w-14 text-right pr-3 -mt-2.5 font-mono text-gray-400/80">
+              <span class="w-14 text-right pr-3 -mt-2.5 font-mono font-medium font-tabular sy-text-tertiary">
                 {{ String(h - 1).padStart(2, '0') }}:00
               </span>
-              <div class="flex-grow border-t border-gray-800/60 h-full"></div>
+              <div class="flex-grow border-t sy-hour-sub-border h-full"></div>
             </div>
 
-            <!-- Time Blocks -->
+            <!-- Time Blocks (支持双向高亮联动与防污染线框) -->
             <div class="absolute left-16 right-4 top-0 bottom-0 pointer-events-none">
               <div v-for="block in dayBlocks" :key="block.log.id"
-                   class="absolute rounded-lg shadow-lg overflow-hidden cursor-pointer pointer-events-auto hover:ring-2 hover:ring-white/90 hover:z-10 transition-all group border border-black/30 backdrop-blur-sm"
+                   class="absolute rounded-lg shadow-md overflow-hidden cursor-pointer pointer-events-auto transition-all duration-150 group border border-black/20 backdrop-blur-xs select-none"
+                   :class="[
+                     hoveredDocId === block.log.docId ? 'ring-2 ring-indigo-400 scale-[1.02] shadow-xl z-20 brightness-110' : '',
+                     hoveredDocId && hoveredDocId !== block.log.docId ? 'opacity-35 transition-opacity' : 'hover:ring-2 hover:ring-white/90 hover:z-10'
+                   ]"
                    :style="{
                      top: `${block.top}px`,
                      height: `${block.height}px`,
@@ -38,16 +42,16 @@
                      zIndex: block.colIndex + (block.height < 32 ? 4 : 2)
                    }"
                    @click="openDoc(block.log.docId)"
-                   @mouseenter="showBlockTooltip($event, block.log)"
+                   @mouseenter="handleBlockMouseEnter($event, block.log)"
                    @mousemove="updateBlockTooltip($event)"
-                   @mouseleave="hideBlockTooltip">
+                   @mouseleave="handleBlockMouseLeave">
                 <div class="px-2.5 py-1 flex items-center justify-between text-white drop-shadow font-semibold text-xs truncate">
                   <span class="truncate">{{ block.title || '加载中...' }}</span>
-                  <span class="text-[11px] opacity-90 font-mono ml-2 shrink-0">{{ formatDuration(block.log.duration) }}</span>
+                  <span class="text-xs opacity-90 font-mono ml-2 shrink-0 font-tabular">{{ formatDuration(block.log.duration) }}</span>
                 </div>
-                <div v-if="block.height >= 38" class="px-2.5 text-[10px] text-white/80 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                <div v-if="block.height >= 38" class="px-2.5 text-xs text-white/90 truncate opacity-0 group-hover:opacity-100 transition-opacity font-tabular">
                   {{ formatTime(block.log.startTime) }} - {{ formatTime(block.log.endTime) }}
-                  <span v-if="block.log.idleTime > 0" class="ml-1 text-yellow-300">(-{{ block.log.idleTime }}s 闲置)</span>
+                  <span v-if="block.log.idleTime > 0" class="ml-1 text-amber-300 font-normal">(-{{ block.log.idleTime }}s 闲置)</span>
                 </div>
               </div>
             </div>
@@ -56,7 +60,7 @@
             <div v-if="isToday" class="absolute left-0 right-0 z-[5] pointer-events-none"
                  :style="{ top: `${currentTimeTop}px` }">
               <div class="flex items-center">
-                <span class="w-14 text-right pr-2 text-[10px] font-bold text-red-400 font-mono -mt-2 bg-[#131920]/90 rounded-sm">
+                <span class="w-14 text-right pr-2 text-xs font-bold text-red-500 font-mono font-tabular -mt-2.5 bg-inherit rounded-sm">
                   {{ currentTimeStr }}
                 </span>
                 <div class="flex-grow border-t-2 border-red-500 relative">
@@ -68,34 +72,38 @@
         </div>
       </div>
 
-      <!-- Right Column: Day Timeline & Doc Ranking (5 cols on lg) -->
-      <div class="lg:col-span-4 flex flex-col bg-gray-800/90 overflow-hidden">
-        <div class="p-3 bg-gray-800 border-b border-gray-700 text-sm font-semibold text-gray-200 flex justify-between items-center">
+      <!-- Right Column: Day Timeline & Doc Ranking (4-5 cols on lg) -->
+      <div class="lg:col-span-4 flex flex-col sy-card-bg overflow-hidden">
+        <div class="p-3 sy-section-header border-b sy-divider text-xs sm:text-sm font-semibold sy-text-primary flex justify-between items-center">
           <span>今日活动清单</span>
-          <span class="text-xs text-indigo-400 font-mono">当日合计 {{ formatDuration(currentDayTotalSec) }}</span>
+          <span class="text-xs text-indigo-500 font-mono font-semibold font-tabular">当日合计 {{ formatDuration(currentDayTotalSec) }}</span>
         </div>
-        <div class="flex-grow overflow-y-auto p-4 space-y-3">
-          <div v-if="currentDayLogs.length === 0" class="text-center py-16 text-gray-500 text-sm">
+        <div class="flex-grow overflow-y-auto p-3.5 space-y-2.5">
+          <div v-if="currentDayLogs.length === 0" class="text-center py-16 sy-text-tertiary text-xs">
             该日期暂无时间记录
           </div>
           <div v-for="log in sortedCurrentDayLogs" :key="log.id"
-               class="p-3 rounded-lg bg-gray-900/80 border border-gray-700/70 hover:border-indigo-500/80 hover:bg-gray-750 transition-all cursor-pointer group"
+               class="p-3 rounded-xl sy-list-item-card transition-all cursor-pointer group"
+               :class="[
+                 hoveredDocId === log.docId ? 'is-hovered' : '',
+                 hoveredDocId && hoveredDocId !== log.docId ? 'opacity-40 transition-opacity' : ''
+               ]"
                @click="openDoc(log.docId)"
-               @mouseenter="showBlockTooltip($event, log)"
+               @mouseenter="handleListMouseEnter($event, log)"
                @mousemove="updateBlockTooltip($event)"
-               @mouseleave="hideBlockTooltip">
+               @mouseleave="handleListMouseLeave">
             <div class="flex justify-between items-start mb-1">
-              <div class="font-medium text-xs text-gray-100 group-hover:text-indigo-300 transition-colors line-clamp-1 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
-                {{ docTitles[log.docId] || log.docId || '未知文档' }}
+              <div class="font-semibold text-xs sy-text-primary group-hover:text-indigo-400 transition-colors line-clamp-1 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
+                <span class="truncate">{{ docTitles[log.docId] || log.docId || '未知文档' }}</span>
               </div>
-              <span class="text-[11px] text-gray-400 font-mono shrink-0 ml-2">
+              <span class="text-xs sy-text-secondary font-mono font-tabular shrink-0 ml-2">
                 {{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}
               </span>
             </div>
-            <div class="flex justify-between items-center text-xs mt-1.5 text-gray-400">
-              <span class="text-indigo-300 font-mono font-medium">专注: {{ formatDuration(log.duration) }}</span>
-              <span v-if="log.idleTime > 0" class="text-gray-500 text-[11px]">扣除闲置: {{ log.idleTime }}s</span>
+            <div class="flex justify-between items-center text-xs mt-1 sy-text-secondary">
+              <span class="text-indigo-500 font-mono font-semibold font-tabular">专注: {{ formatDuration(log.duration) }}</span>
+              <span v-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">扣除闲置: {{ log.idleTime }}s</span>
             </div>
           </div>
         </div>
@@ -106,46 +114,50 @@
     <!-- ==================== WEEK VIEW ==================== -->
     <div v-else-if="mode === 'week'" class="week-view-container flex flex-col h-[680px]">
       <!-- 7 Day Header -->
-      <div class="grid grid-cols-8 border-b border-gray-700/80 bg-gray-800/90 text-center text-xs font-semibold text-gray-300 select-none">
-        <div class="col-span-1 p-2.5 border-r border-gray-700/80 flex items-center justify-center text-gray-400">
+      <div class="grid grid-cols-8 border-b sy-divider sy-section-header text-center text-xs font-semibold sy-text-secondary select-none">
+        <div class="col-span-1 p-2.5 border-r sy-divider flex items-center justify-center sy-text-tertiary">
           时刻
         </div>
         <div v-for="day in weekDays" :key="day.dateStr"
-             class="col-span-1 p-2 border-r border-gray-700/80 last:border-r-0 cursor-pointer hover:bg-gray-700/50 transition-colors"
-             :class="{ 'bg-indigo-950/40 text-indigo-300': day.isToday }"
+             class="col-span-1 p-2 border-r sy-divider last:border-r-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+             :class="{ 'sy-header-today': day.isToday }"
              @click="emitSelectDate(day.dateObj)">
-          <div class="text-[11px] text-gray-400 uppercase tracking-wider">{{ day.dayName }}</div>
-          <div class="text-sm font-bold mt-0.5" :class="day.isToday ? 'text-indigo-400' : 'text-gray-200'">{{ day.displayDate }}</div>
-          <div class="text-[10px] mt-0.5 font-mono" :class="day.totalDuration > 0 ? 'text-green-400' : 'text-gray-400'">
+          <div class="text-xs sy-text-secondary uppercase tracking-wider font-medium">{{ day.dayName }}</div>
+          <div class="text-xs sm:text-sm font-bold mt-0.5" :class="day.isToday ? 'text-indigo-500 font-black' : 'sy-text-primary'">{{ day.displayDate }}</div>
+          <div class="text-xs mt-0.5 font-mono font-tabular" :class="day.totalDuration > 0 ? 'text-emerald-500 font-semibold' : 'sy-text-tertiary'">
             {{ day.totalDuration > 0 ? formatDuration(day.totalDuration) : '-' }}
           </div>
         </div>
       </div>
 
       <!-- 7 Day 24h Grid Body -->
-      <div class="flex-grow overflow-y-auto relative isolate bg-[#131920]" ref="weekScrollContainer">
+      <div class="flex-grow overflow-y-auto relative isolate sy-timeline-canvas" ref="weekScrollContainer">
         <div class="grid grid-cols-8 relative" :style="{ height: `${24 * hourHeight}px` }">
           <!-- Time Labels Column -->
-          <div class="col-span-1 relative border-r border-gray-700/80 bg-[#161c24] select-none">
+          <div class="col-span-1 relative border-r sy-divider sy-time-col-bg select-none">
             <div v-for="h in 24" :key="h"
-                 class="absolute w-full border-b border-gray-700/30 text-right pr-2 text-xs text-gray-400 font-mono font-medium"
+                 class="absolute w-full border-b sy-hour-border text-right pr-2 text-xs sy-text-tertiary font-mono font-medium font-tabular"
                  :style="{ top: `${(h-1) * hourHeight}px`, height: `${hourHeight}px` }">
               <span class="-mt-2.5 inline-block">{{ String(h - 1).padStart(2, '0') }}:00</span>
             </div>
           </div>
 
           <!-- 7 Columns for Days -->
-          <div v-for="(day, dIndex) in weekDays" :key="day.dateStr"
-               class="col-span-1 relative border-r border-gray-700/40 last:border-r-0">
+          <div v-for="day in weekDays" :key="day.dateStr"
+               class="col-span-1 relative border-r sy-hour-sub-border last:border-r-0">
             <!-- Hour Lines -->
             <div v-for="h in 24" :key="h"
-                 class="absolute w-full border-b border-gray-700/20"
+                 class="absolute w-full border-b sy-hour-sub-border"
                  :style="{ top: `${(h-1) * hourHeight}px`, height: `${hourHeight}px` }">
             </div>
 
             <!-- Time Blocks -->
             <div v-for="block in getBlocksForDate(day.dateStr)" :key="block.log.id"
-                 class="absolute rounded-md shadow-md overflow-hidden text-xs cursor-pointer hover:ring-2 hover:ring-white/90 hover:z-10 transition-all group border border-black/30"
+                 class="absolute rounded-md shadow-xs overflow-hidden text-xs cursor-pointer transition-all duration-150 group border border-black/20"
+                 :class="[
+                   hoveredDocId === block.log.docId ? 'ring-2 ring-indigo-400 scale-[1.02] shadow-xl z-20 brightness-110' : '',
+                   hoveredDocId && hoveredDocId !== block.log.docId ? 'opacity-35 transition-opacity' : 'hover:ring-2 hover:ring-white/90 hover:z-10'
+                 ]"
                  :style="{
                    top: `${block.top}px`,
                    height: `${block.height}px`,
@@ -155,13 +167,13 @@
                    zIndex: block.colIndex + (block.height < 28 ? 3 : 1)
                  }"
                  @click="openDoc(block.log.docId)"
-                 @mouseenter="showBlockTooltip($event, block.log)"
+                 @mouseenter="handleBlockMouseEnter($event, block.log)"
                  @mousemove="updateBlockTooltip($event)"
-                 @mouseleave="hideBlockTooltip">
-              <div class="px-1.5 py-0.5 font-semibold text-white/95 truncate leading-tight drop-shadow-sm text-[11px]">
+                 @mouseleave="handleBlockMouseLeave">
+              <div class="px-1.5 py-0.5 font-semibold text-white/95 truncate leading-tight drop-shadow-xs text-xs">
                 {{ block.title || '加载中...' }}
               </div>
-              <div v-if="block.height >= 34" class="px-1.5 text-[9px] text-white/80 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+              <div v-if="block.height >= 34" class="px-1.5 text-xs text-white/80 truncate opacity-0 group-hover:opacity-100 transition-opacity font-tabular">
                 {{ formatTime(block.log.startTime) }} ({{ formatDuration(block.log.duration) }})
               </div>
             </div>
@@ -180,16 +192,16 @@
 
 
     <!-- ==================== MONTH VIEW ==================== -->
-    <div v-else-if="mode === 'month'" class="month-view-container flex flex-col h-[680px] bg-gray-900">
+    <div v-else-if="mode === 'month'" class="month-view-container flex flex-col h-[680px] sy-card-bg">
       <!-- Weekday Headers -->
-      <div class="grid grid-cols-7 border-b border-gray-700/80 bg-gray-800/90 text-center py-2 text-xs font-semibold text-gray-400">
+      <div class="grid grid-cols-7 border-b sy-divider sy-section-header text-center py-2 text-xs font-semibold sy-text-secondary">
         <div v-for="w in ['周一', '周二', '周三', '周四', '周五', '周六', '周日']" :key="w" class="col-span-1">
           {{ w }}
         </div>
       </div>
 
       <!-- Month Calendar Matrix Grid -->
-      <div class="flex-grow grid grid-cols-7 grid-rows-6 gap-1 p-2 bg-[#12161f] overflow-y-auto">
+      <div class="flex-grow grid grid-cols-7 grid-rows-6 gap-1 p-2 sy-month-matrix overflow-y-auto">
         <div v-for="cell in monthCells" :key="cell.key"
              class="month-cell rounded-lg p-2 flex flex-col justify-between border transition-all duration-150 relative cursor-pointer group select-none"
              :class="getCellClasses(cell)"
@@ -198,11 +210,11 @@
           <!-- Top Row: Date Number & Badge -->
           <div class="flex justify-between items-center">
             <span class="text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full"
-                  :class="cell.isToday ? 'bg-indigo-600 text-white font-black ring-2 ring-indigo-400/50' : (cell.isCurrentMonth ? 'text-gray-200' : 'text-gray-400')">
+                  :class="cell.isToday ? 'bg-indigo-600 text-white font-black ring-2 ring-indigo-400/50' : (cell.isCurrentMonth ? 'sy-text-primary' : 'sy-text-tertiary')">
               {{ cell.dayNum }}
             </span>
             <span v-if="cell.totalDuration > 0" 
-                  class="text-[10px] font-mono px-1.5 py-0.5 rounded font-semibold shadow-sm"
+                  class="text-xs font-mono px-1.5 py-0.5 rounded font-semibold shadow-xs font-tabular"
                   :class="getDurationBadgeClasses(cell.totalDuration)">
               {{ formatDuration(cell.totalDuration) }}
             </span>
@@ -211,198 +223,124 @@
           <!-- Middle: Top Doc Tags / Activity Indicators -->
           <div class="my-1 space-y-1 flex-grow overflow-hidden">
             <div v-for="(doc, idx) in cell.topDocs.slice(0, 2)" :key="idx"
-                 class="text-[10px] truncate px-1 py-0.5 rounded bg-gray-800/80 text-gray-300 border border-gray-700/40 flex items-center gap-1">
+                 class="text-xs truncate px-1.5 py-0.5 rounded sy-doc-tag flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: getDocColor(doc.docId) }"></span>
               <span class="truncate">{{ docTitles[doc.docId] || doc.docId || '专注文档' }}</span>
             </div>
-            <div v-if="cell.topDocs.length > 2" class="text-[9px] text-gray-500 font-mono pl-1">
+            <div v-if="cell.topDocs.length > 2" class="text-xs sy-text-tertiary font-mono pl-1">
               +{{ cell.topDocs.length - 2 }} 更多
             </div>
           </div>
 
           <!-- Bottom: Session Count / Hint -->
-          <div class="flex justify-between items-center text-[10px] text-gray-400 font-mono">
+          <div class="flex justify-between items-center text-xs sy-text-tertiary font-mono font-tabular">
             <span v-if="cell.sessionCount > 0">{{ cell.sessionCount }} 次会话</span>
-            <span v-else class="text-transparent group-hover:text-gray-400 text-[9px]">点击查看</span>
+            <span v-else class="text-transparent group-hover:sy-text-tertiary">查看</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Glassmorphism Floating Tooltip (毛玻璃悬浮提示框) -->
+    <!-- Glassmorphism Floating Tooltip (显式线框与主题自适应) -->
     <Teleport to="body">
       <div
         v-if="hoverTooltip.visible"
-        class="fixed pointer-events-none z-[9999] transition-opacity duration-150 backdrop-blur-md bg-gray-950/95 border border-gray-700/90 rounded-xl p-3 shadow-2xl text-xs text-gray-100 max-w-xs flex flex-col gap-1.5"
+        class="fixed pointer-events-none z-[9999] transition-opacity duration-150 backdrop-blur-md sy-floating-tooltip rounded-xl p-3 shadow-2xl text-xs max-w-xs flex flex-col gap-1.5"
         :style="{
           top: `${hoverTooltip.y}px`,
           left: `${hoverTooltip.x}px`,
         }"
       >
-        <div class="font-bold text-sm text-white line-clamp-2">
+        <div class="font-bold text-xs sm:text-sm text-white line-clamp-2">
           {{ hoverTooltip.title }}
         </div>
-        <div v-if="hoverTooltip.notebook || hoverTooltip.path" class="text-[11px] text-gray-400 flex items-center gap-1 truncate">
-          <span class="text-indigo-400 font-medium">📚 {{ hoverTooltip.notebook }}</span>
-          <span v-if="hoverTooltip.path" class="text-gray-500 truncate">> {{ hoverTooltip.path }}</span>
+        <div v-if="hoverTooltip.notebook || hoverTooltip.path" class="text-xs text-gray-300 flex items-center gap-1.5 truncate">
+          <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span class="text-indigo-300 font-medium truncate">{{ hoverTooltip.notebook }}</span>
+          <span v-if="hoverTooltip.path" class="text-gray-400 truncate">> {{ hoverTooltip.path }}</span>
         </div>
         <div v-if="hoverTooltip.tags && hoverTooltip.tags.length > 0" class="flex flex-wrap gap-1 mt-0.5">
-          <span v-for="t in hoverTooltip.tags" :key="t" class="px-1.5 py-0.5 rounded bg-indigo-900/60 border border-indigo-700/50 text-[10px] text-indigo-300 font-mono">
+          <span v-for="t in hoverTooltip.tags" :key="t" class="px-1.5 py-0.5 rounded bg-indigo-900/60 border border-indigo-700/50 text-xs text-indigo-300 font-mono">
             #{{ t }}
           </span>
         </div>
-        <div class="flex items-center justify-between gap-4 pt-1 border-t border-gray-800 text-[11px]">
-          <span class="text-gray-400 font-mono">{{ hoverTooltip.timeRange }}</span>
-          <span class="text-cyan-400 font-bold font-mono">{{ hoverTooltip.duration }}</span>
-        </div>
-        <div v-if="hoverTooltip.idleTime > 0" class="text-[10px] text-amber-400 flex items-center gap-1 font-mono">
-          <span>⚠️ 闲置扣除: {{ hoverTooltip.idleTime }}s</span>
-        </div>
-        <div class="text-[10px] text-indigo-300/80 mt-0.5 flex items-center gap-1 select-none">
-          <svg class="w-3 h-3 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-          </svg>
-          <span>点击直接在思源中打开</span>
+        <div class="border-t border-white/10 pt-1.5 mt-0.5 flex justify-between items-center text-xs text-gray-300 font-mono font-tabular">
+          <span>{{ hoverTooltip.timeRange }}</span>
+          <span class="font-bold text-indigo-300">{{ hoverTooltip.durationStr }}</span>
         </div>
       </div>
     </Teleport>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { openTab } from 'siyuan';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import type { TimeLog } from '../models/TimeLog';
-import { docTitles, fetchDocTitle, getDocMeta } from '../utils/title-cache';
-import { usePlugin } from '../main';
+import { docTitles, fetchDocTitle } from '../utils/title-cache';
+import { sql } from '../api';
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   logs: TimeLog[];
   dayMap: Record<string, TimeLog[]>;
   mode: 'day' | 'week' | 'month';
   currentDate: Date;
-}>(), {
-  logs: () => [],
-  dayMap: () => ({}),
-  mode: 'week',
-  currentDate: () => new Date()
-});
+}>();
 
 const emit = defineEmits<{
   (e: 'select-date', d: Date): void;
-  (e: 'switch-mode', m: 'day' | 'week' | 'month'): void;
+  (e: 'switch-mode', mode: 'day' | 'week' | 'month' | 'year'): void;
 }>();
 
-const hourHeight = 56; // 1 hour = 56px
+// ==================== CONFIG & CONSTANTS ====================
+const hourHeight = 56; // 每小时高度像素
+
+// 莫兰迪 8 色柔和彩盘 (抗眩光且保证白色文字对比度)
+const MORANDI_COLORS = [
+  '#6366f1', // Indigo
+  '#0284c7', // Sky
+  '#0d9488', // Teal
+  '#16a34a', // Emerald
+  '#d97706', // Amber
+  '#e11d48', // Rose
+  '#7c3aed', // Violet
+  '#475569', // Slate
+];
+
+// 双向高亮联动状态
+const hoveredDocId = ref<string | null>(null);
+
 const dayScrollContainer = ref<HTMLElement | null>(null);
 const weekScrollContainer = ref<HTMLElement | null>(null);
 
-// Glassmorphism Tooltip 状态与边界管理
-interface HoverTooltipState {
-  visible: boolean;
-  x: number;
-  y: number;
-  title: string;
-  notebook: string;
-  path: string;
-  tags: string[];
-  timeRange: string;
-  duration: string;
-  idleTime: number;
-}
-
-const hoverTooltip = ref<HoverTooltipState>({
+// Hover Tooltip State
+const hoverTooltip = ref({
   visible: false,
   x: 0,
   y: 0,
   title: '',
   notebook: '',
   path: '',
-  tags: [],
+  tags: [] as string[],
   timeRange: '',
-  duration: '',
-  idleTime: 0,
+  durationStr: ''
 });
 
-const showBlockTooltip = (e: MouseEvent, log: TimeLog) => {
-  const meta = getDocMeta(log.docId);
-  const title = docTitles.value[log.docId] || meta.title || log.docId;
-  const timeRange = `${formatTime(log.startTime)} - ${formatTime(log.endTime)}`;
-  const duration = formatDuration(log.duration);
-
-  hoverTooltip.value = {
-    visible: true,
-    x: e.clientX + 12,
-    y: e.clientY + 12,
-    title,
-    notebook: meta.notebookName || '默认笔记本',
-    path: meta.hpath || '',
-    tags: meta.tags || [],
-    timeRange,
-    duration,
-    idleTime: log.idleTime || 0,
-  };
+// Formatters
+const formatDateKey = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-const updateBlockTooltip = (e: MouseEvent) => {
-  if (hoverTooltip.value.visible) {
-    const tooltipWidth = 270;
-    const tooltipHeight = 150;
-    let x = e.clientX + 14;
-    let y = e.clientY + 14;
-    if (x + tooltipWidth > window.innerWidth) {
-      x = e.clientX - tooltipWidth - 10;
-    }
-    if (y + tooltipHeight > window.innerHeight) {
-      y = e.clientY - tooltipHeight - 10;
-    }
-    hoverTooltip.value.x = x;
-    hoverTooltip.value.y = y;
-  }
-};
-
-const hideBlockTooltip = () => {
-  hoverTooltip.value.visible = false;
-};
-
-// Curated modern color palette for documents (Morandi & soft neon)
-const colors = [
-  '#4f46e5', // Indigo
-  '#0284c7', // Sky
-  '#059669', // Emerald
-  '#d97706', // Amber
-  '#e11d48', // Rose
-  '#7c3aed', // Violet
-  '#db2777', // Pink
-  '#0d9488', // Teal
-  '#ea580c', // Orange
-  '#475569'  // Slate
-];
-
-const getDocColor = (docId: string) => {
-  const meta = getDocMeta(docId);
-  // 优先基于笔记本分类着色，使同一知识库体系呈现一致主题色
-  const key = meta.box || docId;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = key.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-};
-
-watch(() => props.logs, (newLogs) => {
-  if (newLogs) {
-    newLogs.forEach(log => {
-      if (log.docId) {
-        fetchDocTitle(log.docId);
-      }
-    });
-  }
-}, { immediate: true, deep: true });
-
-// Formatter helpers
-const formatTime = (ts: number) => {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+const formatTime = (ts: number): string => {
+  const d = new Date(ts);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
 };
 
 const formatDuration = (seconds: number) => {
@@ -411,42 +349,86 @@ const formatDuration = (seconds: number) => {
   const s = seconds % 60;
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m`;
-  return `${s}s`;
+  if (s > 0) return `${s}s`;
+  return `0m`;
 };
 
-const formatDateKey = (d: Date): string => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+// 莫兰迪色彩分配
+const getDocColor = (docId: string): string => {
+  if (!docId) return MORANDI_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < docId.length; i++) {
+    hash = (hash << 5) - hash + docId.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % MORANDI_COLORS.length;
+  return MORANDI_COLORS[idx];
 };
 
-const plugin = usePlugin();
-
+// 打开思源笔记对应文档
 const openDoc = (docId: string) => {
-  if (docId) {
-    try {
-      if (plugin?.app) {
-        openTab({
-          app: plugin.app,
-          doc: {
-            id: docId,
-          },
-        });
-        return;
-      }
-    } catch {
-      // 降级使用 URI Scheme
+  if (!docId) return;
+  const url = `siyuan://blocks/${docId}`;
+  window.open(url);
+};
+
+// ==================== TOOLTIP & HOVER LINKING ====================
+const handleBlockMouseEnter = (event: MouseEvent, log: TimeLog) => {
+  hoveredDocId.value = log.docId;
+  showBlockTooltip(event, log);
+};
+
+const handleBlockMouseLeave = () => {
+  hoveredDocId.value = null;
+  hideBlockTooltip();
+};
+
+const handleListMouseEnter = (event: MouseEvent, log: TimeLog) => {
+  hoveredDocId.value = log.docId;
+  showBlockTooltip(event, log);
+};
+
+const handleListMouseLeave = () => {
+  hoveredDocId.value = null;
+  hideBlockTooltip();
+};
+
+const showBlockTooltip = async (event: MouseEvent, log: TimeLog) => {
+  hoverTooltip.value.visible = true;
+  hoverTooltip.value.title = docTitles.value[log.docId] || log.docId || '未知文档';
+  hoverTooltip.value.timeRange = `${formatTime(log.startTime)} - ${formatTime(log.endTime)}`;
+  hoverTooltip.value.durationStr = `专注 ${formatDuration(log.duration)}${log.idleTime > 0 ? ` (扣闲置 ${log.idleTime}s)` : ''}`;
+  updateBlockTooltip(event);
+
+  // 异步获取文档路径与属性
+  try {
+    const res = await sql(`SELECT root_id, hpath FROM blocks WHERE id = '${log.docId}' LIMIT 1`);
+    if (res && res.length > 0) {
+      hoverTooltip.value.path = res[0].hpath || '';
     }
-    window.location.href = `siyuan://blocks/${docId}`;
+  } catch (err) {
+    // 忽略异常
   }
 };
 
-const emitSelectDate = (d: Date) => {
-  emit('select-date', d);
-  if (props.mode !== 'day') {
-    emit('switch-mode', 'day');
+const updateBlockTooltip = (event: MouseEvent) => {
+  const padding = 16;
+  let x = event.clientX + padding;
+  let y = event.clientY + padding;
+
+  if (x + 280 > window.innerWidth) {
+    x = event.clientX - 280 - padding;
   }
+  if (y + 140 > window.innerHeight) {
+    y = event.clientY - 140 - padding;
+  }
+
+  hoverTooltip.value.x = x;
+  hoverTooltip.value.y = y;
+};
+
+const hideBlockTooltip = () => {
+  hoverTooltip.value.visible = false;
 };
 
 // ==================== DAY VIEW COMPUTED ====================
@@ -482,14 +464,7 @@ interface BlockDisplay {
   title: string;
 }
 
-/**
- * 智能重叠并排布局算法 (Google Calendar 风格)
- * 1. 计算所有记录的几何区间 [top, top + height]
- * 2. 识别有交叉重叠的记录聚类为冲突群组 (Clusters)
- * 3. 贪心算法为各记录分配列索引 (colIndex) 并计算最大并发列数 (totalCols)
- * 4. 动态计算 leftPercent 和 widthPercent
- */
-const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] => {
+const computeLayoutBlocks = (logs: TimeLog[], minHeight = 24): BlockDisplay[] => {
   if (!logs || logs.length === 0) return [];
 
   interface TempBlock {
@@ -502,7 +477,6 @@ const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] =>
     totalCols: number;
   }
 
-  // 1. 基础尺寸与位置计算
   const rawBlocks: TempBlock[] = logs.map(log => {
     const d = new Date(log.startTime);
     const startHour = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
@@ -523,7 +497,6 @@ const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] =>
     };
   });
 
-  // 2. 排序：按 top 升序；若 top 相同，按 height 降序（较长优先排左）；再按 startTime 升序
   rawBlocks.sort((a, b) => {
     if (Math.abs(a.top - b.top) > 0.001) {
       return a.top - b.top;
@@ -534,7 +507,6 @@ const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] =>
     return a.log.startTime - b.log.startTime;
   });
 
-  // 3. 聚类分组（连通的重叠时间群组）
   const clusters: TempBlock[][] = [];
   let currentCluster: TempBlock[] = [];
   let clusterEnd = -1;
@@ -544,7 +516,6 @@ const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] =>
       currentCluster.push(block);
       clusterEnd = block.end;
     } else {
-      // 若当前块起点在上一个群组的结束位置之前，说明有交叉重叠
       if (block.top < clusterEnd) {
         currentCluster.push(block);
         clusterEnd = Math.max(clusterEnd, block.end);
@@ -559,16 +530,14 @@ const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] =>
     clusters.push(currentCluster);
   }
 
-  // 4. 贪心分配列并计算百分比
   const result: BlockDisplay[] = [];
 
   for (const cluster of clusters) {
-    const columns: number[] = []; // 记录各列当前底部的 y 坐标 (end)
+    const columns: number[] = [];
 
     for (const block of cluster) {
       let placed = false;
       for (let c = 0; c < columns.length; c++) {
-        // 如果该列当前空闲
         if (columns[c] <= block.top) {
           block.colIndex = c;
           columns[c] = block.end;
@@ -602,15 +571,14 @@ const computeLayoutBlocks = (logs: TimeLog[], minHeight = 22): BlockDisplay[] =>
 };
 
 const dayBlocks = computed<BlockDisplay[]>(() => {
-  return computeLayoutBlocks(currentDayLogs.value, 24);
+  return computeLayoutBlocks(currentDayLogs.value, 26);
 });
 
 // ==================== WEEK VIEW COMPUTED ====================
 const weekDays = computed(() => {
   const days = [];
   const curr = new Date(props.currentDate);
-  // Get Monday of current week
-  const dayOfWeek = curr.getDay(); // 0 is Sunday
+  const dayOfWeek = curr.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(curr);
   monday.setDate(curr.getDate() + diffToMonday);
@@ -639,7 +607,7 @@ const weekDays = computed(() => {
 
 const getBlocksForDate = (dateStr: string): BlockDisplay[] => {
   const logs = props.dayMap[dateStr] || props.logs.filter(log => formatDateKey(new Date(log.startTime)) === dateStr);
-  return computeLayoutBlocks(logs, 20);
+  return computeLayoutBlocks(logs, 22);
 };
 
 // ==================== MONTH VIEW COMPUTED ====================
@@ -657,19 +625,17 @@ interface MonthCell {
 const monthCells = computed<MonthCell[]>(() => {
   const cells: MonthCell[] = [];
   const year = props.currentDate.getFullYear();
-  const month = props.currentDate.getMonth(); // 0-indexed
+  const month = props.currentDate.getMonth();
 
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   
   const todayKey = formatDateKey(new Date());
 
-  // Monday = 1, Sunday = 7
   let startDayOfWeek = firstDay.getDay();
   if (startDayOfWeek === 0) startDayOfWeek = 7;
   const paddingBefore = startDayOfWeek - 1;
 
-  // Pre-month padding
   for (let i = paddingBefore; i > 0; i--) {
     const d = new Date(year, month, 1 - i);
     const dateStr = formatDateKey(d);
@@ -687,14 +653,12 @@ const monthCells = computed<MonthCell[]>(() => {
     });
   }
 
-  // Current month days
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const d = new Date(year, month, day);
     const dateStr = formatDateKey(d);
     const dayLogs = props.dayMap[dateStr] || [];
     const totalDuration = dayLogs.reduce((acc, l) => acc + l.duration, 0);
     
-    // Aggregate top docs for this day
     const docMap: Record<string, number> = {};
     dayLogs.forEach(l => {
       docMap[l.docId] = (docMap[l.docId] || 0) + l.duration;
@@ -715,7 +679,6 @@ const monthCells = computed<MonthCell[]>(() => {
     });
   }
 
-  // Post-month padding to fill 42 cells (6 rows x 7)
   const remaining = 42 - cells.length;
   for (let i = 1; i <= remaining; i++) {
     const d = new Date(year, month + 1, i);
@@ -739,24 +702,28 @@ const monthCells = computed<MonthCell[]>(() => {
 
 const getCellClasses = (cell: MonthCell) => {
   if (!cell.isCurrentMonth) {
-    return 'bg-gray-900/40 border-gray-800/40 text-gray-600 hover:bg-gray-800/30';
+    return 'sy-month-cell-muted';
   }
-  if (cell.totalDuration >= 10800) { // >= 3h
-    return 'bg-indigo-950/50 border-indigo-700/60 hover:border-indigo-400 hover:bg-indigo-900/50';
+  if (cell.totalDuration >= 10800) {
+    return 'sy-month-cell-high';
   }
-  if (cell.totalDuration >= 3600) { // >= 1h
-    return 'bg-blue-950/40 border-blue-700/50 hover:border-blue-400 hover:bg-blue-900/40';
+  if (cell.totalDuration >= 3600) {
+    return 'sy-month-cell-med';
   }
   if (cell.totalDuration > 0) {
-    return 'bg-gray-800/70 border-gray-700/70 hover:border-gray-500 hover:bg-gray-750';
+    return 'sy-month-cell-active';
   }
-  return 'bg-gray-850/60 border-gray-800 hover:border-gray-600 hover:bg-gray-800';
+  return 'sy-month-cell-default';
 };
 
 const getDurationBadgeClasses = (seconds: number) => {
-  if (seconds >= 10800) return 'bg-indigo-500/30 text-indigo-300 border border-indigo-400/40';
-  if (seconds >= 3600) return 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
-  return 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+  if (seconds >= 10800) return 'bg-indigo-500/20 text-indigo-500 border border-indigo-500/40';
+  if (seconds >= 3600) return 'bg-cyan-500/20 text-cyan-500 border border-cyan-500/40';
+  return 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/40';
+};
+
+const emitSelectDate = (d: Date) => {
+  emit('select-date', d);
 };
 
 // ==================== LIVE TIME TICKER ====================
@@ -772,31 +739,58 @@ const currentTimeTop = computed(() => {
 
 const currentTimeStr = computed(() => formatTime(now.value.getTime()));
 
+// ==================== 智能对齐活跃时段算法 (AUTO-SCROLL) ====================
+const autoScrollToActiveTime = () => {
+  nextTick(() => {
+    const container = props.mode === 'day' ? dayScrollContainer.value : weekScrollContainer.value;
+    if (!container) return;
+
+    let targetMinute = 8.5 * 60; // 默认 08:30
+    const nowMinutes = now.value.getHours() * 60 + now.value.getMinutes();
+
+    let earliestLogMinute: number | null = null;
+    if (currentDayLogs.value.length > 0) {
+      currentDayLogs.value.forEach(l => {
+        const d = new Date(l.startTime);
+        const m = d.getHours() * 60 + d.getMinutes();
+        if (earliestLogMinute === null || m < earliestLogMinute) {
+          earliestLogMinute = m;
+        }
+      });
+    }
+
+    if (earliestLogMinute !== null) {
+      // 当日有记录：平滑对齐至最早记录前 30 分钟
+      targetMinute = Math.max(0, earliestLogMinute - 30);
+    } else if (isToday.value) {
+      // 正在查看今天且尚无记录：平滑对齐至当前时间前 45 分钟，让红线处于视觉黄金区
+      targetMinute = Math.max(0, nowMinutes - 45);
+    } else {
+      // 历史空白日期：对齐至早上 08:00
+      targetMinute = 8 * 60;
+    }
+
+    const targetTop = (targetMinute / 60) * hourHeight;
+    container.scrollTo({
+      top: targetTop,
+      behavior: 'smooth'
+    });
+  });
+};
+
 onMounted(() => {
   timer = setInterval(() => {
     now.value = new Date();
   }, 30000);
 
   setTimeout(() => {
-    const h = now.value.getHours();
-    if (dayScrollContainer.value) {
-      dayScrollContainer.value.scrollTop = Math.max(0, (h - 2) * hourHeight);
-    }
-    if (weekScrollContainer.value) {
-      weekScrollContainer.value.scrollTop = Math.max(0, (h - 2) * hourHeight);
-    }
-  }, 150);
+    autoScrollToActiveTime();
+  }, 120);
 });
 
-watch(() => props.mode, () => {
+watch([() => props.mode, () => props.currentDate], () => {
   setTimeout(() => {
-    const h = now.value.getHours();
-    if (dayScrollContainer.value) {
-      dayScrollContainer.value.scrollTop = Math.max(0, (h - 2) * hourHeight);
-    }
-    if (weekScrollContainer.value) {
-      weekScrollContainer.value.scrollTop = Math.max(0, (h - 2) * hourHeight);
-    }
+    autoScrollToActiveTime();
   }, 100);
 });
 
@@ -806,10 +800,125 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.bg-gray-850 {
-  background-color: #171f2c;
+.sy-calendar-container {
+  background-color: var(--st-bg-surface, #161b22);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
 }
-.bg-gray-750 {
-  background-color: #283344;
+
+.sy-card-bg {
+  background-color: var(--st-bg-surface, #161b22);
+}
+
+.sy-grid-bg {
+  background-color: var(--st-bg-surface, #161b22);
+}
+
+.sy-timeline-canvas {
+  background-color: var(--st-bg-base, #0d1117);
+}
+
+.sy-section-header {
+  background-color: var(--st-bg-surface, #161b22);
+}
+
+.sy-time-col-bg {
+  background-color: var(--st-bg-surface, #161b22);
+}
+
+.sy-divider {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-hour-border {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-hour-sub-border {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.sy-text-primary {
+  color: var(--st-text-primary, #f0f6fc);
+}
+
+.sy-text-secondary {
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-text-tertiary {
+  color: var(--st-text-tertiary, #6e7681);
+}
+
+.sy-header-today {
+  background-color: var(--st-primary-subtle, rgba(99, 102, 241, 0.12));
+  color: var(--st-primary, #818cf8);
+}
+
+.sy-list-item-card {
+  background-color: var(--st-bg-elevated, #21262d);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-list-item-card:hover,
+.sy-list-item-card.is-hovered {
+  border-color: var(--st-primary, #6366f1);
+  background-color: var(--st-bg-hover, rgba(148, 163, 184, 0.16));
+}
+
+.sy-month-matrix {
+  background-color: var(--st-bg-base, #0d1117);
+}
+
+.sy-month-cell-muted {
+  background-color: var(--st-bg-base, #0d1117);
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.05));
+  opacity: 0.5;
+}
+
+.sy-month-cell-default {
+  background-color: var(--st-bg-surface, #161b22);
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-month-cell-default:hover {
+  border-color: var(--st-border-strong, rgba(255, 255, 255, 0.25));
+  background-color: var(--st-bg-hover, rgba(148, 163, 184, 0.1));
+}
+
+.sy-month-cell-active {
+  background-color: var(--st-bg-elevated, #21262d);
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.15));
+}
+
+.sy-month-cell-active:hover {
+  border-color: var(--st-primary, #6366f1);
+}
+
+.sy-month-cell-med {
+  background-color: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.4);
+}
+
+.sy-month-cell-high {
+  background-color: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.sy-doc-tag {
+  background-color: var(--st-bg-subtle, rgba(148, 163, 184, 0.1));
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.08));
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-floating-tooltip {
+  background-color: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
+/* 核心线框防御 */
+:deep(svg),
+svg.sy-wire-icon {
+  fill: none !important;
 }
 </style>

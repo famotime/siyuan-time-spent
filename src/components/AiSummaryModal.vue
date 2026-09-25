@@ -1,82 +1,91 @@
 <template>
   <div v-if="visible" 
-       class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 transition-all duration-300"
+       class="fixed inset-0 z-50 sy-summary-modal-mask flex items-center justify-center p-3 sm:p-6 transition-all duration-300"
        @click.self="handleClose">
     
-    <!-- Modal Card Container -->
-    <div class="bg-gray-900 border border-gray-700/90 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden text-gray-100">
+    <!-- Modal Card Container (深度适配明暗主题) -->
+    <div class="sy-modal-card rounded-2xl shadow-2xl w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden">
       
       <!-- Modal Header -->
-      <div class="px-5 py-4 border-b border-gray-800/90 flex items-center justify-between bg-gray-950/60 shrink-0">
+      <div class="px-5 py-4 border-b sy-divider flex items-center justify-between sy-header-bg shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 shrink-0">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-600/30 shrink-0">
+            <svg class="w-5 h-5 text-white sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
           <div>
             <div class="flex flex-wrap items-center gap-2">
-              <h3 class="text-base font-bold text-white tracking-wide">
-                AI 深度复盘与建议
+              <h3 class="text-sm sm:text-base font-bold sy-text-primary tracking-wide">
+                AI 深度复盘与工作建议
               </h3>
               <!-- 周期标签 -->
-              <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950 border border-indigo-500/40 text-indigo-300 font-medium font-mono">
+              <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-medium font-mono font-tabular">
                 {{ scopeTitle }}
               </span>
               <!-- 模型标签 -->
-              <span v-if="currentModel" class="text-xs px-2.5 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 font-medium font-mono">
+              <span v-if="currentModel" class="text-xs px-2.5 py-0.5 rounded-full sy-model-badge font-medium font-mono">
                 {{ currentModel }}
               </span>
             </div>
-            <!-- 设定目标提示 -->
-            <p v-if="focusGoal" class="text-xs text-indigo-300/90 mt-1 truncate max-w-md">
-              🎯 目标：{{ focusGoal }}
+            <!-- 设定目标提示 (纯矢量显式线框) -->
+            <p v-if="focusGoal" class="text-xs sy-text-secondary mt-1 truncate max-w-md flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+              <span>目标：{{ focusGoal }}</span>
             </p>
           </div>
         </div>
 
         <!-- Close Button -->
-        <button @click="handleClose" 
-                class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white bg-gray-800/80 hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                title="关闭">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <SyTooltip content="关闭 (Esc)" placement="bottom">
+          <SyIconButton 
+            icon="close" 
+            size="md" 
+            variant="ghost" 
+            aria-label="关闭" 
+            @click="handleClose" 
+          />
+        </SyTooltip>
       </div>
 
       <!-- Modal Body (Scrollable) -->
-      <div class="p-5 sm:p-6 overflow-y-auto flex-1 min-h-[260px] max-h-[calc(88vh-140px)]">
+      <div class="p-5 sm:p-6 overflow-y-auto flex-1 min-h-[260px] max-h-[calc(88vh-140px)] sy-body-bg">
         
         <!-- Case 1: 未配置 AI 服务 -->
         <div v-if="noConfigError" class="flex flex-col items-center justify-center py-10 text-center gap-4">
-          <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-1">
-            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 mb-1">
+            <svg class="w-8 h-8 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
           <div class="max-w-md">
-            <h4 class="text-base font-bold text-gray-200">尚未配置大模型 API</h4>
-            <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+            <h4 class="text-sm sm:text-base font-bold sy-text-primary">尚未配置大模型 API</h4>
+            <p class="text-xs sy-text-secondary mt-2 leading-relaxed">
               请先在插件设置中填写 API 接口地址与密钥，或者使用 <strong>API 旋钮 (siyuan-api-switch)</strong> 进行统一接管配置。
             </p>
           </div>
           <button @click="handleOpenSettings" 
-                  class="mt-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
+                  class="mt-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all cursor-pointer">
             前往配置 AI 服务
           </button>
         </div>
 
         <!-- Case 2: 发生网络或接口错误 -->
         <div v-else-if="errorMessage" class="flex flex-col items-center justify-center py-8 text-center gap-3">
-          <div class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div class="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-500">
+            <svg class="w-7 h-7 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
           <div class="max-w-lg">
-            <h4 class="text-sm font-bold text-rose-300">生成 AI 总结失败</h4>
-            <p class="text-xs text-gray-400 mt-1 font-mono bg-gray-950/80 p-3 rounded-lg border border-gray-800 break-all text-left">
+            <h4 class="text-xs sm:text-sm font-bold text-rose-500">生成 AI 总结失败</h4>
+            <p class="text-xs sy-text-secondary mt-1 font-mono sy-code-block p-3 rounded-lg border sy-divider break-all text-left">
               {{ errorMessage }}
             </p>
           </div>
@@ -86,7 +95,7 @@
               重新生成
             </button>
             <button @click="handleOpenSettings" 
-                    class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium border border-gray-700 transition-all cursor-pointer">
+                    class="px-4 py-2 rounded-xl sy-btn-secondary text-xs font-medium border transition-all cursor-pointer">
               检查 AI 设置
             </button>
           </div>
@@ -96,62 +105,88 @@
         <div v-else-if="loading && !summaryMarkdown" class="flex flex-col items-center justify-center py-12 gap-4">
           <div class="relative w-12 h-12 flex items-center justify-center">
             <div class="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
-            <svg class="w-6 h-6 text-indigo-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            <svg class="w-6 h-6 text-indigo-500 animate-pulse sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
           <div class="text-center">
-            <div class="text-sm font-semibold text-gray-200">AI 正在深度复盘与分析...</div>
-            <div class="text-xs text-gray-400 mt-1">正在融合时间统计指标与专注目标数据</div>
+            <div class="text-xs sm:text-sm font-semibold sy-text-primary">AI 正在深度复盘与分析...</div>
+            <div class="text-xs sy-text-secondary mt-1">正在融合时间统计指标与专注目标数据</div>
           </div>
         </div>
 
         <!-- Case 4: 渲染已生成或正在流式生成的 Markdown 内容 -->
-        <div v-else class="markdown-preview text-gray-300 leading-relaxed text-sm">
+        <div v-else class="markdown-preview sy-text-primary leading-relaxed text-xs sm:text-sm">
           <div v-html="renderedHtml"></div>
           
           <!-- 流式打字中光标指示 -->
-          <span v-if="loading" class="inline-block w-2 h-4 ml-1 bg-indigo-400 animate-pulse align-middle"></span>
+          <span v-if="loading" class="inline-block w-2 h-4 ml-1 bg-indigo-500 animate-pulse align-middle"></span>
         </div>
 
       </div>
 
-      <!-- Modal Footer -->
-      <div class="px-5 py-3.5 border-t border-gray-800/90 flex flex-wrap items-center justify-between gap-3 bg-gray-950/60 shrink-0">
-        <div class="text-xs text-gray-400 flex items-center gap-2">
-          <span v-if="loading" class="flex items-center gap-1.5 text-indigo-400 font-medium">
-            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+      <!-- Modal Footer (生产力生态沉淀操作区) -->
+      <div class="px-5 py-3.5 border-t sy-divider flex flex-wrap items-center justify-between gap-3 sy-header-bg shrink-0">
+        <div class="text-xs sy-text-secondary flex items-center gap-2 font-tabular">
+          <span v-if="loading" class="flex items-center gap-1.5 text-indigo-500 font-medium">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
             正在生成洞察与建议...
           </span>
-          <span v-else class="text-gray-400">
+          <span v-else class="sy-text-secondary">
             总计统计 {{ logs?.length || 0 }} 次专注会话
           </span>
         </div>
 
-        <div class="flex items-center gap-2.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- 导出为独立思源复盘文档 (核心生产力生态闭环) -->
+          <SyTooltip content="在思源笔记中创建独立复盘笔记文档" placement="top">
+            <button 
+              @click="saveAsSiyuanDoc" 
+              :disabled="loading || !summaryMarkdown || isSavingDoc"
+              class="px-3.5 py-1.5 rounded-xl sy-btn-secondary disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <svg class="w-3.5 h-3.5 text-indigo-500 sy-wire-icon" :class="{ 'animate-spin': isSavingDoc }" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span>{{ isSavingDoc ? '正在保存...' : '沉淀为思源笔记' }}</span>
+            </button>
+          </SyTooltip>
+
           <!-- 复制总结 -->
-          <button @click="copySummary" 
-                  :disabled="loading || !summaryMarkdown"
-                  class="px-3.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-gray-200 border border-gray-700/80 hover:border-gray-600 transition-all flex items-center gap-1.5 cursor-pointer">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            {{ copySuccess ? '✅ 已复制' : '复制总结' }}
-          </button>
+          <SyTooltip content="复制 Markdown 复盘内容至剪贴板" placement="top">
+            <button 
+              @click="copySummary" 
+              :disabled="loading || !summaryMarkdown"
+              class="px-3.5 py-1.5 rounded-xl sy-btn-secondary disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <svg v-if="!copySuccess" class="w-3.5 h-3.5 sy-wire-icon text-indigo-500" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              <svg v-else class="w-3.5 h-3.5 text-emerald-500 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>{{ copySuccess ? '已复制' : '复制总结' }}</span>
+            </button>
+          </SyTooltip>
 
           <!-- 重新生成 -->
-          <button @click="generateSummary" 
-                  :disabled="loading"
-                  class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5 cursor-pointer">
-            <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          <button 
+            @click="generateSummary" 
+            :disabled="loading"
+            class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5 sy-wire-icon" :class="{ 'animate-spin': loading }" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            重新生成
+            <span>重新生成</span>
           </button>
 
           <!-- 关闭 -->
-          <button @click="handleClose" 
-                  class="px-3.5 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-800 text-xs font-medium text-gray-300 border border-gray-700/60 transition-colors cursor-pointer">
+          <button 
+            @click="handleClose" 
+            class="px-3.5 py-1.5 rounded-xl sy-btn-secondary text-xs font-medium border transition-colors cursor-pointer"
+          >
             关闭
           </button>
         </div>
@@ -168,6 +203,9 @@ import type TimeSpentPlugin from '../index';
 import type { TimeLog } from '../models/TimeLog';
 import { AIService } from '../utils/ai-service';
 import { renderMarkdown } from '../utils/markdown';
+import SyTooltip from './Common/SyTooltip.vue';
+import SyIconButton from './Common/SyIconButton.vue';
+import { lsNotebooks, createDocWithMd } from '../api';
 
 const props = defineProps<{
   visible: boolean;
@@ -187,6 +225,7 @@ const summaryMarkdown = ref('');
 const errorMessage = ref('');
 const noConfigError = ref(false);
 const copySuccess = ref(false);
+const isSavingDoc = ref(false);
 
 const currentModel = computed(() => {
   if (!props.plugin) return '';
@@ -246,8 +285,42 @@ const copySummary = async () => {
     }, 2000);
   } catch (err) {
     console.error('Failed to copy summary:', err);
-    const msg = props.plugin?.i18n?.aiSummaryCopyFailed || '复制总结失败，请手动选中文本复制';
-    showMessage(msg, 3000, 'error');
+    showMessage('复制总结失败，请手动选中文本复制', 3000, 'error');
+  }
+};
+
+// 沉淀为思源笔记独立文档
+const saveAsSiyuanDoc = async () => {
+  if (!summaryMarkdown.value) return;
+  isSavingDoc.value = true;
+  try {
+    const notebooksRes = await lsNotebooks();
+    const openNotebook = notebooksRes?.notebooks?.find(nb => !nb.closed) || notebooksRes?.notebooks?.[0];
+    if (!openNotebook) {
+      showMessage('未找到已打开的笔记本，无法创建复盘文档', 3000, 'error');
+      return;
+    }
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const docPath = `/时间复盘/源时记 · ${props.scopeTitle} (${dateStr})`;
+    
+    // 生成美观的 Markdown 头部
+    const content = `# 源时记 · ${props.scopeTitle} 深度复盘\n\n> ⏱️ 生成时间：${now.toLocaleString()} | 统计会话：${props.logs?.length || 0} 次${props.focusGoal ? ` | 专注目标：${props.focusGoal}` : ''}\n\n${summaryMarkdown.value}`;
+
+    const docId = await createDocWithMd(openNotebook.id, docPath, content);
+    if (docId) {
+      showMessage('已成功保存为独立复盘笔记！', 3500, 'info');
+      // 打开新建的文档
+      window.open(`siyuan://blocks/${docId}`);
+    } else {
+      showMessage('创建文档失败，请检查思源存储空间', 3000, 'error');
+    }
+  } catch (err) {
+    console.error('Failed to create siyuan doc:', err);
+    showMessage('保存复盘笔记失败，请重试', 3000, 'error');
+  } finally {
+    isSavingDoc.value = false;
   }
 };
 
@@ -261,21 +334,110 @@ const handleClose = () => {
   emit('close');
 };
 
-// 监听弹窗打开状态，打开时若无内容则自动触发生成
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     generateSummary();
   } else {
-    // 关闭时清空错误信息
     errorMessage.value = '';
   }
 });
 </script>
 
 <style scoped>
+.sy-summary-modal-mask {
+  background-color: var(--st-surface-overlay, rgba(15, 23, 42, 0.65));
+  backdrop-filter: blur(var(--st-surface-backdrop-blur, 8px));
+  -webkit-backdrop-filter: blur(var(--st-surface-backdrop-blur, 8px));
+}
+
+.sy-modal-card {
+  background-color: var(--st-bg-surface, #161b22);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.12));
+}
+
+.sy-header-bg {
+  background-color: var(--st-bg-surface, #161b22);
+}
+
+.sy-body-bg {
+  background-color: var(--st-bg-base, #0d1117);
+}
+
+.sy-divider {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-text-primary {
+  color: var(--st-text-primary, #f0f6fc);
+}
+
+.sy-text-secondary {
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-badge {
+  background-color: var(--st-primary-subtle, rgba(99, 102, 241, 0.14));
+  border: 1px solid var(--st-primary-border, rgba(99, 102, 241, 0.4));
+  color: var(--st-primary, #818cf8);
+}
+
+.sy-model-badge {
+  background-color: rgba(168, 85, 247, 0.14);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+}
+
+.sy-btn-secondary {
+  background-color: var(--st-bg-elevated, #21262d);
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--st-text-primary, #f0f6fc);
+}
+
+.sy-btn-secondary:hover {
+  background-color: var(--st-bg-hover, rgba(148, 163, 184, 0.16));
+}
+
+.sy-code-block {
+  background-color: var(--st-bg-base, #0d1117);
+}
+
 .markdown-preview :deep(h1),
 .markdown-preview :deep(h2),
 .markdown-preview :deep(h3) {
   scroll-margin-top: 2rem;
+  color: var(--st-text-primary, #f0f6fc);
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-preview :deep(p) {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.markdown-preview :deep(ul),
+.markdown-preview :deep(ol) {
+  margin-bottom: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.markdown-preview :deep(li) {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-preview :deep(blockquote) {
+  border-left: 3px solid var(--st-primary, #6366f1);
+  padding-left: 0.75rem;
+  margin: 0.75rem 0;
+  color: var(--st-text-secondary, #8b949e);
+  background-color: var(--st-bg-subtle, rgba(148, 163, 184, 0.05));
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+/* 核心线框图标防御 */
+:deep(svg),
+svg.sy-wire-icon {
+  fill: none !important;
 }
 </style>

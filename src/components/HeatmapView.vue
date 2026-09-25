@@ -1,25 +1,25 @@
 <template>
-  <div class="heatmap-view bg-gray-900 border border-gray-700/80 rounded-xl p-4 sm:p-5 shadow-2xl flex flex-col gap-4">
+  <div class="heatmap-view sy-card rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-4">
     <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/90 pb-3">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b sy-divider pb-3">
       <div class="flex items-center gap-2.5">
-        <span class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow-[0_0_10px_rgba(34,211,238,0.7)]"></span>
-        <h3 class="text-sm sm:text-base font-bold text-white tracking-wide">
+        <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block shadow-[0_0_10px_rgba(6,182,212,0.6)]"></span>
+        <h3 class="text-xs sm:text-sm font-bold sy-text-primary tracking-wide">
           {{ year }} 年度笔记专注活跃度 (365天热力图)
         </h3>
-        <span class="text-xs px-2.5 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">
+        <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-mono font-tabular">
           共 {{ activeDaysCount }} 天保持专注
         </span>
       </div>
 
       <!-- Legend (图例) -->
-      <div class="flex items-center gap-1.5 text-[11px] text-gray-400 select-none">
+      <div class="flex items-center gap-1.5 text-xs sy-text-secondary select-none">
         <span>少</span>
-        <span class="w-3 h-3 rounded-sm bg-gray-800/90 border border-gray-700/60 inline-block" title="无活动"></span>
-        <span class="w-3 h-3 rounded-sm bg-indigo-950 border border-indigo-800/50 inline-block" title="< 30分钟"></span>
-        <span class="w-3 h-3 rounded-sm bg-indigo-800 inline-block" title="30分钟 - 2小时"></span>
-        <span class="w-3 h-3 rounded-sm bg-indigo-600 inline-block" title="2 - 4小时"></span>
-        <span class="w-3 h-3 rounded-sm bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)] inline-block" title="> 4小时"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-0 inline-block" title="无活动"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-1 inline-block" title="< 30分钟"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-2 inline-block" title="30分钟 - 2小时"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-3 inline-block" title="2 - 4小时"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-4 inline-block shadow-[0_0_6px_rgba(6,182,212,0.5)]" title="> 4小时"></span>
         <span>多</span>
       </div>
     </div>
@@ -29,11 +29,11 @@
       <div class="min-w-[760px] flex flex-col gap-1.5">
         
         <!-- Month Labels Row -->
-        <div class="flex pl-8 text-[11px] font-mono text-gray-400 select-none">
+        <div class="flex pl-8 text-xs font-mono sy-text-tertiary select-none">
           <div
             v-for="(m, idx) in monthLabels"
             :key="idx"
-            class="truncate"
+            class="truncate font-tabular"
             :style="{ width: `${m.colSpan * 15}px` }"
           >
             {{ m.name }}
@@ -43,7 +43,7 @@
         <!-- Heatmap Grid: 7 Rows (周一到周日) x N Columns (周) -->
         <div class="flex gap-1">
           <!-- Weekday Labels Column -->
-          <div class="w-7 flex flex-col justify-between text-[10px] font-mono text-gray-500 select-none py-0.5">
+          <div class="w-7 flex flex-col justify-between text-xs font-mono sy-text-tertiary select-none py-0.5">
             <span>一</span>
             <span>三</span>
             <span>五</span>
@@ -60,7 +60,7 @@
               <div
                 v-for="(day, dIdx) in week"
                 :key="dIdx"
-                class="w-3 h-3 rounded-sm transition-all duration-150 cursor-pointer relative group"
+                class="w-3 h-3 rounded-xs transition-all duration-150 cursor-pointer relative group"
                 :class="getDayCellClass(day)"
                 @click="onDayClick(day)"
                 @mouseenter="showTooltip($event, day)"
@@ -74,14 +74,17 @@
     </div>
 
     <!-- Bottom Stat Summary -->
-    <div class="flex flex-wrap items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-800/80">
-      <div class="flex items-center gap-3">
-        <span>年度累计有效专注: <strong class="text-indigo-300 font-mono font-bold">{{ formatDuration(totalYearSeconds) }}</strong></span>
+    <div class="flex flex-wrap items-center justify-between text-xs sy-text-secondary pt-2 border-t sy-divider">
+      <div class="flex items-center gap-3 font-tabular">
+        <span>年度累计有效专注: <strong class="text-indigo-500 font-mono font-bold">{{ formatDuration(totalYearSeconds) }}</strong></span>
         <span>·</span>
-        <span>最长连续专注: <strong class="text-cyan-400 font-mono font-bold">{{ maxStreakDays }} 天</strong></span>
+        <span>最长连续专注: <strong class="text-cyan-500 font-mono font-bold">{{ maxStreakDays }} 天</strong></span>
       </div>
-      <div class="text-[11px] text-gray-500">
-        💡 点击任意方格可一键下钻至当天的日视图
+      <div class="text-xs sy-text-tertiary flex items-center gap-1">
+        <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>点击任意方格可一键下钻至当天的日视图</span>
       </div>
     </div>
 
@@ -89,21 +92,21 @@
     <Teleport to="body">
       <div
         v-if="tooltip.visible"
-        class="fixed pointer-events-none z-[9999] transition-opacity duration-150 backdrop-blur-md bg-gray-950/95 border border-gray-700/90 rounded-xl p-2.5 shadow-2xl text-xs text-gray-100 max-w-xs flex flex-col gap-1"
+        class="fixed pointer-events-none z-[9999] transition-opacity duration-150 backdrop-blur-md sy-floating-tooltip rounded-xl p-2.5 shadow-2xl text-xs max-w-xs flex flex-col gap-1"
         :style="{ top: `${tooltip.y}px`, left: `${tooltip.x}px` }"
       >
         <div class="font-bold text-white flex items-center justify-between gap-3">
           <span>{{ tooltip.dateStr }}</span>
-          <span class="text-indigo-400 font-mono text-[11px]">{{ tooltip.dayName }}</span>
+          <span class="text-indigo-300 font-mono text-xs">{{ tooltip.dayName }}</span>
         </div>
-        <div class="text-cyan-300 font-bold font-mono text-sm mt-0.5">
+        <div class="text-cyan-400 font-bold font-mono text-sm mt-0.5 font-tabular">
           {{ tooltip.durationStr }}
         </div>
-        <div class="text-[11px] text-gray-400">
+        <div class="text-xs text-gray-300 font-tabular">
           共 {{ tooltip.sessionsCount }} 次专注会话
           <span v-if="tooltip.idleSec > 0" class="text-amber-400 ml-1">(-{{ tooltip.idleSec }}s 闲置)</span>
         </div>
-        <div class="text-[10px] text-indigo-300/80 mt-1 select-none">
+        <div class="text-xs text-indigo-300/80 mt-1 select-none">
           点击进入当日详情
         </div>
       </div>
@@ -122,7 +125,7 @@ interface DayItem {
   totalDuration: number;
   idleDuration: number;
   sessionCount: number;
-  level: number; // 0 to 4
+  level: number;
 }
 
 const props = withDefaults(
@@ -206,7 +209,6 @@ const calendarWeeks = computed(() => {
   const start = new Date(y, 0, 1);
   const end = new Date(y, 11, 31);
 
-  // 对齐到周一
   const startDay = start.getDay();
   const diffToMonday = startDay === 0 ? -6 : 1 - startDay;
   const firstMonday = new Date(start);
@@ -224,10 +226,10 @@ const calendarWeeks = computed(() => {
 
     let level = 0;
     if (totalDuration > 0) {
-      if (totalDuration < 1800) level = 1; // < 30m
-      else if (totalDuration < 7200) level = 2; // < 2h
-      else if (totalDuration < 14400) level = 3; // < 4h
-      else level = 4; // >= 4h
+      if (totalDuration < 1800) level = 1;
+      else if (totalDuration < 7200) level = 2;
+      else if (totalDuration < 14400) level = 3;
+      else level = 4;
     }
 
     currentWeek.push({
@@ -260,7 +262,6 @@ const monthLabels = computed(() => {
   let count = 0;
 
   calendarWeeks.value.forEach((week) => {
-    // 取该周周四所在的月份作为代表月
     const midDay = week[3] ? week[3].date : week[0].date;
     const m = midDay.getMonth();
     if (m !== currentMonth) {
@@ -283,19 +284,19 @@ const monthLabels = computed(() => {
 
 const getDayCellClass = (day: DayItem) => {
   if (!day.isCurrentYear) {
-    return 'opacity-20 bg-gray-900 border border-gray-800/40 pointer-events-none';
+    return 'opacity-15 sy-legend-0 pointer-events-none';
   }
   switch (day.level) {
     case 1:
-      return 'bg-indigo-950 border border-indigo-800/60 hover:ring-2 hover:ring-indigo-400';
+      return 'sy-legend-1 hover:ring-2 hover:ring-indigo-400';
     case 2:
-      return 'bg-indigo-800 hover:ring-2 hover:ring-indigo-300';
+      return 'sy-legend-2 hover:ring-2 hover:ring-indigo-300';
     case 3:
-      return 'bg-indigo-600 hover:ring-2 hover:ring-white';
+      return 'sy-legend-3 hover:ring-2 hover:ring-white';
     case 4:
-      return 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.7)] hover:ring-2 hover:ring-white';
+      return 'sy-legend-4 hover:ring-2 hover:ring-white';
     default:
-      return 'bg-gray-800/90 border border-gray-700/50 hover:border-gray-500';
+      return 'sy-legend-0 hover:border-gray-500';
   }
 };
 
@@ -317,7 +318,6 @@ const activeDaysCount = computed(() => {
   return count;
 });
 
-// 计算年度最长连续专注天数 (Streak)
 const maxStreakDays = computed(() => {
   let maxStreak = 0;
   let currentStreak = 0;
@@ -340,11 +340,66 @@ const maxStreakDays = computed(() => {
 </script>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  height: 6px;
+.sy-card {
+  background-color: var(--st-bg-surface, #161b22);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(75, 85, 99, 0.4);
-  border-radius: 9999px;
+
+.sy-divider {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-text-primary {
+  color: var(--st-text-primary, #f0f6fc);
+}
+
+.sy-text-secondary {
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-text-tertiary {
+  color: var(--st-text-tertiary, #6e7681);
+}
+
+.sy-badge {
+  background-color: var(--st-primary-subtle, rgba(99, 102, 241, 0.14));
+  border: 1px solid var(--st-primary-border, rgba(99, 102, 241, 0.4));
+  color: var(--st-primary, #818cf8);
+}
+
+/* 热力图色阶 */
+.sy-legend-0 {
+  background-color: var(--st-bg-subtle, rgba(148, 163, 184, 0.12));
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.sy-legend-1 {
+  background-color: rgba(99, 102, 241, 0.25);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.sy-legend-2 {
+  background-color: rgba(99, 102, 241, 0.55);
+}
+
+.sy-legend-3 {
+  background-color: #6366f1;
+}
+
+.sy-legend-4 {
+  background-color: #06b6d4;
+  box-shadow: 0 0 6px rgba(6, 182, 212, 0.6);
+}
+
+.sy-floating-tooltip {
+  background-color: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* 显式线框防御 */
+:deep(svg),
+svg.sy-wire-icon {
+  fill: none !important;
 }
 </style>

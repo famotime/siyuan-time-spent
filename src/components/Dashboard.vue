@@ -1,44 +1,71 @@
 <template>
-  <div class="time-spent-dashboard isolate relative z-0 bg-gray-950 text-gray-100 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5">
+  <div class="time-spent-dashboard isolate relative z-0 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5">
     
     <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
-    <header class="flex flex-col gap-3.5 pb-3.5 border-b border-gray-800/80">
+    <header class="flex flex-col gap-3.5 pb-3.5 sy-header-border">
       
-      <!-- Top Row: Brand & Close Button -->
+      <!-- Top Row: Brand, Tracking Status & Actions -->
       <div class="flex justify-between items-center w-full">
         <!-- Title & Live Status -->
         <div class="flex items-center gap-3.5">
-          <!-- 放大图标尺寸，显示原 icon 纯净透明底色 -->
-          <div class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shrink-0 bg-transparent">
-            <img :src="iconUrl" alt="源时记" class="w-full h-full object-contain drop-shadow-xl select-none" />
+          <!-- 品牌图标 -->
+          <div class="w-11 h-11 sm:w-13 sm:h-13 flex items-center justify-center shrink-0 bg-transparent">
+            <img :src="iconUrl" alt="源时记" class="w-full h-full object-contain drop-shadow-md select-none" />
           </div>
           <div class="flex flex-col justify-center">
             <div class="flex flex-wrap items-center gap-2.5">
-              <h1 class="text-xl sm:text-2xl font-black tracking-wide text-white">
+              <h1 class="text-xl sm:text-2xl font-black tracking-wide sy-text-primary">
                 源时记
               </h1>
-              <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-950/90 border border-indigo-500/40 text-indigo-300 font-medium shadow-sm">
-                时间分布与专注看板
+              <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-medium">
+                时间记录与专注分析
               </span>
             </div>
-            <p class="text-xs text-gray-400 mt-1 leading-relaxed">
+            <p class="text-xs sy-text-secondary mt-0.5 leading-relaxed">
               全自动深度工作追踪 · 智能防挂机 · 多维日历复盘
             </p>
           </div>
         </div>
 
-        <!-- Header Right Close Button -->
-        <button @click="emit('close')" 
-                class="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer" 
-                title="关闭看板">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <!-- Header Right Actions: Settings, Refresh & Close -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <!-- 刷新数据按钮 -->
+          <SyTooltip content="重新计算并载入最新时间数据" shortcut="R" placement="bottom">
+            <SyIconButton 
+              icon="refresh" 
+              size="md" 
+              variant="secondary" 
+              aria-label="刷新数据" 
+              @click="handleRefreshData" 
+            />
+          </SyTooltip>
+
+          <!-- 插件设置按钮 -->
+          <SyTooltip content="打开源时记设置" shortcut="S" placement="bottom">
+            <SyIconButton 
+              icon="settings" 
+              size="md" 
+              variant="secondary" 
+              aria-label="打开插件设置" 
+              @click="handleOpenSetting" 
+            />
+          </SyTooltip>
+
+          <!-- 关闭看板按钮 -->
+          <SyTooltip content="关闭看板" shortcut="Esc" placement="bottom">
+            <SyIconButton 
+              icon="close" 
+              size="md" 
+              variant="ghost" 
+              aria-label="关闭看板" 
+              @click="emit('close')" 
+            />
+          </SyTooltip>
+        </div>
       </div>
 
-      <!-- Focus Goal Hero Section (专注目标 Hero 卡片) -->
-      <div class="focus-goal-card bg-gray-900/90 border border-gray-800/90 hover:border-gray-700/80 rounded-xl p-3 sm:p-4 transition-all shadow-sm">
+      <!-- Focus Goal Hero Section (专注目标 Hero 卡片：圆角方框、加大顶部间距、独特底色与文字区分) -->
+      <div class="focus-goal-hero-card rounded-2xl p-4 sm:p-5 transition-all shadow-md mt-2 sm:mt-3">
         <!-- Mode 1: Display Mode (已设定目标且非编辑态) -->
         <div v-if="focusGoal && !isEditingFocusGoal" class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
           <!-- Left & Center: Badge + Statement (点击整块可快速进入编辑) -->
@@ -47,25 +74,25 @@
             class="flex items-center gap-3.5 cursor-pointer group flex-1 min-w-0"
             title="点击修改专注目标"
           >
-            <!-- 40px 精致靶心线框徽章 (深色底，靛蓝强调，纯线框设计) -->
-            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gray-800/90 border border-gray-700/80 group-hover:border-indigo-500/50 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner transition-colors">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <!-- 44px 精致靶心显式线框徽章 (防思源 CSS 污染) -->
+            <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sy-goal-icon-badge flex items-center justify-center shrink-0 shadow-inner transition-transform group-hover:scale-105">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7 sy-wire-icon text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <circle cx="12" cy="12" r="6" />
                 <circle cx="12" cy="12" r="2" />
               </svg>
             </div>
 
-            <!-- 目标标题微标签与显著放大加粗宣言 -->
+            <!-- 目标标题微标签与宣言 -->
             <div class="flex flex-col min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-400">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400">
                   FOCUS GOAL
                 </span>
-                <span class="text-[11px] text-gray-500">·</span>
-                <span class="text-[11px] text-gray-400 font-medium">当前专注目标</span>
+                <span class="text-xs text-indigo-400/60">·</span>
+                <span class="text-xs text-indigo-300 font-medium">当前专注目标</span>
               </div>
-              <div class="text-base sm:text-lg md:text-xl font-bold text-white group-hover:text-indigo-200 transition-colors truncate tracking-wide mt-0.5" :title="focusGoal">
+              <div class="text-base sm:text-lg md:text-xl font-black sy-goal-title group-hover:text-indigo-300 transition-colors truncate tracking-wide mt-0.5" :title="focusGoal">
                 {{ focusGoal }}
               </div>
             </div>
@@ -73,36 +100,39 @@
 
           <!-- Right Action Buttons & Saved Tip -->
           <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-            <!-- 保存成功提示 -->
-            <span v-if="focusGoalSavedTip" class="text-[11px] text-emerald-400 font-medium flex items-center gap-1 animate-fadeIn mr-1">
-              <svg class="w-3.5 h-3.5 text-emerald-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            <!-- 保存成功提示 (纯矢量显式线框) -->
+            <span v-if="focusGoalSavedTip" class="text-xs text-emerald-400 font-medium flex items-center gap-1 animate-fadeIn mr-1">
+              <svg class="w-4 h-4 text-emerald-400 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12" />
               </svg>
               <span>已保存</span>
             </span>
 
             <!-- 编辑按钮 (显式线框) -->
-            <button 
-              @click.stop="startEditingGoal"
-              class="h-8.5 px-3 flex items-center gap-1.5 text-xs font-medium text-gray-300 hover:text-white bg-gray-800/80 hover:bg-gray-700 border border-gray-700/60 rounded-lg transition-all cursor-pointer shadow-sm"
-              title="编辑目标"
-            >
-              <svg class="w-3.5 h-3.5 text-gray-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              <span>编辑</span>
-            </button>
+            <SyTooltip content="编辑当前专注目标" placement="top">
+              <button 
+                @click.stop="startEditingGoal"
+                class="sy-btn-goal-action h-8.5 px-3 flex items-center gap-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer shadow-xs"
+              >
+                <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>编辑</span>
+              </button>
+            </SyTooltip>
 
             <!-- 清除按钮 (显式线框) -->
-            <button 
-              @click.stop="clearFocusGoal"
-              class="h-8.5 w-8.5 flex items-center justify-center text-gray-400 hover:text-red-400 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/60 rounded-lg transition-all cursor-pointer shadow-sm"
-              title="清除目标"
-            >
-              <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
+            <SyTooltip content="清除专注目标" placement="top">
+              <button 
+                @click.stop="clearFocusGoal"
+                class="sy-btn-goal-action h-8.5 w-8.5 flex items-center justify-center rounded-xl transition-all cursor-pointer shadow-xs hover:text-red-400"
+              >
+                <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+              </button>
+            </SyTooltip>
           </div>
         </div>
 
@@ -111,18 +141,18 @@
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
             <!-- 目标标题徽章 (显式线框靶心) -->
             <div class="flex items-center gap-2.5 shrink-0">
-              <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-800 border border-gray-700/80 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
-                <svg class="w-5 h-5 text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <span class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sy-goal-icon-badge flex items-center justify-center shrink-0 shadow-inner">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <circle cx="12" cy="12" r="6" />
                   <circle cx="12" cy="12" r="2" />
                 </svg>
               </span>
               <div class="flex flex-col">
-                <span class="text-[10px] font-mono uppercase tracking-wider text-indigo-400">
+                <span class="text-xs font-mono uppercase tracking-wider text-indigo-400 font-bold">
                   Focus Goal
                 </span>
-                <span class="text-xs font-bold text-gray-200 tracking-wide">
+                <span class="text-xs font-bold sy-goal-title tracking-wide">
                   设定专注目标
                 </span>
               </div>
@@ -137,15 +167,17 @@
                 @keydown.enter="confirmGoalEdit"
                 @keydown.esc="cancelGoalEdit"
                 :placeholder="currentGoalPlaceholder"
-                class="w-full h-10 pl-3.5 pr-8 text-sm sm:text-base bg-gray-950/90 border border-gray-800 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/50 rounded-lg text-gray-100 placeholder-gray-500 transition-all outline-none"
+                class="sy-input-field w-full h-10 pl-3.5 pr-8 text-xs sm:text-sm rounded-xl transition-all outline-none"
               />
               <button 
                 v-if="editGoalInput" 
                 @click="editGoalInput = ''" 
-                class="absolute right-2.5 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+                class="absolute right-2.5 sy-text-tertiary hover:sy-text-primary transition-colors cursor-pointer"
                 title="清空输入">
-                <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               </button>
             </div>
@@ -154,11 +186,11 @@
             <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
               <button 
                 @click="confirmGoalEdit"
-                class="h-10 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold rounded-lg transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                class="h-10 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-600/30 cursor-pointer flex items-center gap-1.5"
                 title="保存目标 (Enter)"
               >
-                <svg class="w-4 h-4" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12" />
                 </svg>
                 <span>保存</span>
               </button>
@@ -166,7 +198,7 @@
               <button 
                 v-if="focusGoal"
                 @click="cancelGoalEdit"
-                class="h-10 px-3.5 text-xs sm:text-sm text-gray-400 hover:text-gray-200 bg-gray-800/80 hover:bg-gray-700 border border-gray-700/60 rounded-lg transition-all cursor-pointer"
+                class="sy-btn-goal-action h-10 px-3.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer"
                 title="取消修改 (Esc)"
               >
                 取消
@@ -175,9 +207,9 @@
           </div>
 
           <!-- 目标预设快捷选择标签 (根据当前日历周期智能联动推荐) -->
-          <div class="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-gray-800/60">
-            <span class="text-[11px] text-gray-400 shrink-0 select-none flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-indigo-500/20">
+            <span class="text-xs text-indigo-300/80 shrink-0 select-none flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               {{ calendarMode === 'day' ? '今日推荐：' : calendarMode === 'week' ? '本周推荐：' : '本月推荐：' }}
@@ -186,126 +218,154 @@
               v-for="(candidate, index) in currentGoalCandidates" 
               :key="index"
               @click="selectGoalCandidate(candidate)"
-              class="text-[11px] px-2.5 py-1 rounded-lg bg-gray-800/70 hover:bg-indigo-950/80 text-gray-300 hover:text-indigo-200 border border-gray-700/50 hover:border-indigo-500/40 transition-all cursor-pointer flex items-center gap-1"
-              :class="{ 'bg-indigo-950/90 border-indigo-500/70 text-indigo-300 font-semibold shadow-sm': editGoalInput === candidate }">
+              class="text-xs px-2.5 py-1 rounded-lg sy-candidate-pill transition-all cursor-pointer flex items-center gap-1"
+              :class="{ 'is-selected': editGoalInput === candidate }">
               {{ candidate }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Bottom Row: Date Navigator & Mode Switcher & AI Summary -->
-      <div class="flex flex-wrap items-center justify-between gap-3 w-full pt-2.5 border-t border-gray-900">
+      <!-- Bottom Row: Date Navigator & Mode Switcher & Actions -->
+      <div class="flex flex-wrap items-center justify-between gap-3 w-full pt-2.5 border-t sy-divider">
         <!-- Left: Date Navigator & Period Label -->
         <div class="flex flex-wrap items-center gap-2.5">
-          <!-- Date Navigator -->
-          <div class="h-9 inline-flex items-center bg-gray-900/90 border border-gray-800 rounded-xl p-1 shadow-inner gap-1 box-border">
-            <button @click="navigatePeriod(-1)" 
-                    class="w-7 h-[26px] flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                    title="上一周期">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+          <!-- Date Navigator Group -->
+          <div class="h-9 inline-flex items-center sy-pill-group p-0.5 rounded-xl shadow-xs gap-0.5 box-border">
+            <!-- 上一周期 -->
+            <SyTooltip content="上一周期" shortcut="Alt + ←" placement="bottom">
+              <button 
+                @click="navigatePeriod(-1)" 
+                class="w-7 h-7 flex items-center justify-center sy-text-secondary hover:sy-text-primary rounded-lg transition-colors cursor-pointer"
+                aria-label="上一周期"
+              >
+                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            </SyTooltip>
             
-            <button @click="jumpToToday" 
-                    class="px-3 h-[26px] flex items-center justify-center text-xs font-semibold bg-transparent text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors border-x border-gray-800/80 cursor-pointer"
-                    :title="`跳转至当前${calendarMode === 'day' ? '日期' : calendarMode === 'week' ? '周' : '月份'}`">
-              {{ todayButtonLabel }}
-            </button>
+            <!-- 回到今天/当前周期 -->
+            <SyTooltip :content="`回到当前${calendarMode === 'day' ? '日期' : calendarMode === 'week' ? '周' : calendarMode === 'month' ? '月' : '年'}`" shortcut="T" placement="bottom">
+              <button 
+                @click="jumpToToday" 
+                class="px-3 h-7 flex items-center justify-center text-xs font-semibold sy-text-primary hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors border-x sy-divider cursor-pointer"
+              >
+                {{ todayButtonLabel }}
+              </button>
+            </SyTooltip>
 
-            <button @click="navigatePeriod(1)" 
-                    class="w-7 h-[26px] flex items-center justify-center bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                    title="下一周期">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            <!-- 下一周期 -->
+            <SyTooltip content="下一周期" shortcut="Alt + →" placement="bottom">
+              <button 
+                @click="navigatePeriod(1)" 
+                class="w-7 h-7 flex items-center justify-center sy-text-secondary hover:sy-text-primary rounded-lg transition-colors cursor-pointer"
+                aria-label="下一周期"
+              >
+                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </SyTooltip>
           </div>
 
           <!-- Period Display Label -->
-          <div class="h-9 text-xs font-semibold text-gray-300 bg-gray-900/90 border border-gray-800 px-3.5 rounded-xl flex items-center gap-2 shadow-sm font-mono box-border">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <div class="h-9 text-xs font-semibold sy-text-primary sy-pill-group px-3.5 rounded-xl flex items-center gap-2 shadow-xs font-mono box-border">
+            <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
             {{ currentPeriodLabel }}
           </div>
         </div>
 
-        <!-- Right: Mode Tabs: Day / Week / Month & AI Summary Button -->
+        <!-- Right: Mode Tabs: Day / Week / Month / Year & Actions -->
         <div class="flex flex-wrap items-center gap-2.5">
-          <!-- Mode Tabs -->
-          <div class="h-9 inline-flex items-center bg-gray-900/90 border border-gray-800 p-1 rounded-xl shadow-inner gap-1 box-border">
-            <button @click="switchMode('day')" 
-                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
-                    :class="calendarMode === 'day' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
+          <!-- Mode Tabs (Segmented Controls) -->
+          <div class="h-9 inline-flex items-center sy-pill-group p-1 rounded-xl shadow-xs gap-1 box-border">
+            <button 
+              @click="switchMode('day')" 
+              class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+              :class="calendarMode === 'day' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
               日视图
             </button>
-            <button @click="switchMode('week')" 
-                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
-                    :class="calendarMode === 'week' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
+            <button 
+              @click="switchMode('week')" 
+              class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+              :class="calendarMode === 'week' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
               周视图
             </button>
-            <button @click="switchMode('month')" 
-                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
-                    :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
+            <button 
+              @click="switchMode('month')" 
+              class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+              :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
               月视图
             </button>
-            <button @click="switchMode('year')" 
-                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
-                    :class="calendarMode === 'year' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
+            <button 
+              @click="switchMode('year')" 
+              class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+              :class="calendarMode === 'year' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
               年热力
             </button>
           </div>
 
-          <!-- Export Dropdown Button -->
+          <!-- Export Dropdown -->
           <div class="relative">
-            <button @click="isExportMenuOpen = !isExportMenuOpen" 
-                    class="h-9 px-3 inline-flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white text-xs font-semibold rounded-xl transition-all cursor-pointer box-border shadow-sm">
-              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>导出</span>
-              <svg class="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+            <SyTooltip content="导出专注统计数据报表 (CSV / JSON)" placement="bottom">
+              <button 
+                @click="isExportMenuOpen = !isExportMenuOpen" 
+                class="h-9 px-3 inline-flex items-center gap-1.5 sy-pill-group hover:bg-black/5 dark:hover:bg-white/10 sy-text-primary text-xs font-semibold rounded-xl transition-all cursor-pointer box-border shadow-xs"
+              >
+                <svg class="w-3.5 h-3.5 sy-wire-icon sy-text-secondary" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>导出</span>
+                <svg class="w-3 h-3 sy-wire-icon sy-text-tertiary" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+            </SyTooltip>
 
-            <!-- Dropdown Menu -->
-            <div v-if="isExportMenuOpen" 
-                 class="absolute right-0 mt-1 w-44 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs text-gray-200">
-              <div class="px-3 py-1 text-[10px] text-gray-500 font-mono border-b border-gray-800">
+            <!-- Dropdown Menu (坚固不透明实体底色，彻底杜绝背后文字穿透) -->
+            <div 
+              v-if="isExportMenuOpen" 
+              class="absolute right-0 mt-2 w-48 sy-dropdown-card rounded-xl py-1.5 z-[100] flex flex-col text-xs sy-text-primary shadow-2xl"
+            >
+              <div class="px-3.5 py-1 text-xs sy-text-tertiary font-mono border-b sy-divider">
                 当前周期 ({{ modeName }})
               </div>
-              <button @click="handleExport('current', 'csv')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+              <button @click="handleExport('current', 'csv')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
                 <span>导出 CSV 表格</span>
-                <span class="text-[10px] text-gray-400 font-mono">.csv</span>
+                <span class="text-xs sy-text-tertiary font-mono">.csv</span>
               </button>
-              <button @click="handleExport('current', 'json')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+              <button @click="handleExport('current', 'json')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
                 <span>导出 JSON 数据</span>
-                <span class="text-[10px] text-gray-400 font-mono">.json</span>
+                <span class="text-xs sy-text-tertiary font-mono">.json</span>
               </button>
 
-              <div class="px-3 py-1 text-[10px] text-gray-500 font-mono border-y border-gray-800 mt-1">
+              <div class="px-3.5 py-1 text-xs sy-text-tertiary font-mono border-y sy-divider mt-1">
                 全部历史记录
               </div>
-              <button @click="handleExport('all', 'csv')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+              <button @click="handleExport('all', 'csv')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
                 <span>导出全量 CSV</span>
-                <span class="text-[10px] text-gray-400 font-mono">.csv</span>
+                <span class="text-xs sy-text-tertiary font-mono">.csv</span>
               </button>
-              <button @click="handleExport('all', 'json')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+              <button @click="handleExport('all', 'json')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
                 <span>导出全量 JSON</span>
-                <span class="text-[10px] text-gray-400 font-mono">.json</span>
+                <span class="text-xs sy-text-tertiary font-mono">.json</span>
               </button>
             </div>
           </div>
 
           <!-- AI Summary Button -->
-          <button @click="openAiSummaryModal" 
-                  class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer box-border">
-            <svg class="w-3.5 h-3.5 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            AI 总结
-          </button>
+          <SyTooltip content="AI 深度复盘与工作建议" shortcut="Ctrl + Enter" placement="bottom">
+            <button 
+              @click="openAiSummaryModal" 
+              class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer box-border"
+            >
+              <svg class="w-3.5 h-3.5 text-purple-200 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>AI 总结</span>
+            </button>
+          </SyTooltip>
         </div>
       </div>
     </header>
@@ -314,74 +374,74 @@
     <!-- ==================== UNIFIED TOP VISUAL OVERVIEW ==================== -->
     <section class="top-visual-overview flex flex-col">
       
-      <!-- KPI Metric Cards Grid (显式充足的底部间距，彻底与图表拉开清晰层级) -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-6 sm:mb-8">
+      <!-- KPI Metric Cards Grid (恢复原字体粗黑体质感与饱满尺寸) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-5 sm:mb-6">
         <!-- KPI 1: Total Focused Time -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-indigo-500/50 p-3.5 rounded-xl shadow-md transition-all">
+        <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-indigo-500/60">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>{{ modeName }}总专注</span>
-            <span class="text-indigo-400 font-mono">Total</span>
+            <span class="text-indigo-400 font-mono font-medium">Total</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
             {{ formatDuration(totalFocusSeconds) }}
           </div>
-          <div class="text-[11px] text-gray-500 mt-1 truncate">
+          <div class="text-xs text-gray-400 mt-1 truncate">
             {{ scopeFocusSubtitle }}
           </div>
         </div>
 
         <!-- KPI 2: Daily Average or Pace -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-cyan-500/50 p-3.5 rounded-xl shadow-md transition-all">
+        <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-cyan-500/60">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>{{ averageMetricLabel }}</span>
-            <span class="text-cyan-400 font-mono">Avg</span>
+            <span class="text-cyan-400 font-mono font-medium">Avg</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-cyan-400">
             {{ formatDuration(averageFocusSeconds) }}
           </div>
-          <div class="text-[11px] text-gray-500 mt-1 truncate">
+          <div class="text-xs text-gray-400 mt-1 truncate">
             {{ averageMetricSubtitle }}
           </div>
         </div>
 
         <!-- KPI 3: Total Sessions -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-emerald-500/50 p-3.5 rounded-xl shadow-md transition-all">
+        <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-emerald-500/60">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>专注会话数</span>
-            <span class="text-emerald-400 font-mono">Sessions</span>
+            <span class="text-emerald-400 font-mono font-medium">Sessions</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-emerald-400">
             {{ activeLogs.length }} <span class="text-xs font-normal text-gray-400">次</span>
           </div>
-          <div class="text-[11px] text-gray-500 mt-1 truncate">
+          <div class="text-xs text-gray-400 mt-1 truncate">
             单会话均长 {{ formatDuration(sessionAverageSeconds) }}
           </div>
         </div>
 
         <!-- KPI 4: Idle Time Deducted -->
-        <div class="kpi-card bg-gray-900/90 border border-gray-800/90 hover:border-amber-500/50 p-3.5 rounded-xl shadow-md transition-all">
+        <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-amber-500/60">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>闲置扣除时长</span>
-            <span class="text-amber-400 font-mono">Idle Filter</span>
+            <span class="text-amber-400 font-mono font-medium">Idle Filter</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-amber-400">
             {{ formatDuration(totalIdleSeconds) }}
           </div>
-          <div class="text-[11px] text-gray-500 mt-1 truncate">
+          <div class="text-xs text-gray-400 mt-1 truncate">
             精准剥离无操作挂机
           </div>
         </div>
 
         <!-- KPI 5: Top Focus Target -->
-        <div class="kpi-card col-span-2 sm:col-span-1 bg-gray-900/90 border border-gray-800/90 hover:border-purple-500/50 p-3.5 rounded-xl shadow-md transition-all">
+        <div class="kpi-card col-span-2 sm:col-span-1 sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-purple-500/60">
           <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>主攻专注重心</span>
-            <span class="text-purple-400 font-mono">Top Focus</span>
+            <span class="text-purple-400 font-mono font-medium">Top Focus</span>
           </div>
           <div class="text-sm font-bold text-gray-200 truncate mt-0.5" :title="topDocInfo.title">
             {{ topDocInfo.title }}
           </div>
-          <div class="text-[11px] text-purple-300 mt-1 font-mono">
+          <div class="text-xs text-purple-300 mt-1 font-mono font-bold">
             {{ topDocInfo.durationStr }} (占比 {{ topDocInfo.percent }}%)
           </div>
         </div>
@@ -389,27 +449,29 @@
 
       <!-- Overview Visual Charts -->
       <div class="charts-container">
-        <Charts :logs="activeLogs" 
-                :scope-type="calendarMode" 
-                :scope-date-title="currentPeriodLabel" 
-                :day-map="scopeDayMap"
-                :day-labels="scopeDayLabels" />
+        <Charts 
+          :logs="activeLogs" 
+          :scope-type="calendarMode" 
+          :scope-date-title="currentPeriodLabel" 
+          :day-map="scopeDayMap"
+          :day-labels="scopeDayLabels" 
+        />
       </div>
     </section>
 
 
     <!-- ==================== MAIN CALENDAR / HEATMAP VIEW ==================== -->
-    <section class="calendar-main-section flex flex-col gap-3 pt-3 border-t border-gray-800/80">
+    <section class="calendar-main-section flex flex-col gap-3 pt-3 border-t sy-divider">
       <div class="flex justify-between items-center px-1">
-        <h2 class="text-sm font-bold text-gray-300 tracking-wide flex items-center gap-2">
+        <h2 class="text-sm font-bold sy-text-primary tracking-wide flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
           {{ calendarSectionTitle }}
         </h2>
-        <span class="text-xs text-gray-400">
-          <template v-if="calendarMode === 'year'">点击任意方格可一键下钻至当天的日视图</template>
+        <span class="text-xs sy-text-secondary">
+          <template v-if="calendarMode === 'year'">点击任意方格可下钻至当天的日视图</template>
           <template v-else-if="calendarMode === 'month'">点击任意日期可切换进入该日视图</template>
           <template v-else-if="calendarMode === 'week'">点击表头日期可下钻至日视图</template>
-          <template v-else>点击色块可直达思源对应文档</template>
+          <template v-else>点击色块直达思源对应文档</template>
         </span>
       </div>
 
@@ -433,11 +495,13 @@
       />
     </section>
 
-    <!-- Toast Notification -->
-    <div v-if="toastMessage" 
-         class="fixed bottom-6 right-6 z-50 bg-indigo-600/95 border border-indigo-400/40 text-white px-4 py-2.5 rounded-xl shadow-2xl backdrop-blur-md text-xs font-semibold flex items-center gap-2 animate-bounce">
-      <svg class="w-4 h-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+    <!-- Toast Notification (直观且防污染) -->
+    <div 
+      v-if="toastMessage" 
+      class="fixed bottom-6 right-6 z-50 bg-indigo-600 text-white px-4 py-2.5 rounded-xl shadow-2xl backdrop-blur-md text-xs font-semibold flex items-center gap-2 animate-bounce border border-indigo-400/30"
+    >
+      <svg class="w-4 h-4 sy-wire-icon text-emerald-300" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <polyline points="20 6 9 17 4 12" />
       </svg>
       {{ toastMessage }}
     </div>
@@ -457,11 +521,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import CalendarView from './CalendarView.vue';
 import HeatmapView from './HeatmapView.vue';
 import Charts from './Charts.vue';
 import AiSummaryModal from './AiSummaryModal.vue';
+import SyTooltip from './Common/SyTooltip.vue';
+import SyIconButton from './Common/SyIconButton.vue';
 import type { TimeLog } from '../models/TimeLog';
 import { usePlugin } from '../main';
 import { AIExportManager } from '../utils/ai-export';
@@ -485,7 +551,7 @@ const toastMessage = ref<string>('');
 // 数据导出下拉状态
 const isExportMenuOpen = ref<boolean>(false);
 
-// Focus Goal State (双模式与智能周期候选)
+// Focus Goal State
 const STORAGE_KEY_FOCUS_GOAL = 'siyuan_time_spent_focus_goal';
 const focusGoal = ref<string>(localStorage.getItem(STORAGE_KEY_FOCUS_GOAL) || '');
 const focusGoalSavedTip = ref<boolean>(false);
@@ -613,7 +679,7 @@ const currentPeriodLabel = computed(() => {
   }
 });
 
-// 日历视图区块标题 (日视图体现日期，周视图体现第几周，月视图体现第几个月，年视图体现年度)
+// 日历视图区块标题
 const calendarSectionTitle = computed(() => {
   const d = currentDate.value;
   const year = d.getFullYear();
@@ -714,7 +780,6 @@ const averageMetricLabel = computed(() => {
 
 const averageFocusSeconds = computed(() => {
   if (calendarMode.value === 'day') {
-    // Peak hour
     const hourly = Array(24).fill(0);
     activeLogs.value.forEach(l => {
       const h = new Date(l.startTime).getHours();
@@ -807,6 +872,22 @@ const loadDataForCurrentScope = async () => {
   });
 };
 
+// 刷新数据
+const handleRefreshData = async () => {
+  if (plugin && (plugin as any).storageManager) {
+    (plugin as any).storageManager.clearCache();
+  }
+  await loadDataForCurrentScope();
+  showToast('已重新载入并计算最新时间数据');
+};
+
+// 打开设置
+const handleOpenSetting = () => {
+  if (plugin && (plugin as any).openSetting) {
+    (plugin as any).openSetting();
+  }
+};
+
 // Mode Switch
 const switchMode = (mode: 'day' | 'week' | 'month' | 'year') => {
   calendarMode.value = mode;
@@ -871,7 +952,7 @@ const handleExport = (range: 'current' | 'all', format: 'csv' | 'json') => {
   } else {
     Exporter.exportToJson(logsToExport, filename);
   }
-  showToast(`✅ 成功导出 ${logsToExport.length} 条记录 (${format.toUpperCase()})`);
+  showToast(`成功导出 ${logsToExport.length} 条记录 (${format.toUpperCase()})`);
 };
 
 // Focus Goal Management
@@ -934,23 +1015,6 @@ const openAiSummaryModal = () => {
   isAiModalVisible.value = true;
 };
 
-// AI Export (保留剪贴板导出备用)
-const exportForAI = async () => {
-  const md = AIExportManager.generateMarkdownSummary(
-    activeLogs.value, 
-    currentPeriodLabel.value, 
-    calendarMode.value
-  );
-
-  try {
-    await navigator.clipboard.writeText(md);
-    showToast(`✅ ${modeName.value}度 AI 总结已成功复制到剪贴板！`);
-  } catch (err) {
-    Logger.error('Failed to copy AI summary: ', err);
-    showToast('❌ 复制失败，请检查剪贴板权限');
-  }
-};
-
 const showToast = (msg: string) => {
   toastMessage.value = msg;
   setTimeout(() => {
@@ -958,7 +1022,32 @@ const showToast = (msg: string) => {
   }, 3500);
 };
 
+// 键盘快捷键监听
+const handleGlobalKeyDown = (e: KeyboardEvent) => {
+  // 如果焦点在输入框中，不触发单键快捷键
+  const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+  if (tag === 'input' || tag === 'textarea') return;
+
+  if (e.altKey && e.key === 'ArrowLeft') {
+    e.preventDefault();
+    navigatePeriod(-1);
+  } else if (e.altKey && e.key === 'ArrowRight') {
+    e.preventDefault();
+    navigatePeriod(1);
+  } else if (e.key === 't' || e.key === 'T') {
+    e.preventDefault();
+    jumpToToday();
+  } else if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault();
+    handleRefreshData();
+  } else if (e.key === 's' || e.key === 'S') {
+    e.preventDefault();
+    handleOpenSetting();
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener('keydown', handleGlobalKeyDown);
   loadDataForCurrentScope();
   // 载入持久化的专注目标
   if (plugin && (plugin as any).loadData) {
@@ -973,6 +1062,13 @@ onMounted(async () => {
   }
 });
 
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeyDown);
+  if (focusGoalTipTimer) {
+    clearTimeout(focusGoalTipTimer);
+  }
+});
+
 watch([calendarMode, currentDate], () => {
   loadDataForCurrentScope();
 });
@@ -980,11 +1076,164 @@ watch([calendarMode, currentDate], () => {
 
 <style scoped>
 .time-spent-dashboard {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--st-text-primary, #f0f6fc);
 }
 
-/* 确保思源主题样式不会将线框图标的 fill 覆盖为 solid 色块 */
-.focus-goal-card svg {
+/* 语义化卡片与背景 */
+.sy-card {
+  background-color: var(--st-bg-surface, #161b22);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+/* Focus Goal 专属 Hero 独立圆角方框卡片 (鲜明区分于普通卡片) */
+.focus-goal-hero-card {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.5) 0%, rgba(15, 23, 42, 0.75) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme-mode="light"] .focus-goal-hero-card,
+.theme--light .focus-goal-hero-card {
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  border: 1px solid #c7d2fe;
+  box-shadow: 0 4px 15px -2px rgba(99, 102, 241, 0.08), inset 0 1px 0 0 #ffffff;
+}
+
+.sy-goal-title {
+  color: #ffffff;
+}
+
+:root[data-theme-mode="light"] .sy-goal-title,
+.theme--light .sy-goal-title {
+  color: #1e1b4b;
+}
+
+.sy-btn-goal-action {
+  background-color: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+}
+
+.sy-btn-goal-action:hover {
+  background-color: rgba(99, 102, 241, 0.28);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+:root[data-theme-mode="light"] .sy-btn-goal-action,
+.theme--light .sy-btn-goal-action {
+  background-color: #e0e7ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+}
+
+:root[data-theme-mode="light"] .sy-btn-goal-action:hover,
+.theme--light .sy-btn-goal-action:hover {
+  background-color: #c7d2fe;
+  color: #1e1b4b;
+}
+
+.sy-pill-group {
+  background-color: var(--st-bg-surface, #161b22);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+/* 导出下拉菜单：强制坚实不透明实体背景，彻底杜绝背后文字重叠穿透 */
+.sy-dropdown-card {
+  background-color: #1a202c !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.65), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
+}
+
+:root[data-theme-mode="light"] .sy-dropdown-card,
+.theme--light .sy-dropdown-card {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.sy-header-border {
+  border-bottom: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-divider {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+.sy-text-primary {
+  color: var(--st-text-primary, #f0f6fc);
+}
+
+.sy-text-secondary {
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-text-tertiary {
+  color: var(--st-text-tertiary, #6e7681);
+}
+
+.sy-badge {
+  background-color: var(--st-primary-subtle, rgba(99, 102, 241, 0.14));
+  border: 1px solid var(--st-primary-border, rgba(99, 102, 241, 0.4));
+  color: var(--st-primary, #818cf8);
+}
+
+.sy-goal-icon-badge {
+  background-color: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+:root[data-theme-mode="light"] .sy-goal-icon-badge,
+.theme--light .sy-goal-icon-badge {
+  background-color: #e0e7ff;
+  border: 1px solid #c7d2fe;
+}
+
+.sy-btn-card-action {
+  background-color: var(--st-bg-elevated, #21262d);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.15));
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-btn-card-action:hover {
+  background-color: var(--st-bg-hover, rgba(148, 163, 184, 0.16));
+  color: var(--st-text-primary, #ffffff);
+}
+
+.sy-input-field {
+  background-color: var(--st-bg-base, #0d1117);
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.15));
+  color: var(--st-text-primary, #f0f6fc);
+}
+
+.sy-input-field:focus {
+  border-color: var(--st-primary, #6366f1);
+  box-shadow: 0 0 0 1px var(--st-primary, #6366f1);
+}
+
+.sy-candidate-pill {
+  background-color: var(--st-bg-subtle, rgba(148, 163, 184, 0.08));
+  border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--st-text-secondary, #8b949e);
+}
+
+.sy-candidate-pill:hover {
+  background-color: var(--st-primary-subtle, rgba(99, 102, 241, 0.14));
+  color: var(--st-primary, #818cf8);
+  border-color: var(--st-primary-border, rgba(99, 102, 241, 0.4));
+}
+
+.sy-candidate-pill.is-selected {
+  background-color: var(--st-primary-subtle, rgba(99, 102, 241, 0.18));
+  border-color: var(--st-primary, #6366f1);
+  color: var(--st-primary, #818cf8);
+  font-weight: 600;
+}
+
+/* 核心线框图标防御：彻底清除思源主题强行注入的 fill */
+:deep(svg),
+svg.sy-wire-icon {
   fill: none !important;
 }
 </style>
