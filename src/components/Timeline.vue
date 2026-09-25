@@ -1,21 +1,21 @@
 <template>
-  <div class="timeline-container relative pl-4 border-l-2 border-gray-700 max-h-96 overflow-y-auto">
-    <div v-if="logs.length === 0" class="text-gray-500 italic text-sm py-4">
+  <div class="timeline-container relative pl-4 border-l-2 sy-divider max-h-96 overflow-y-auto">
+    <div v-if="logs.length === 0" class="sy-text-tertiary italic text-sm py-4">
       今日无活动记录。
     </div>
     
     <div v-for="log in sortedLogs" :key="log.id" class="timeline-item relative mb-6">
-      <div class="absolute -left-6 mt-1.5 w-3 h-3 bg-indigo-500 rounded-full border-2 border-gray-900"></div>
+      <div class="absolute -left-6 mt-1.5 w-3 h-3 bg-indigo-500 rounded-full border-2 border-transparent"></div>
       
-      <div class="group block p-3 rounded-lg bg-gray-800 border border-gray-700 hover:border-indigo-500 hover:bg-gray-750 transition-colors duration-200 cursor-pointer">
+      <div class="group block p-3 rounded-lg sy-timeline-card border sy-divider hover:border-indigo-500 transition-colors duration-200 cursor-pointer">
         <div class="flex justify-between items-center mb-1">
-          <span class="text-sm font-semibold text-gray-200 truncate pr-2">{{ docTitles[log.docId] || log.docId || '未知文档' }}</span>
-          <span class="text-xs text-gray-400 whitespace-nowrap">{{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}</span>
+          <span class="text-sm font-semibold sy-text-primary truncate pr-2">{{ docTitles[log.docId] || log.docId || '未知文档' }}</span>
+          <span class="text-xs sy-text-secondary whitespace-nowrap">{{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}</span>
         </div>
-        <div class="text-xs text-indigo-300 font-medium mt-1">
+        <div class="text-xs text-indigo-600 dark:text-indigo-300 font-medium mt-1">
           专注时长: {{ formatDuration(log.duration) }}
         </div>
-        <div class="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="text-xs sy-text-tertiary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
           扣除闲置: {{ log.idleTime }}s
         </div>
       </div>
@@ -58,7 +58,22 @@ const formatDuration = (seconds: number) => {
 .timeline-item:last-child {
   margin-bottom: 0;
 }
-.bg-gray-750 {
-  background-color: #2d3748; /* slightly lighter than gray-800 */
+.sy-timeline-card {
+  background-color: var(--st-bg-surface, #161b22);
+}
+.sy-timeline-card:hover {
+  background-color: var(--st-bg-hover, rgba(148, 163, 184, 0.1));
+}
+.sy-divider {
+  border-color: var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+.sy-text-primary {
+  color: var(--st-text-primary, #f0f6fc);
+}
+.sy-text-secondary {
+  color: var(--st-text-secondary, #8b949e);
+}
+.sy-text-tertiary {
+  color: var(--st-text-tertiary, #6e7681);
 }
 </style>

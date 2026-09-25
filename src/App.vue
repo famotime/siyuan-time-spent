@@ -69,9 +69,9 @@ defineExpose({
   height: 90vh;
   max-width: 1320px;
   pointer-events: auto;
-  background-color: var(--st-bg-base, #0d1117);
+  background-color: var(--st-bg-base, var(--b3-theme-background, #0d1117));
   border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--st-border-subtle, rgba(255, 255, 255, 0.05));
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--st-border-subtle, rgba(255, 255, 255, 0.05));
   transition: background-color 200ms ease, border-color 200ms ease;
 }
 </style>

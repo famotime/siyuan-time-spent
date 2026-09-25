@@ -101,7 +101,8 @@ export default class TimeSpentPlugin extends Plugin {
         this.element.style.height = "100%";
         this.element.style.width = "100%";
         this.element.style.overflow = "auto";
-        this.element.style.backgroundColor = "rgb(3 7 18)";
+        this.element.style.backgroundColor = "var(--b3-theme-background)";
+        this.element.classList.add("time-spent-tab-host");
 
         const app = createApp(Dashboard, {
           inTab: true,

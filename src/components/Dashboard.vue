@@ -1,5 +1,5 @@
 <template>
-  <div class="time-spent-dashboard isolate relative z-0 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5">
+  <div class="time-spent-dashboard isolate relative z-0 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5" :data-theme-mode="isDarkMode ? 'dark' : 'light'">
     
     <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
     <header class="flex flex-col gap-3.5 pb-3.5 sy-header-border">
@@ -208,8 +208,8 @@
 
           <!-- 目标预设快捷选择标签 (根据当前日历周期智能联动推荐) -->
           <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-indigo-500/20">
-            <span class="text-xs text-indigo-300/80 shrink-0 select-none flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <span class="text-xs text-indigo-600 dark:text-indigo-300/80 shrink-0 select-none flex items-center gap-1.5 font-medium">
+              <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               {{ calendarMode === 'day' ? '今日推荐：' : calendarMode === 'week' ? '本周推荐：' : '本月推荐：' }}
@@ -378,70 +378,70 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-5 sm:mb-6">
         <!-- KPI 1: Total Focused Time -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-indigo-500/60">
-          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
             <span>{{ modeName }}总专注</span>
-            <span class="text-indigo-400 font-mono font-medium">Total</span>
+            <span class="text-indigo-500 dark:text-indigo-400 font-mono font-medium">Total</span>
           </div>
-          <div class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300">
+          <div class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600 dark:from-indigo-400 dark:to-cyan-300">
             {{ formatDuration(totalFocusSeconds) }}
           </div>
-          <div class="text-xs text-gray-400 mt-1 truncate">
+          <div class="text-xs sy-text-secondary mt-1 truncate">
             {{ scopeFocusSubtitle }}
           </div>
         </div>
 
         <!-- KPI 2: Daily Average or Pace -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-cyan-500/60">
-          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
             <span>{{ averageMetricLabel }}</span>
-            <span class="text-cyan-400 font-mono font-medium">Avg</span>
+            <span class="text-cyan-600 dark:text-cyan-400 font-mono font-medium">Avg</span>
           </div>
-          <div class="text-xl md:text-2xl font-black text-cyan-400">
+          <div class="text-xl md:text-2xl font-black text-cyan-600 dark:text-cyan-400">
             {{ formatDuration(averageFocusSeconds) }}
           </div>
-          <div class="text-xs text-gray-400 mt-1 truncate">
+          <div class="text-xs sy-text-secondary mt-1 truncate">
             {{ averageMetricSubtitle }}
           </div>
         </div>
 
         <!-- KPI 3: Total Sessions -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-emerald-500/60">
-          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
             <span>专注会话数</span>
-            <span class="text-emerald-400 font-mono font-medium">Sessions</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-mono font-medium">Sessions</span>
           </div>
-          <div class="text-xl md:text-2xl font-black text-emerald-400">
-            {{ activeLogs.length }} <span class="text-xs font-normal text-gray-400">次</span>
+          <div class="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            {{ activeLogs.length }} <span class="text-xs font-normal sy-text-secondary">次</span>
           </div>
-          <div class="text-xs text-gray-400 mt-1 truncate">
+          <div class="text-xs sy-text-secondary mt-1 truncate">
             单会话均长 {{ formatDuration(sessionAverageSeconds) }}
           </div>
         </div>
 
         <!-- KPI 4: Idle Time Deducted -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-amber-500/60">
-          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
             <span>闲置扣除时长</span>
-            <span class="text-amber-400 font-mono font-medium">Idle Filter</span>
+            <span class="text-amber-600 dark:text-amber-400 font-mono font-medium">Idle Filter</span>
           </div>
-          <div class="text-xl md:text-2xl font-black text-amber-400">
+          <div class="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-400">
             {{ formatDuration(totalIdleSeconds) }}
           </div>
-          <div class="text-xs text-gray-400 mt-1 truncate">
+          <div class="text-xs sy-text-secondary mt-1 truncate">
             精准剥离无操作挂机
           </div>
         </div>
 
         <!-- KPI 5: Top Focus Target -->
         <div class="kpi-card col-span-2 sm:col-span-1 sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-purple-500/60">
-          <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+          <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
             <span>主攻专注重心</span>
-            <span class="text-purple-400 font-mono font-medium">Top Focus</span>
+            <span class="text-purple-600 dark:text-purple-400 font-mono font-medium">Top Focus</span>
           </div>
-          <div class="text-sm font-bold text-gray-200 truncate mt-0.5" :title="topDocInfo.title">
+          <div class="text-sm font-bold sy-text-primary truncate mt-0.5" :title="topDocInfo.title">
             {{ topDocInfo.title }}
           </div>
-          <div class="text-xs text-purple-300 mt-1 font-mono font-bold">
+          <div class="text-xs text-purple-600 dark:text-purple-300 mt-1 font-mono font-bold">
             {{ topDocInfo.durationStr }} (占比 {{ topDocInfo.percent }}%)
           </div>
         </div>
@@ -540,6 +540,32 @@ const plugin = usePlugin();
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
+
+// 明暗双模主题感知体系
+const isDarkMode = ref(true);
+
+const detectThemeMode = () => {
+  // 1. 优先读取思源原生配置
+  if ((window as any).siyuan?.config?.appearance?.mode !== undefined) {
+    isDarkMode.value = (window as any).siyuan.config.appearance.mode === 1;
+    return;
+  }
+  // 2. 读取 HTML / Body 属性
+  const htmlTheme = document.documentElement.getAttribute('data-theme-mode');
+  const bodyTheme = document.body.getAttribute('data-theme-mode');
+  if (htmlTheme === 'dark' || bodyTheme === 'dark') {
+    isDarkMode.value = true;
+    return;
+  }
+  if (htmlTheme === 'light' || bodyTheme === 'light') {
+    isDarkMode.value = false;
+    return;
+  }
+  // 3. 兜底系统配色
+  isDarkMode.value = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+};
+
+let themeObserver: MutationObserver | null = null;
 
 // State
 const calendarMode = ref<'day' | 'week' | 'month' | 'year'>('week');
@@ -1048,6 +1074,13 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
 
 onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeyDown);
+  detectThemeMode();
+  themeObserver = new MutationObserver(() => {
+    detectThemeMode();
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme-mode', 'class'] });
+  themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme-mode', 'class'] });
+
   loadDataForCurrentScope();
   // 载入持久化的专注目标
   if (plugin && (plugin as any).loadData) {
@@ -1064,6 +1097,10 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeyDown);
+  if (themeObserver) {
+    themeObserver.disconnect();
+    themeObserver = null;
+  }
   if (focusGoalTipTimer) {
     clearTimeout(focusGoalTipTimer);
   }
@@ -1078,6 +1115,8 @@ watch([calendarMode, currentDate], () => {
 .time-spent-dashboard {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   color: var(--st-text-primary, #f0f6fc);
+  background-color: var(--st-bg-base, var(--b3-theme-background, #0d1117));
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* 语义化卡片与背景 */
@@ -1094,7 +1133,8 @@ watch([calendarMode, currentDate], () => {
 }
 
 :root[data-theme-mode="light"] .focus-goal-hero-card,
-.theme--light .focus-goal-hero-card {
+.theme--light .focus-goal-hero-card,
+[data-theme-mode="light"] .focus-goal-hero-card {
   background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
   border: 1px solid #c7d2fe;
   box-shadow: 0 4px 15px -2px rgba(99, 102, 241, 0.08), inset 0 1px 0 0 #ffffff;
@@ -1105,7 +1145,8 @@ watch([calendarMode, currentDate], () => {
 }
 
 :root[data-theme-mode="light"] .sy-goal-title,
-.theme--light .sy-goal-title {
+.theme--light .sy-goal-title,
+[data-theme-mode="light"] .sy-goal-title {
   color: #1e1b4b;
 }
 
@@ -1122,14 +1163,16 @@ watch([calendarMode, currentDate], () => {
 }
 
 :root[data-theme-mode="light"] .sy-btn-goal-action,
-.theme--light .sy-btn-goal-action {
+.theme--light .sy-btn-goal-action,
+[data-theme-mode="light"] .sy-btn-goal-action {
   background-color: #e0e7ff;
   border: 1px solid #c7d2fe;
   color: #3730a3;
 }
 
 :root[data-theme-mode="light"] .sy-btn-goal-action:hover,
-.theme--light .sy-btn-goal-action:hover {
+.theme--light .sy-btn-goal-action:hover,
+[data-theme-mode="light"] .sy-btn-goal-action:hover {
   background-color: #c7d2fe;
   color: #1e1b4b;
 }
@@ -1147,7 +1190,8 @@ watch([calendarMode, currentDate], () => {
 }
 
 :root[data-theme-mode="light"] .sy-dropdown-card,
-.theme--light .sy-dropdown-card {
+.theme--light .sy-dropdown-card,
+[data-theme-mode="light"] .sy-dropdown-card {
   background-color: #ffffff !important;
   border: 1px solid rgba(0, 0, 0, 0.12) !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
@@ -1185,7 +1229,8 @@ watch([calendarMode, currentDate], () => {
 }
 
 :root[data-theme-mode="light"] .sy-goal-icon-badge,
-.theme--light .sy-goal-icon-badge {
+.theme--light .sy-goal-icon-badge,
+[data-theme-mode="light"] .sy-goal-icon-badge {
   background-color: #e0e7ff;
   border: 1px solid #c7d2fe;
 }
@@ -1202,7 +1247,7 @@ watch([calendarMode, currentDate], () => {
 }
 
 .sy-input-field {
-  background-color: var(--st-bg-base, #0d1117);
+  background-color: var(--st-bg-elevated, #0d1117);
   border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.15));
   color: var(--st-text-primary, #f0f6fc);
 }

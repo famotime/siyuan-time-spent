@@ -5,7 +5,7 @@
 @source "../src";
 
 :root {
-  /* ==================== 设计系统语义 Token（双模自适应） ==================== */
+  /* ==================== 设计系统语义 Token（默认基线） ==================== */
   /* 基础与表面层级 */
   --st-surface-overlay: rgba(15, 23, 42, 0.55);
   --st-surface-backdrop-blur: 8px;
@@ -19,7 +19,7 @@
   /* 文本与对比度 (WCAG 2.2 AA 标准) */
   --st-text-primary: var(--b3-theme-on-background, #f0f6fc);
   --st-text-secondary: var(--b3-theme-on-surface, #8b949e);
-  --st-text-tertiary: var(--b3-empty-color, #6e7681);
+  --st-text-tertiary: var(--b3-theme-on-surface-light, #6e7681);
   --st-text-disabled: #484f58;
 
   /* 边框与分割线 */
@@ -39,6 +39,84 @@
   --st-info: #06b6d4;
 
   /* 焦点光晕 */
+  --st-focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
+}
+
+/* ==================== 亮色主题语义 Token (显式精准适配) ==================== */
+:root[data-theme-mode="light"],
+html[data-theme-mode="light"],
+body[data-theme-mode="light"],
+[data-theme-mode="light"],
+.theme--light {
+  /* 基础与表面层级 */
+  --st-surface-overlay: var(--b3-mask-background, rgba(0, 0, 0, 0.35));
+  --st-surface-backdrop-blur: 8px;
+
+  --st-bg-base: var(--b3-theme-background, #f8fafc);
+  --st-bg-surface: var(--b3-theme-surface, #ffffff);
+  --st-bg-elevated: var(--b3-theme-surface-lighter, #f1f5f9);
+  --st-bg-subtle: rgba(0, 0, 0, 0.04);
+  --st-bg-hover: rgba(0, 0, 0, 0.06);
+
+  /* 文本与对比度 (WCAG 2.2 AA 标准) */
+  --st-text-primary: var(--b3-theme-on-background, #0f172a);
+  --st-text-secondary: var(--b3-theme-on-surface, #475569);
+  --st-text-tertiary: var(--b3-theme-on-surface-light, #64748b);
+  --st-text-disabled: #cbd5e1;
+
+  /* 边框与分割线 */
+  --st-border-subtle: var(--b3-border-color, rgba(0, 0, 0, 0.08));
+  --st-border-strong: rgba(0, 0, 0, 0.16);
+
+  /* 品牌色 */
+  --st-primary: var(--b3-theme-primary, #4f46e5);
+  --st-primary-hover: #4338ca;
+  --st-primary-subtle: rgba(79, 70, 229, 0.1);
+  --st-primary-border: rgba(79, 70, 229, 0.3);
+
+  /* 状态指示色 */
+  --st-success: #16a34a;
+  --st-warning: #d97706;
+  --st-danger: #dc2626;
+  --st-info: #0891b2;
+
+  /* 焦点光晕 */
+  --st-focus-ring: 0 0 0 2px rgba(79, 70, 229, 0.4);
+}
+
+/* ==================== 暗色主题语义 Token (显式精准适配) ==================== */
+:root[data-theme-mode="dark"],
+html[data-theme-mode="dark"],
+body[data-theme-mode="dark"],
+[data-theme-mode="dark"],
+.theme--dark {
+  --st-surface-overlay: var(--b3-mask-background, rgba(15, 23, 42, 0.65));
+  --st-surface-backdrop-blur: 8px;
+
+  --st-bg-base: var(--b3-theme-background, #0d1117);
+  --st-bg-surface: var(--b3-theme-surface, #161b22);
+  --st-bg-elevated: var(--b3-theme-surface-lighter, #21262d);
+  --st-bg-subtle: rgba(148, 163, 184, 0.08);
+  --st-bg-hover: rgba(148, 163, 184, 0.16);
+
+  --st-text-primary: var(--b3-theme-on-background, #f0f6fc);
+  --st-text-secondary: var(--b3-theme-on-surface, #8b949e);
+  --st-text-tertiary: var(--b3-theme-on-surface-light, #6e7681);
+  --st-text-disabled: #484f58;
+
+  --st-border-subtle: var(--b3-border-color, rgba(240, 246, 252, 0.1));
+  --st-border-strong: rgba(240, 246, 252, 0.2);
+
+  --st-primary: var(--b3-theme-primary, #6366f1);
+  --st-primary-hover: #4f46e5;
+  --st-primary-subtle: rgba(99, 102, 241, 0.14);
+  --st-primary-border: rgba(99, 102, 241, 0.4);
+
+  --st-success: #10b981;
+  --st-warning: #f59e0b;
+  --st-danger: #ef4444;
+  --st-info: #06b6d4;
+
   --st-focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
 }
 

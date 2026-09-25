@@ -169,13 +169,13 @@ const iconSizeClasses = computed(() => {
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'ghost':
-      return 'text-gray-400 hover:text-white bg-transparent hover:bg-gray-800/60 border border-transparent';
+      return 'sy-text-secondary hover:sy-text-primary bg-transparent hover:bg-black/5 dark:hover:bg-white/10 border border-transparent';
     case 'primary':
       return 'text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/30 border border-indigo-500/50';
     case 'ai-sparkle':
       return 'text-purple-200 hover:text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-600/25 border border-purple-500/40';
     case 'danger':
-      return 'text-gray-400 hover:text-red-400 bg-gray-900/80 hover:bg-red-950/40 border border-gray-800 hover:border-red-500/40';
+      return 'sy-text-secondary hover:text-red-500 bg-transparent hover:bg-red-500/10 border border-transparent';
     default:
       // secondary (标准桌面工具条按钮，自动融入思源明暗主题)
       return 'sy-btn-secondary';
