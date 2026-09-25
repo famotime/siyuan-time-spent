@@ -38,7 +38,9 @@
                      zIndex: block.colIndex + (block.height < 32 ? 4 : 2)
                    }"
                    @click="openDoc(block.log.docId)"
-                   :title="`${block.title}\n${formatTime(block.log.startTime)} - ${formatTime(block.log.endTime)}\n时长: ${formatDuration(block.log.duration)}\n闲置扣除: ${block.log.idleTime}秒`">
+                   @mouseenter="showBlockTooltip($event, block.log)"
+                   @mousemove="updateBlockTooltip($event)"
+                   @mouseleave="hideBlockTooltip">
                 <div class="px-2.5 py-1 flex items-center justify-between text-white drop-shadow font-semibold text-xs truncate">
                   <span class="truncate">{{ block.title || '加载中...' }}</span>
                   <span class="text-[11px] opacity-90 font-mono ml-2 shrink-0">{{ formatDuration(block.log.duration) }}</span>
@@ -78,7 +80,10 @@
           </div>
           <div v-for="log in sortedCurrentDayLogs" :key="log.id"
                class="p-3 rounded-lg bg-gray-900/80 border border-gray-700/70 hover:border-indigo-500/80 hover:bg-gray-750 transition-all cursor-pointer group"
-               @click="openDoc(log.docId)">
+               @click="openDoc(log.docId)"
+               @mouseenter="showBlockTooltip($event, log)"
+               @mousemove="updateBlockTooltip($event)"
+               @mouseleave="hideBlockTooltip">
             <div class="flex justify-between items-start mb-1">
               <div class="font-medium text-xs text-gray-100 group-hover:text-indigo-300 transition-colors line-clamp-1 flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
@@ -150,7 +155,9 @@
                    zIndex: block.colIndex + (block.height < 28 ? 3 : 1)
                  }"
                  @click="openDoc(block.log.docId)"
-                 :title="`${block.title}\n${formatTime(block.log.startTime)} - ${formatTime(block.log.endTime)}\n时长: ${formatDuration(block.log.duration)}`">
+                 @mouseenter="showBlockTooltip($event, block.log)"
+                 @mousemove="updateBlockTooltip($event)"
+                 @mouseleave="hideBlockTooltip">
               <div class="px-1.5 py-0.5 font-semibold text-white/95 truncate leading-tight drop-shadow-sm text-[11px]">
                 {{ block.title || '加载中...' }}
               </div>
@@ -221,6 +228,44 @@
         </div>
       </div>
     </div>
+
+    <!-- Glassmorphism Floating Tooltip (毛玻璃悬浮提示框) -->
+    <Teleport to="body">
+      <div
+        v-if="hoverTooltip.visible"
+        class="fixed pointer-events-none z-[9999] transition-opacity duration-150 backdrop-blur-md bg-gray-950/95 border border-gray-700/90 rounded-xl p-3 shadow-2xl text-xs text-gray-100 max-w-xs flex flex-col gap-1.5"
+        :style="{
+          top: `${hoverTooltip.y}px`,
+          left: `${hoverTooltip.x}px`,
+        }"
+      >
+        <div class="font-bold text-sm text-white line-clamp-2">
+          {{ hoverTooltip.title }}
+        </div>
+        <div v-if="hoverTooltip.notebook || hoverTooltip.path" class="text-[11px] text-gray-400 flex items-center gap-1 truncate">
+          <span class="text-indigo-400 font-medium">📚 {{ hoverTooltip.notebook }}</span>
+          <span v-if="hoverTooltip.path" class="text-gray-500 truncate">> {{ hoverTooltip.path }}</span>
+        </div>
+        <div v-if="hoverTooltip.tags && hoverTooltip.tags.length > 0" class="flex flex-wrap gap-1 mt-0.5">
+          <span v-for="t in hoverTooltip.tags" :key="t" class="px-1.5 py-0.5 rounded bg-indigo-900/60 border border-indigo-700/50 text-[10px] text-indigo-300 font-mono">
+            #{{ t }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between gap-4 pt-1 border-t border-gray-800 text-[11px]">
+          <span class="text-gray-400 font-mono">{{ hoverTooltip.timeRange }}</span>
+          <span class="text-cyan-400 font-bold font-mono">{{ hoverTooltip.duration }}</span>
+        </div>
+        <div v-if="hoverTooltip.idleTime > 0" class="text-[10px] text-amber-400 flex items-center gap-1 font-mono">
+          <span>⚠️ 闲置扣除: {{ hoverTooltip.idleTime }}s</span>
+        </div>
+        <div class="text-[10px] text-indigo-300/80 mt-0.5 flex items-center gap-1 select-none">
+          <svg class="w-3 h-3 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+          <span>点击直接在思源中打开</span>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -228,7 +273,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { openTab } from 'siyuan';
 import type { TimeLog } from '../models/TimeLog';
-import { docTitles, fetchDocTitle } from '../utils/title-cache';
+import { docTitles, fetchDocTitle, getDocMeta } from '../utils/title-cache';
 import { usePlugin } from '../main';
 
 const props = withDefaults(defineProps<{
@@ -252,7 +297,75 @@ const hourHeight = 56; // 1 hour = 56px
 const dayScrollContainer = ref<HTMLElement | null>(null);
 const weekScrollContainer = ref<HTMLElement | null>(null);
 
-// Curated modern color palette for documents
+// Glassmorphism Tooltip 状态与边界管理
+interface HoverTooltipState {
+  visible: boolean;
+  x: number;
+  y: number;
+  title: string;
+  notebook: string;
+  path: string;
+  tags: string[];
+  timeRange: string;
+  duration: string;
+  idleTime: number;
+}
+
+const hoverTooltip = ref<HoverTooltipState>({
+  visible: false,
+  x: 0,
+  y: 0,
+  title: '',
+  notebook: '',
+  path: '',
+  tags: [],
+  timeRange: '',
+  duration: '',
+  idleTime: 0,
+});
+
+const showBlockTooltip = (e: MouseEvent, log: TimeLog) => {
+  const meta = getDocMeta(log.docId);
+  const title = docTitles.value[log.docId] || meta.title || log.docId;
+  const timeRange = `${formatTime(log.startTime)} - ${formatTime(log.endTime)}`;
+  const duration = formatDuration(log.duration);
+
+  hoverTooltip.value = {
+    visible: true,
+    x: e.clientX + 12,
+    y: e.clientY + 12,
+    title,
+    notebook: meta.notebookName || '默认笔记本',
+    path: meta.hpath || '',
+    tags: meta.tags || [],
+    timeRange,
+    duration,
+    idleTime: log.idleTime || 0,
+  };
+};
+
+const updateBlockTooltip = (e: MouseEvent) => {
+  if (hoverTooltip.value.visible) {
+    const tooltipWidth = 270;
+    const tooltipHeight = 150;
+    let x = e.clientX + 14;
+    let y = e.clientY + 14;
+    if (x + tooltipWidth > window.innerWidth) {
+      x = e.clientX - tooltipWidth - 10;
+    }
+    if (y + tooltipHeight > window.innerHeight) {
+      y = e.clientY - tooltipHeight - 10;
+    }
+    hoverTooltip.value.x = x;
+    hoverTooltip.value.y = y;
+  }
+};
+
+const hideBlockTooltip = () => {
+  hoverTooltip.value.visible = false;
+};
+
+// Curated modern color palette for documents (Morandi & soft neon)
 const colors = [
   '#4f46e5', // Indigo
   '#0284c7', // Sky
@@ -267,9 +380,12 @@ const colors = [
 ];
 
 const getDocColor = (docId: string) => {
+  const meta = getDocMeta(docId);
+  // 优先基于笔记本分类着色，使同一知识库体系呈现一致主题色
+  const key = meta.box || docId;
   let hash = 0;
-  for (let i = 0; i < docId.length; i++) {
-    hash = docId.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < key.length; i++) {
+    hash = key.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
 };

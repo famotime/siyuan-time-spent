@@ -47,7 +47,7 @@ export default class TimeSpentPlugin extends Plugin {
   public platform: SyFrontendTypes;
   public readonly version = version;
   
-  private timeTracker: TimeTracker;
+  public timeTracker: TimeTracker;
   public storageManager: StorageManager;
   public settingManager: SettingManager;
   public settings: PluginSettings = { ...DEFAULT_SETTINGS };
@@ -133,7 +133,8 @@ export default class TimeSpentPlugin extends Plugin {
     this.storageManager = new StorageManager(this);
     
     // 7. 初始化并启动时间追踪器
-    this.timeTracker = new TimeTracker(this, this.storageManager);
+    const idleSeconds = (this.settings.idleThresholdMinutes || 5) * 60;
+    this.timeTracker = new TimeTracker(this, this.storageManager, idleSeconds);
     this.timeTracker.start();
   }
 

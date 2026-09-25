@@ -249,6 +249,53 @@
                     :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
               月视图
             </button>
+            <button @click="switchMode('year')" 
+                    class="h-[26px] px-3.5 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
+                    :class="calendarMode === 'year' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30' : 'bg-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'">
+              年热力
+            </button>
+          </div>
+
+          <!-- Export Dropdown Button -->
+          <div class="relative">
+            <button @click="isExportMenuOpen = !isExportMenuOpen" 
+                    class="h-9 px-3 inline-flex items-center gap-1.5 bg-gray-900/90 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white text-xs font-semibold rounded-xl transition-all cursor-pointer box-border shadow-sm">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>导出</span>
+              <svg class="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div v-if="isExportMenuOpen" 
+                 class="absolute right-0 mt-1 w-44 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl py-1 z-50 flex flex-col text-xs text-gray-200">
+              <div class="px-3 py-1 text-[10px] text-gray-500 font-mono border-b border-gray-800">
+                当前周期 ({{ modeName }})
+              </div>
+              <button @click="handleExport('current', 'csv')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+                <span>导出 CSV 表格</span>
+                <span class="text-[10px] text-gray-400 font-mono">.csv</span>
+              </button>
+              <button @click="handleExport('current', 'json')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+                <span>导出 JSON 数据</span>
+                <span class="text-[10px] text-gray-400 font-mono">.json</span>
+              </button>
+
+              <div class="px-3 py-1 text-[10px] text-gray-500 font-mono border-y border-gray-800 mt-1">
+                全部历史记录
+              </div>
+              <button @click="handleExport('all', 'csv')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+                <span>导出全量 CSV</span>
+                <span class="text-[10px] text-gray-400 font-mono">.csv</span>
+              </button>
+              <button @click="handleExport('all', 'json')" class="px-3 py-1.5 text-left hover:bg-indigo-600/30 hover:text-indigo-300 flex items-center justify-between cursor-pointer">
+                <span>导出全量 JSON</span>
+                <span class="text-[10px] text-gray-400 font-mono">.json</span>
+              </button>
+            </div>
           </div>
 
           <!-- AI Summary Button -->
@@ -351,7 +398,7 @@
     </section>
 
 
-    <!-- ==================== MAIN CALENDAR VIEW ==================== -->
+    <!-- ==================== MAIN CALENDAR / HEATMAP VIEW ==================== -->
     <section class="calendar-main-section flex flex-col gap-3 pt-3 border-t border-gray-800/80">
       <div class="flex justify-between items-center px-1">
         <h2 class="text-sm font-bold text-gray-300 tracking-wide flex items-center gap-2">
@@ -359,18 +406,31 @@
           {{ calendarSectionTitle }}
         </h2>
         <span class="text-xs text-gray-400">
-          <template v-if="calendarMode === 'month'">点击任意日期可切换进入该日视图</template>
+          <template v-if="calendarMode === 'year'">点击任意方格可一键下钻至当天的日视图</template>
+          <template v-else-if="calendarMode === 'month'">点击任意日期可切换进入该日视图</template>
           <template v-else-if="calendarMode === 'week'">点击表头日期可下钻至日视图</template>
           <template v-else>点击色块可直达思源对应文档</template>
         </span>
       </div>
 
-      <CalendarView :logs="activeLogs" 
-                    :day-map="scopeDayMap" 
-                    :mode="calendarMode" 
-                    :current-date="currentDate" 
-                    @select-date="handleSelectDate" 
-                    @switch-mode="handleCalendarSwitchMode" />
+      <!-- Year Mode: Heatmap View (365天热力图) -->
+      <HeatmapView
+        v-if="calendarMode === 'year'"
+        :year="currentDate.getFullYear()"
+        :day-map="scopeDayMap"
+        @select-date="handleSelectDate"
+      />
+
+      <!-- Day / Week / Month Mode: Calendar View -->
+      <CalendarView
+        v-else
+        :logs="activeLogs" 
+        :day-map="scopeDayMap" 
+        :mode="calendarMode" 
+        :current-date="currentDate" 
+        @select-date="handleSelectDate" 
+        @switch-mode="handleCalendarSwitchMode"
+      />
     </section>
 
     <!-- Toast Notification -->
@@ -399,11 +459,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import CalendarView from './CalendarView.vue';
+import HeatmapView from './HeatmapView.vue';
 import Charts from './Charts.vue';
 import AiSummaryModal from './AiSummaryModal.vue';
 import type { TimeLog } from '../models/TimeLog';
 import { usePlugin } from '../main';
 import { AIExportManager } from '../utils/ai-export';
+import { Exporter } from '../utils/exporter';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
 import Logger from '../utils/logger';
 import iconUrl from '../../icon.webp';
@@ -414,11 +476,14 @@ const emit = defineEmits<{
 }>();
 
 // State
-const calendarMode = ref<'day' | 'week' | 'month'>('week');
+const calendarMode = ref<'day' | 'week' | 'month' | 'year'>('week');
 const currentDate = ref<Date>(new Date());
 const activeLogs = ref<TimeLog[]>([]);
 const scopeDayMap = ref<Record<string, TimeLog[]>>({});
 const toastMessage = ref<string>('');
+
+// 数据导出下拉状态
+const isExportMenuOpen = ref<boolean>(false);
 
 // Focus Goal State (双模式与智能周期候选)
 const STORAGE_KEY_FOCUS_GOAL = 'siyuan_time_spent_focus_goal';
@@ -445,12 +510,19 @@ const currentGoalCandidates = computed(() => {
       '本周主攻核心知识库重构 (10小时)',
       '最近一周每天保持深度专注'
     ];
-  } else {
+  } else if (calendarMode.value === 'month') {
     return [
       '本月累计深度工作50小时',
       '本月攻克核心学习专题 (30小时)',
       '本月平均每周专注12小时',
       '本月养成每日深度工作习惯'
+    ];
+  } else {
+    return [
+      '本年累计深度工作500小时',
+      '本年构建核心知识体系与长青笔记',
+      '本年攻克专业考试与核心技能',
+      '保持每日无感专注与深度心流'
     ];
   }
 });
@@ -461,8 +533,10 @@ const currentGoalPlaceholder = computed(() => {
     return '设定今日专注目标，如：今天专注2小时，深度推进核心课题...';
   } else if (calendarMode.value === 'week') {
     return '设定本周专注目标，如：本周平均每天专注2小时...';
-  } else {
+  } else if (calendarMode.value === 'month') {
     return '设定本月专注目标，如：本月累计深度工作50小时...';
+  } else {
+    return '设定本年专注目标，如：本年累计深度工作500小时...';
   }
 });
 
@@ -491,13 +565,15 @@ const formatDuration = (seconds: number) => {
 const modeName = computed(() => {
   if (calendarMode.value === 'day') return '日';
   if (calendarMode.value === 'week') return '周';
-  return '月';
+  if (calendarMode.value === 'month') return '月';
+  return '年';
 });
 
 const todayButtonLabel = computed(() => {
   if (calendarMode.value === 'day') return '今日';
   if (calendarMode.value === 'week') return '本周';
-  return '本月';
+  if (calendarMode.value === 'month') return '本月';
+  return '本年';
 });
 
 // 计算指定日期的周序号（ISO/标准周）
@@ -530,12 +606,14 @@ const currentPeriodLabel = computed(() => {
     const mStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
     const sStr = `${sunday.getMonth() + 1}/${sunday.getDate()}`;
     return `${year}年 (周度 ${mStr} - ${sStr})`;
-  } else {
+  } else if (calendarMode.value === 'month') {
     return `${year}年 ${month}月`;
+  } else {
+    return `${year}年 (全年度热力)`;
   }
 });
 
-// 日历视图区块标题 (日视图体现日期，周视图体现第几周，月视图体现第几个月)
+// 日历视图区块标题 (日视图体现日期，周视图体现第几周，月视图体现第几个月，年视图体现年度)
 const calendarSectionTitle = computed(() => {
   const d = currentDate.value;
   const year = d.getFullYear();
@@ -557,8 +635,10 @@ const calendarSectionTitle = computed(() => {
     const mStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
     const sStr = `${sunday.getMonth() + 1}/${sunday.getDate()}`;
     return `日历视图 (${year}年 第${weekNum}周 · ${mStr} - ${sStr})`;
-  } else {
+  } else if (calendarMode.value === 'month') {
     return `日历视图 (${year}年 第${month}月)`;
+  } else {
+    return `年度专注热力图 (${year}年)`;
   }
 });
 
@@ -588,7 +668,7 @@ const scopeDayLabels = computed(() => {
       });
     }
     return labels;
-  } else {
+  } else if (calendarMode.value === 'month') {
     const lastDay = new Date(year, month + 1, 0).getDate();
     const labels = [];
     for (let i = 1; i <= lastDay; i++) {
@@ -596,6 +676,15 @@ const scopeDayLabels = computed(() => {
       labels.push({
         key: formatDateKey(item),
         label: `${i}`
+      });
+    }
+    return labels;
+  } else {
+    const labels = [];
+    for (let m = 1; m <= 12; m++) {
+      labels.push({
+        key: `${year}-${String(m).padStart(2, '0')}`,
+        label: `${m}月`
       });
     }
     return labels;
@@ -614,7 +703,8 @@ const totalIdleSeconds = computed(() => {
 const scopeFocusSubtitle = computed(() => {
   if (calendarMode.value === 'day') return '今日净深度工作时间';
   if (calendarMode.value === 'week') return '本周7日累计专注总时长';
-  return '本月度总累计投入时间';
+  if (calendarMode.value === 'month') return '本月度总累计投入时间';
+  return '本年度累计有效专注总时长';
 });
 
 const averageMetricLabel = computed(() => {
@@ -633,17 +723,20 @@ const averageFocusSeconds = computed(() => {
     return Math.max(...hourly, 0);
   } else if (calendarMode.value === 'week') {
     return Math.round(totalFocusSeconds.value / 7);
-  } else {
+  } else if (calendarMode.value === 'month') {
     const d = currentDate.value;
     const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
     return Math.round(totalFocusSeconds.value / daysInMonth);
+  } else {
+    return Math.round(totalFocusSeconds.value / 365);
   }
 });
 
 const averageMetricSubtitle = computed(() => {
   if (calendarMode.value === 'day') return '今日最高单小时专注';
   if (calendarMode.value === 'week') return '周内每日平均产出';
-  return '全月每日平均产出';
+  if (calendarMode.value === 'month') return '全月每日平均产出';
+  return '全年每日平均产出';
 });
 
 const sessionAverageSeconds = computed(() => {
@@ -696,8 +789,12 @@ const loadDataForCurrentScope = async () => {
     const res = await sm.loadLogsForWeek(monday);
     activeLogs.value = res.allLogs;
     scopeDayMap.value = res.dayMap;
-  } else {
+  } else if (calendarMode.value === 'month') {
     const res = await sm.loadLogsForMonth(year, month + 1);
+    activeLogs.value = res.allLogs;
+    scopeDayMap.value = res.dayMap;
+  } else {
+    const res = await sm.loadLogsForYear(year);
     activeLogs.value = res.allLogs;
     scopeDayMap.value = res.dayMap;
   }
@@ -711,12 +808,12 @@ const loadDataForCurrentScope = async () => {
 };
 
 // Mode Switch
-const switchMode = (mode: 'day' | 'week' | 'month') => {
+const switchMode = (mode: 'day' | 'week' | 'month' | 'year') => {
   calendarMode.value = mode;
   loadDataForCurrentScope();
 };
 
-const handleCalendarSwitchMode = (mode: 'day' | 'week' | 'month') => {
+const handleCalendarSwitchMode = (mode: 'day' | 'week' | 'month' | 'year') => {
   switchMode(mode);
 };
 
@@ -727,8 +824,10 @@ const navigatePeriod = (step: number) => {
     d.setDate(d.getDate() + step);
   } else if (calendarMode.value === 'week') {
     d.setDate(d.getDate() + step * 7);
-  } else {
+  } else if (calendarMode.value === 'month') {
     d.setMonth(d.getMonth() + step);
+  } else {
+    d.setFullYear(d.getFullYear() + step);
   }
   currentDate.value = d;
   loadDataForCurrentScope();
@@ -743,6 +842,36 @@ const handleSelectDate = (d: Date) => {
   currentDate.value = new Date(d);
   calendarMode.value = 'day';
   loadDataForCurrentScope();
+};
+
+// ==================== DATA EXPORT ====================
+const handleExport = (range: 'current' | 'all', format: 'csv' | 'json') => {
+  isExportMenuOpen.value = false;
+  let logsToExport = activeLogs.value;
+  let prefix = `${calendarMode.value}-${currentPeriodLabel.value}`;
+
+  if (range === 'all') {
+    if (plugin && (plugin as any).storageManager) {
+      const cached = (plugin as any).storageManager.getAllCachedLogs();
+      if (cached && cached.length > 0) {
+        logsToExport = cached;
+      }
+    }
+    prefix = 'siyuan-time-spent-all';
+  }
+
+  if (!logsToExport || logsToExport.length === 0) {
+    showToast('⚠️ 当前无任何可导出的数据');
+    return;
+  }
+
+  const filename = `${prefix}.${format}`;
+  if (format === 'csv') {
+    Exporter.exportToCsv(logsToExport, filename);
+  } else {
+    Exporter.exportToJson(logsToExport, filename);
+  }
+  showToast(`✅ 成功导出 ${logsToExport.length} 条记录 (${format.toUpperCase()})`);
 };
 
 // Focus Goal Management

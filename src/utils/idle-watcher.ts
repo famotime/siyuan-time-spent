@@ -18,6 +18,24 @@ export class IdleWatcher {
         this.boundActivityHandler = this.handleActivity.bind(this);
     }
 
+    public setThreshold(thresholdSeconds: number) {
+        this.threshold = Math.max(10, thresholdSeconds) * 1000;
+    }
+
+    public getIsIdle(): boolean {
+        return this.isIdle;
+    }
+
+    /**
+     * 若当前处于闲置中，返回从开始闲置到当前已过去的秒数；若未闲置则返回 0
+     */
+    public getOngoingIdleDurationSec(): number {
+        if (this.isIdle && this.idleStartTime > 0) {
+            return Math.max(0, Math.floor((Date.now() - this.idleStartTime) / 1000));
+        }
+        return 0;
+    }
+
     public start() {
         this.lastActivity = Date.now();
         this.isIdle = false;

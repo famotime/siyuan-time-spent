@@ -10,6 +10,8 @@
   "settingOpenInTabDesc": "开启后点击顶栏图标将在新页签中打开看板，关闭后以弹窗形式打开（默认开启）",
   "settingOpenInTabEnabledMsg": "已设置为在页签打开",
   "settingOpenInTabDisabledMsg": "已设置为以弹窗打开",
+  "settingIdleThresholdTitle": "闲置判定阈值 (分钟)",
+  "settingIdleThresholdDesc": "无任何键鼠或触控操作超过该时长后自动暂停计时并标记为闲置（1-60 分钟，默认 5 分钟）",
   "settingsGroupBasic": "基础设置",
   "settingsGroupAi": "AI 服务",
   "settingsGroupAiDesc": "配置大语言模型 API 服务，支持本地设置或由 API 旋钮 (siyuan-api-switch) 统一接管。",

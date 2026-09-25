@@ -2,6 +2,7 @@ export interface PluginSettings {
   // 基础设置
   enableLog: boolean;
   openInTab: boolean;
+  idleThresholdMinutes?: number;
 
   // AI 服务设置（支持本地配置及 siyuan-api-switch 接管）
   aiProvider?: string;
@@ -17,6 +18,7 @@ export interface PluginSettings {
 export const DEFAULT_SETTINGS: PluginSettings = {
   enableLog: false,
   openInTab: true,
+  idleThresholdMinutes: 5,
   aiProvider: "openai",
   aiBaseUrl: "",
   aiApiKey: "",

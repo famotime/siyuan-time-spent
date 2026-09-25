@@ -253,6 +253,36 @@ export class SettingManager {
       },
     });
 
+    // 1.3 闲置判定阈值（分钟）
+    this.setting.addItem({
+      title: this.plugin.i18n.settingIdleThresholdTitle || "闲置判定阈值 (分钟)",
+      description:
+        this.plugin.i18n.settingIdleThresholdDesc ||
+        "无任何键鼠或触控操作超过该时长后自动暂停计时并标记为闲置（1-60 分钟，默认 5 分钟）",
+      createActionElement: () => {
+        const input = document.createElement("input");
+        input.dataset.settingKey = "idleThresholdMinutes";
+        input.type = "number";
+        input.min = "1";
+        input.max = "60";
+        input.className = "b3-text-field fn__flex-center";
+        input.style.width = "90px";
+        input.value = (settings.idleThresholdMinutes ?? 5).toString();
+        input.addEventListener("change", async () => {
+          let val = parseInt(input.value, 10);
+          if (isNaN(val) || val < 1) val = 1;
+          if (val > 60) val = 60;
+          input.value = val.toString();
+          settings.idleThresholdMinutes = val;
+          if (this.plugin.timeTracker) {
+            this.plugin.timeTracker.updateIdleThreshold(val);
+          }
+          await this.plugin.saveSettings();
+        });
+        return input;
+      },
+    });
+
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({
@@ -503,7 +533,7 @@ export class SettingManager {
       {
         id: "basic",
         title: this.plugin.i18n.settingsGroupBasic || "基础设置",
-        keys: ["enableLog", "openInTab"],
+        keys: ["enableLog", "openInTab", "idleThresholdMinutes"],
         open: true,
       },
       {
@@ -551,6 +581,7 @@ export class SettingManager {
     const settingKeysMapping = [
       { key: "enableLog", desc: this.plugin.i18n.settingEnableLogDesc || "开启后在开发者工具控制台输出时间追踪与调试日志（默认关闭）" },
       { key: "openInTab", desc: this.plugin.i18n.settingOpenInTabDesc || "开启后点击顶栏图标将在新页签中打开看板，关闭后以弹窗形式打开（默认开启）" },
+      { key: "idleThresholdMinutes", desc: this.plugin.i18n.settingIdleThresholdDesc || "无任何键鼠或触控操作超过该时长后自动暂停计时并标记为闲置（1-60 分钟，默认 5 分钟）" },
       { key: "aiProvider", desc: this.plugin.i18n.settingsAiProviderDescription || "大模型服务提供商，如 openai、anthropic 等。" },
       { key: "aiBaseUrl", desc: this.plugin.i18n.settingsAiBaseUrlDescription || "API 的 Base URL 地址，如 https://api.openai.com/v1。" },
       { key: "aiApiKey", desc: this.plugin.i18n.settingsAiApiKeyDescription || "大模型 API 的安全密钥，通常为 Bearer Key。" },

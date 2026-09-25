@@ -65,6 +65,28 @@ export class StorageManager {
         const endStr = this.formatDate(lastDay);
         return await this.loadLogsForDateRange(startStr, endStr);
     }
+
+    /**
+     * Load logs for an entire year (e.g. 2026)
+     */
+    public async loadLogsForYear(year: number): Promise<{ allLogs: TimeLog[], dayMap: Record<string, TimeLog[]> }> {
+        const firstDay = new Date(year, 0, 1);
+        const lastDay = new Date(year, 11, 31);
+        const startStr = this.formatDate(firstDay);
+        const endStr = this.formatDate(lastDay);
+        return await this.loadLogsForDateRange(startStr, endStr);
+    }
+
+    /**
+     * 获取当前内存中已缓存的所有日志条目
+     */
+    public getAllCachedLogs(): TimeLog[] {
+        let all: TimeLog[] = [];
+        this.cache.forEach((logs) => {
+            all = all.concat(logs);
+        });
+        return all;
+    }
     
     /**
      * Load logs for a week starting at weekStartDate (Monday) or 7-day span

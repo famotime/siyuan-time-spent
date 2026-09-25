@@ -10,6 +10,8 @@
   "settingOpenInTabDesc": "Open dashboard in a new tab when clicking the top bar icon, otherwise open in a modal dialog (enabled by default)",
   "settingOpenInTabEnabledMsg": "Set to open in tab",
   "settingOpenInTabDisabledMsg": "Set to open in modal dialog",
+  "settingIdleThresholdTitle": "Idle Timeout (Minutes)",
+  "settingIdleThresholdDesc": "Pause tracking and deduct idle time after no user input exceeds this duration (1-60 mins, default 5 mins)",
   "settingsGroupBasic": "Basic Settings",
   "settingsGroupAi": "AI Service",
   "settingsGroupAiDesc": "Configure LLM API service, support local settings or management by API Switcher (siyuan-api-switch).",

@@ -19,6 +19,12 @@ export class TimeTracker {
         this.idleWatcher = new IdleWatcher(idleThresholdSeconds, this.handleIdleStatusChange.bind(this));
     }
 
+    public updateIdleThreshold(minutes: number) {
+        const seconds = Math.max(1, minutes) * 60;
+        this.idleWatcher.setThreshold(seconds);
+        Logger.log(`Updated idle threshold to ${minutes} minutes (${seconds}s)`);
+    }
+
     public start() {
         this.idleWatcher.start();
         
@@ -28,6 +34,29 @@ export class TimeTracker {
         // Optional: you can listen to focus/blur of the window
         window.addEventListener('focus', this.handleWindowFocus.bind(this));
         window.addEventListener('blur', this.handleWindowBlur.bind(this));
+
+        // 探测思源启动时默认已打开的文档，避免首篇文档未切换前漏记
+        setTimeout(() => {
+            this.detectInitialDocument();
+        }, 500);
+    }
+
+    private detectInitialDocument() {
+        try {
+            const activeProtyle = document.querySelector('.layout__wnd--active .protyle:not(.fn__none)')
+                || document.querySelector('.protyle:not(.fn__none)');
+            if (activeProtyle) {
+                const wysiwyg = activeProtyle.querySelector('.protyle-wysiwyg[data-doc-type="NodeDocument"]')
+                    || activeProtyle.querySelector('.protyle-wysiwyg[data-node-id]');
+                const rootId = wysiwyg?.getAttribute('data-node-id');
+                if (rootId && !this.currentDocId) {
+                    Logger.log(`Captured initial active document on start: ${rootId}`);
+                    this.switchDocument(rootId);
+                }
+            }
+        } catch (e) {
+            Logger.error('Failed to detect initial document:', e);
+        }
     }
 
     public stop() {
@@ -80,7 +109,11 @@ export class TimeTracker {
         if (this.currentDocId && this.currentSessionStart > 0) {
             const endTime = Date.now();
             const durationSecs = Math.floor((endTime - this.currentSessionStart) / 1000);
-            const effectiveDuration = Math.max(0, durationSecs - this.currentSessionIdleTime);
+            
+            // 精准结算：若当前正处于闲置中，将持续中的闲置时长一并准确扣除
+            const ongoingIdleSecs = this.idleWatcher.getOngoingIdleDurationSec();
+            const totalIdleSecs = this.currentSessionIdleTime + ongoingIdleSecs;
+            const effectiveDuration = Math.max(0, durationSecs - totalIdleSecs);
             
             if (effectiveDuration > 0) {
                 const log: TimeLog = {
@@ -89,7 +122,7 @@ export class TimeTracker {
                     startTime: this.currentSessionStart,
                     endTime: endTime,
                     duration: effectiveDuration,
-                    idleTime: this.currentSessionIdleTime
+                    idleTime: totalIdleSecs
                 };
                 
                 this.saveLog(log);
