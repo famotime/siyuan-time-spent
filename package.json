@@ -3,10 +3,13 @@
   "version": "0.8.0",
   "type": "module",
   "description": "源时记：思源笔记全自动时间追踪与深度工作专注分析看板",
-  "author": "",
+  "author": "Quincy Zou",
   "license": "MIT",
-  "homepage": "",
-  "repository": "",
+  "homepage": "https://github.com/famotime/siyuan-time-spent",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/famotime/siyuan-time-spent.git"
+  },
   "scripts": {
     "dev": "vite build --watch",
     "release": "node ./release.js",

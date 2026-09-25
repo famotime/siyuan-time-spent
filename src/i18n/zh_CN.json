@@ -37,5 +37,6 @@
   "focusGoalTitle": "专注目标",
   "focusGoalPlaceholder": "设定专注目标，如：今天专注1小时，处理12篇笔记文档...",
   "aiSummaryBtn": "AI 总结",
-  "aiSummaryModalTitle": "AI 深度复盘与建议"
+  "aiSummaryModalTitle": "AI 深度复盘与建议",
+  "aiSummaryCopyFailed": "复制总结失败，请手动选中文本复制"
 }

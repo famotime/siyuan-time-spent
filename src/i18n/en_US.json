@@ -37,5 +37,6 @@
   "focusGoalTitle": "Focus Goal",
   "focusGoalPlaceholder": "Set a focus goal, e.g., Focus 1 hour today, process 12 note docs...",
   "aiSummaryBtn": "AI Summary",
-  "aiSummaryModalTitle": "AI Deep Review & Recommendations"
+  "aiSummaryModalTitle": "AI Deep Review & Recommendations",
+  "aiSummaryCopyFailed": "Failed to copy summary, please select text manually to copy"
 }

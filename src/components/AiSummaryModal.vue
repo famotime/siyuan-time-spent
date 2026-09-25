@@ -246,7 +246,8 @@ const copySummary = async () => {
     }, 2000);
   } catch (err) {
     console.error('Failed to copy summary:', err);
-    showMessage('复制总结失败，请手动选中文本复制', 3000, 'error');
+    const msg = props.plugin?.i18n?.aiSummaryCopyFailed || '复制总结失败，请手动选中文本复制';
+    showMessage(msg, 3000, 'error');
   }
 };
 
