@@ -17,13 +17,18 @@
   ],
   "displayName": {
     "default": "源时记",
-    "en-US": "Time Spent Dashboard"
+    "zh_CN": "源时记",
+    "en_US": "Time Spent Dashboard"
   },
   "description": {
     "default": "源时记：思源笔记全自动时间追踪与深度工作专注分析看板。智能识别文档切换，精准剥离闲置挂机，支持日/周/月多维日历透视、可视化图表与一键 AI 总结复盘。",
-    "en-US": "Automatic time tracking and deep work analytics for SiYuan with smart idle filtering, calendar dashboard, and AI review."
+    "zh_CN": "源时记：思源笔记全自动时间追踪与深度工作专注分析看板。智能识别文档切换，精准剥离闲置挂机，支持日/周/月多维日历透视、可视化图表与一键 AI 总结复盘。",
+    "en_US": "Automatic time tracking and deep work analytics for SiYuan with smart idle filtering, calendar dashboard, and AI review."
   },
-  "readme": "README.md",
+  "readme": {
+    "default": "README.md",
+    "zh_CN": "README.md"
+  },
   "keywords": [
     "time-tracking",
     "focus",
