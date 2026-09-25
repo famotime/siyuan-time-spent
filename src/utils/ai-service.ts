@@ -161,6 +161,7 @@ export class AIService {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
+          ...((config as any).headers || {}),
         },
         body: JSON.stringify({
           model,

@@ -55,7 +55,7 @@ export default defineConfig(({
       viteStaticCopy({
         targets: [
           {
-            src: "./README*.md",
+            src: "./README.md",
             dest: "./",
           },
           {
@@ -121,7 +121,7 @@ export default defineConfig(({
                   async buildStart() {
                     const files = await fg([
                       "src/i18n/*.json",
-                      "./README*.md",
+                      "./README.md",
                       "./plugin.json",
                     ])
                     for (const file of files) {

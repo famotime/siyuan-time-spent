@@ -260,6 +260,8 @@ export default class TimeSpentPlugin extends Plugin {
         requestTimeoutSeconds: this.activeAiConfig.value.requestTimeoutSeconds ?? 30,
         temperature: this.activeAiConfig.value.temperature ?? 0.7,
         maxTokens: this.activeAiConfig.value.maxTokens ?? 4096,
+        headers: this.activeAiConfig.value.headers,
+        protocol: this.activeAiConfig.value.protocol,
       };
     }
     return {

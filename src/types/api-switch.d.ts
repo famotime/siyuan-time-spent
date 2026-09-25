@@ -27,6 +27,9 @@ export interface SharedConfig {
   memo?: string;
   /** 服务商官网链接 */
   providerUrl?: string;
+  protocol?: string;
+  headers?: Record<string, string>;
+  isDecisionModel?: boolean;
 }
 
 export interface SiyuanApiSwitch {
