@@ -35,13 +35,34 @@ export class TimeTracker {
         window.addEventListener('focus', this.handleWindowFocus.bind(this));
         window.addEventListener('blur', this.handleWindowBlur.bind(this));
 
+        // 监听可见性变化与挂起，防止移动端切后台或系统休眠导致当前会话丢失
+        document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+        window.addEventListener('pagehide', this.handlePageHide.bind(this));
+
         // 探测思源启动时默认已打开的文档，避免首篇文档未切换前漏记
         setTimeout(() => {
             this.detectInitialDocument();
         }, 500);
     }
 
-    private detectInitialDocument() {
+    private handleVisibilityChange() {
+        if (document.visibilityState === 'hidden') {
+            Logger.log('Page hidden or app suspended in background, flushing session...');
+            this.finishCurrentSession();
+        } else if (document.visibilityState === 'visible') {
+            Logger.log('Page visible again, detecting active document...');
+            setTimeout(() => {
+                this.detectInitialDocument();
+            }, 300);
+        }
+    }
+
+    private handlePageHide() {
+        Logger.log('Page hide triggered, flushing session...');
+        this.finishCurrentSession();
+    }
+
+    public detectInitialDocument() {
         try {
             const activeProtyle = document.querySelector('.layout__wnd--active .protyle:not(.fn__none)')
                 || document.querySelector('.protyle:not(.fn__none)');
@@ -64,6 +85,8 @@ export class TimeTracker {
         this.plugin.eventBus.off('switch-protyle', this.handleSwitchProtyle.bind(this));
         window.removeEventListener('focus', this.handleWindowFocus.bind(this));
         window.removeEventListener('blur', this.handleWindowBlur.bind(this));
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+        window.removeEventListener('pagehide', this.handlePageHide.bind(this));
         
         this.finishCurrentSession();
     }
@@ -122,7 +145,8 @@ export class TimeTracker {
                     startTime: this.currentSessionStart,
                     endTime: endTime,
                     duration: effectiveDuration,
-                    idleTime: totalIdleSecs
+                    idleTime: totalIdleSecs,
+                    type: 'passive'
                 };
                 
                 this.saveLog(log);
@@ -132,6 +156,27 @@ export class TimeTracker {
         this.currentDocId = null;
         this.currentSessionStart = 0;
         this.currentSessionIdleTime = 0;
+    }
+
+    public getCurrentDocId(): string | null {
+        return this.currentDocId;
+    }
+
+    public getCurrentSessionDurationSec(): number {
+        if (!this.currentDocId || this.currentSessionStart === 0) return 0;
+        const now = Date.now();
+        const durationSecs = Math.floor((now - this.currentSessionStart) / 1000);
+        const ongoingIdleSecs = this.idleWatcher.getOngoingIdleDurationSec();
+        const totalIdleSecs = this.currentSessionIdleTime + ongoingIdleSecs;
+        return Math.max(0, durationSecs - totalIdleSecs);
+    }
+
+    public async addManualLog(log: TimeLog): Promise<void> {
+        await this.storageManager.appendLog(log);
+    }
+
+    public async deleteLog(dateStr: string, logId: string): Promise<boolean> {
+        return await this.storageManager.deleteLog(dateStr, logId);
     }
 
     private generateId(): string {

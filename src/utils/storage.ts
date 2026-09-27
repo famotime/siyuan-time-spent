@@ -144,6 +144,22 @@ export class StorageManager {
         return this.formatDate(d);
     }
 
+    public async saveLogsForDate(dateStr: string, logs: TimeLog[]): Promise<void> {
+        const filename = `${dateStr}.json`;
+        this.cache.set(dateStr, logs);
+        await this.plugin.saveData(filename, logs);
+    }
+
+    public async deleteLog(dateStr: string, logId: string): Promise<boolean> {
+        const logs = await this.loadLogsForDate(dateStr);
+        const filtered = logs.filter(l => l.id !== logId);
+        if (filtered.length !== logs.length) {
+            await this.saveLogsForDate(dateStr, filtered);
+            return true;
+        }
+        return false;
+    }
+
     /**
      * 清理内存中的日志缓存（在数据同步或外部改写时调用）
      */

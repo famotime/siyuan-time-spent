@@ -16,7 +16,9 @@
   "frontends": [
     "desktop",
     "browser-desktop",
-    "desktop-window"
+    "desktop-window",
+    "mobile",
+    "browser-mobile"
   ],
   "displayName": {
     "default": "源时记",

@@ -8,7 +8,7 @@ export class IdleWatcher {
     private idleStartTime: number = 0;
     private onStatusChange: IdleStatusCallback;
 
-    private readonly activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+    private readonly activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'touchmove', 'touchend'];
     private boundActivityHandler: () => void;
 
     constructor(thresholdSeconds: number, onStatusChange: IdleStatusCallback) {
