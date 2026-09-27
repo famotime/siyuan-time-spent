@@ -8,9 +8,11 @@ import "@/index.css";
 import PluginInfoString from '@/../plugin.json';
 import { destroy, init, openOverlay } from '@/main';
 import Dashboard from './components/Dashboard.vue';
+import StatusBarTimer from './components/StatusBarTimer.vue';
 import { TimeTracker } from './utils/tracker';
 import { StorageManager } from './utils/storage';
 import { SettingManager } from './utils/setting';
+import { PomodoroManager } from './utils/pomodoro';
 import Logger from './utils/logger';
 import { DEFAULT_SETTINGS, PluginSettings } from './models/Settings';
 import type { SharedConfig } from './types/api-switch';
@@ -51,6 +53,8 @@ export default class TimeSpentPlugin extends Plugin {
   public timeTracker: TimeTracker;
   public storageManager: StorageManager;
   public settingManager: SettingManager;
+  public pomodoroManager: PomodoroManager;
+  private _statusBarApp: any = null;
   public settings: PluginSettings = { ...DEFAULT_SETTINGS };
 
   // AI 旋钮 (siyuan-api-switch) 当前接管的配置与就绪事件监听
@@ -139,9 +143,44 @@ export default class TimeSpentPlugin extends Plugin {
     const idleSeconds = (this.settings.idleThresholdMinutes || 5) * 60;
     this.timeTracker = new TimeTracker(this, this.storageManager, idleSeconds);
     this.timeTracker.start();
+
+    // 8. 初始化番茄钟双模引擎与状态栏常驻胶囊
+    this.pomodoroManager = new PomodoroManager(this);
+    if (this.settings.enableStatusBarTimer !== false) {
+      this.initStatusBarTimer();
+    }
+  }
+
+  private initStatusBarTimer() {
+    try {
+      const statusElement = document.createElement("div");
+      statusElement.classList.add("plugin-time-spent-status-item");
+      const statusItem = this.addStatusBar({
+        element: statusElement,
+        position: "right",
+      });
+      if (statusItem) {
+        const app = createApp(StatusBarTimer, {
+          plugin: this,
+          pomodoro: this.pomodoroManager,
+        });
+        app.mount(statusItem);
+        this._statusBarApp = app;
+      }
+    } catch (e) {
+      Logger.error("Failed to initialize status bar timer:", e);
+    }
   }
 
   onunload() {
+    if (this._statusBarApp) {
+      this._statusBarApp.unmount();
+      this._statusBarApp = null;
+    }
+    if (this.pomodoroManager) {
+      this.pomodoroManager.discard();
+    }
+
     if (this.timeTracker) {
       this.timeTracker.stop();
     }

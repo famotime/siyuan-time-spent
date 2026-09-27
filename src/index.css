@@ -200,3 +200,14 @@ svg[style*="fill: none"] {
 .plugin-time-spent-overlay *::-webkit-scrollbar-thumb:hover {
   background-color: var(--st-text-tertiary, rgba(148, 163, 184, 0.45));
 }
+
+/* ==================== 状态栏专注胶囊抗污染防护 ==================== */
+.plugin-time-spent-status-item {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+.plugin-time-spent-status-item svg {
+  fill: none !important;
+}
+
