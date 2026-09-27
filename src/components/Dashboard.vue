@@ -354,6 +354,20 @@
             </div>
           </div>
 
+          <!-- Daily Note 归档按钮 -->
+          <SyTooltip :content="t('dailyNoteArchiveTooltip')" placement="bottom">
+            <button 
+              @click="handleArchiveToDailyNote" 
+              :disabled="isArchivingDailyNote"
+              class="h-9 px-3 inline-flex items-center gap-1.5 sy-pill-group hover:bg-black/5 dark:hover:bg-white/10 sy-text-primary text-xs font-semibold rounded-xl transition-all cursor-pointer box-border shadow-xs disabled:opacity-50"
+            >
+              <svg class="w-3.5 h-3.5 text-indigo-500 sy-wire-icon" :class="{ 'animate-spin': isArchivingDailyNote }" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span>{{ isArchivingDailyNote ? t('dailyNoteArchiving') : t('dailyNoteArchiveBtn') }}</span>
+            </button>
+          </SyTooltip>
+
           <!-- AI Summary Button -->
           <SyTooltip :content="t('aiSummaryModalTitle')" shortcut="Ctrl + Enter" placement="bottom">
             <button 
@@ -536,6 +550,8 @@ import { docTitles, fetchDocTitle } from '../utils/title-cache';
 import Logger from '../utils/logger';
 import iconUrl from '../../icon.webp';
 import { t, formatDurationI18n, currentLang, getWeekdayNames } from '../i18n';
+import { DailyNoteArchiver } from '../utils/daily-note';
+import { showMessage } from 'siyuan';
 
 const plugin = usePlugin();
 const emit = defineEmits<{
@@ -619,6 +635,28 @@ const currentGoalPlaceholder = computed(() => {
 
 // AI Summary Modal State
 const isAiModalVisible = ref(false);
+
+// Daily Note Archiving State
+const isArchivingDailyNote = ref(false);
+
+const handleArchiveToDailyNote = async () => {
+  if (isArchivingDailyNote.value) return;
+  isArchivingDailyNote.value = true;
+  try {
+    const targetDate = formatDateKey(currentDate.value);
+    const success = await DailyNoteArchiver.archiveToDailyNote(activeLogs.value, targetDate);
+    if (success) {
+      showMessage(t('dailyNoteArchiveSuccess'));
+    } else {
+      showMessage(t('dailyNoteArchiveFailed'), 6000, 'error');
+    }
+  } catch (e) {
+    Logger.error('Failed to archive to daily note:', e);
+    showMessage(t('dailyNoteArchiveFailed'), 6000, 'error');
+  } finally {
+    isArchivingDailyNote.value = false;
+  }
+};
 
 // Formatter
 const formatDateKey = (d: Date): string => {
