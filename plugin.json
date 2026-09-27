@@ -2,7 +2,7 @@
   "name": "siyuan-time-spent",
   "author": "Quincy Zou",
   "url": "https://github.com/famotime/siyuan-time-spent",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "minAppVersion": "3.7.3",
   "disabledInPublish": true,
   "icon": "icon.webp",
