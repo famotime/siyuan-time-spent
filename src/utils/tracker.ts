@@ -25,6 +25,11 @@ export class TimeTracker {
         Logger.log(`Updated idle threshold to ${minutes} minutes (${seconds}s)`);
     }
 
+    public updateAfkThreshold(minutes: number) {
+        this.idleWatcher.setAfkThreshold(minutes);
+        Logger.log(`Updated AFK prompt threshold to ${minutes} minutes`);
+    }
+
     public start() {
         this.idleWatcher.start();
         

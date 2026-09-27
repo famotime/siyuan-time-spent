@@ -506,6 +506,8 @@
         :current-date="currentDate" 
         @select-date="handleSelectDate" 
         @switch-mode="handleCalendarSwitchMode"
+        @open-manual-log="isManualLogModalVisible = true"
+        @delete-log="handleDeleteLog"
       />
     </section>
 
@@ -531,6 +533,26 @@
       @close="isAiModalVisible = false"
     />
 
+    <!-- Manual Log Modal (手动补录时间弹窗) -->
+    <ManualLogModal
+      :visible="isManualLogModalVisible"
+      :date-str="formatDateKey(currentDate)"
+      :doc-options="recentDocOptions"
+      @save="handleSaveManualLog"
+      @close="isManualLogModalVisible = false"
+    />
+
+    <!-- AFK Prompt Modal (离桌唤醒归因气泡) -->
+    <AfkPromptModal
+      :visible="isAfkModalVisible"
+      :afk-duration-sec="afkEventData.durationSec"
+      :afk-start-time="afkEventData.startTime"
+      :afk-end-time="afkEventData.endTime"
+      @select-offline="handleAfkOffline"
+      @select-break="handleAfkBreak"
+      @close="isAfkModalVisible = false"
+    />
+
   </div>
 </template>
 
@@ -540,6 +562,8 @@ import CalendarView from './CalendarView.vue';
 import HeatmapView from './HeatmapView.vue';
 import Charts from './Charts.vue';
 import AiSummaryModal from './AiSummaryModal.vue';
+import ManualLogModal from './ManualLogModal.vue';
+import AfkPromptModal from './AfkPromptModal.vue';
 import SyTooltip from './Common/SyTooltip.vue';
 import SyIconButton from './Common/SyIconButton.vue';
 import type { TimeLog } from '../models/TimeLog';
@@ -560,6 +584,80 @@ const emit = defineEmits<{
 
 // 明暗双模主题感知体系
 const isDarkMode = ref(true);
+
+// Manual Log Modal State
+const isManualLogModalVisible = ref(false);
+
+const recentDocOptions = computed(() => {
+  const map = new Map<string, string>();
+  activeLogs.value.forEach(log => {
+    if (log.docId && !map.has(log.docId)) {
+      map.set(log.docId, docTitles.value[log.docId] || log.docId);
+    }
+  });
+  if (plugin && plugin.timeTracker) {
+    const curId = plugin.timeTracker.getCurrentDocId();
+    if (curId && !map.has(curId)) {
+      map.set(curId, docTitles.value[curId] || curId);
+    }
+  }
+  return Array.from(map.entries()).map(([id, title]) => ({ id, title }));
+});
+
+const handleSaveManualLog = async (log: TimeLog) => {
+  if (plugin && plugin.timeTracker) {
+    await plugin.timeTracker.addManualLog(log);
+    showMessage(t('manualLogSuccess'));
+    await handleRefreshData();
+  }
+};
+
+const handleDeleteLog = async (log: TimeLog) => {
+  if (plugin && plugin.timeTracker) {
+    const dateStr = formatDateKey(new Date(log.startTime));
+    const ok = await plugin.timeTracker.deleteLog(dateStr, log.id);
+    if (ok) {
+      showMessage(t('deleteLogSuccess'));
+      await handleRefreshData();
+    }
+  }
+};
+
+// AFK Prompt Modal State
+const isAfkModalVisible = ref(false);
+const afkEventData = ref<{ durationSec: number; startTime: number; endTime: number }>({ durationSec: 0, startTime: 0, endTime: 0 });
+
+const onAfkDetected = (e: Event) => {
+  if (plugin?.settings?.enableAfkPrompt === false) return;
+  const detail = (e as CustomEvent).detail;
+  if (detail && detail.durationSec > 0) {
+    afkEventData.value = detail;
+    isAfkModalVisible.value = true;
+  }
+};
+
+const handleAfkOffline = async (data: { startTime: number; endTime: number; duration: number }) => {
+  if (plugin && plugin.timeTracker) {
+    const activeDocId = plugin.timeTracker.getCurrentDocId() || (activeLogs.value[0]?.docId) || 'offline-study';
+    const offlineLog: TimeLog = {
+      id: 'offline_' + Math.random().toString(36).substring(2, 12),
+      docId: activeDocId,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      duration: data.duration,
+      idleTime: 0,
+      type: 'offline',
+      note: t('afkOptionOffline')
+    };
+    await plugin.timeTracker.addManualLog(offlineLog);
+    showMessage(t('afkRecordedMsg'));
+    await handleRefreshData();
+  }
+};
+
+const handleAfkBreak = () => {
+  isAfkModalVisible.value = false;
+};
 
 const detectThemeMode = () => {
   // 1. 优先读取思源原生配置
@@ -1124,6 +1222,7 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
 
 onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeyDown);
+  window.addEventListener('siyuan-time-spent:afk-detected', onAfkDetected);
   detectThemeMode();
   themeObserver = new MutationObserver(() => {
     detectThemeMode();
@@ -1147,6 +1246,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeyDown);
+  window.removeEventListener('siyuan-time-spent:afk-detected', onAfkDetected);
   if (themeObserver) {
     themeObserver.disconnect();
     themeObserver = null;

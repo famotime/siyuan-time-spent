@@ -75,7 +75,20 @@
       <!-- Right Column: Day Timeline & Doc Ranking (4-5 cols on lg) -->
       <div class="lg:col-span-4 flex flex-col sy-card-bg overflow-hidden">
         <div class="p-3 sy-section-header border-b sy-divider text-xs sm:text-sm font-semibold sy-text-primary flex justify-between items-center">
-          <span>{{ t('calendarTodayList') }}</span>
+          <div class="flex items-center gap-2">
+            <span>{{ t('calendarTodayList') }}</span>
+            <button 
+              @click="$emit('open-manual-log')"
+              class="px-2 py-0.5 rounded-lg border sy-divider hover:border-indigo-500 hover:text-indigo-400 text-xs transition-colors flex items-center gap-1 cursor-pointer font-normal"
+              :title="t('manualLogModalTitle')"
+            >
+              <svg class="w-3 h-3 sy-wire-icon text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>{{ t('manualLogAddBtn') }}</span>
+            </button>
+          </div>
           <span class="text-xs text-indigo-500 font-mono font-semibold font-tabular">{{ t('calendarDayTotal', { duration: formatDuration(currentDayTotalSec) }) }}</span>
         </div>
         <div class="flex-grow overflow-y-auto p-3.5 space-y-2.5">
@@ -93,17 +106,33 @@
                @mousemove="updateBlockTooltip($event)"
                @mouseleave="handleListMouseLeave">
             <div class="flex justify-between items-start mb-1">
-              <div class="font-semibold text-xs sy-text-primary group-hover:text-indigo-400 transition-colors line-clamp-1 flex items-center gap-2">
+              <div class="font-semibold text-xs sy-text-primary group-hover:text-indigo-400 transition-colors line-clamp-1 flex items-center gap-1.5 min-w-0">
                 <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
+                <span v-if="log.isPomodoro || log.type === 'pomodoro'" class="text-xs shrink-0 select-none">🍅</span>
+                <span v-else-if="log.type === 'offline'" class="text-xs px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 font-mono shrink-0 select-none">线下</span>
+                <span v-else-if="log.type === 'manual'" class="text-xs px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-mono shrink-0 select-none">补录</span>
                 <span class="truncate">{{ docTitles[log.docId] || log.docId || t('timelineUnknownDoc') }}</span>
               </div>
-              <span class="text-xs sy-text-secondary font-mono font-tabular shrink-0 ml-2">
-                {{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}
-              </span>
+              <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                <span class="text-xs sy-text-secondary font-mono font-tabular">
+                  {{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}
+                </span>
+                <button 
+                  @click.stop="handleDeleteClick(log)" 
+                  class="opacity-0 group-hover:opacity-100 hover:text-rose-500 text-slate-400 transition-all p-0.5 rounded cursor-pointer"
+                  :title="t('deleteLogConfirm')"
+                >
+                  <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="flex justify-between items-center text-xs mt-1 sy-text-secondary">
               <span class="text-indigo-500 font-mono font-semibold font-tabular">{{ t('calendarFocus') }}: {{ formatDuration(log.duration) }}</span>
-              <span v-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">{{ t('calendarIdleDeducted', { seconds: log.idleTime }) }}</span>
+              <span v-if="log.note" class="text-xs text-indigo-400/80 font-mono truncate max-w-[120px]">{{ log.note }}</span>
+              <span v-else-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">{{ t('calendarIdleDeducted', { seconds: log.idleTime }) }}</span>
             </div>
           </div>
         </div>
@@ -293,7 +322,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'select-date', d: Date): void;
   (e: 'switch-mode', mode: 'day' | 'week' | 'month' | 'year'): void;
+  (e: 'open-manual-log'): void;
+  (e: 'delete-log', log: TimeLog): void;
 }>();
+
+const handleDeleteClick = (log: TimeLog) => {
+  if (confirm(t('deleteLogConfirm'))) {
+    emit('delete-log', log);
+  }
+};
 
 // ==================== CONFIG & CONSTANTS ====================
 const hourHeight = 56; // 每小时高度像素

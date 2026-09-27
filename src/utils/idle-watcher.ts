@@ -10,9 +10,11 @@ export class IdleWatcher {
 
     private readonly activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'touchmove', 'touchend'];
     private boundActivityHandler: () => void;
+    private afkThresholdMs: number = 600 * 1000; // 默认 10 分钟触发离桌归因询问
 
-    constructor(thresholdSeconds: number, onStatusChange: IdleStatusCallback) {
+    constructor(thresholdSeconds: number, onStatusChange: IdleStatusCallback, afkThresholdMinutes: number = 10) {
         this.threshold = thresholdSeconds * 1000;
+        this.afkThresholdMs = Math.max(1, afkThresholdMinutes) * 60 * 1000;
         this.onStatusChange = onStatusChange;
         this.lastActivity = Date.now();
         this.boundActivityHandler = this.handleActivity.bind(this);
@@ -20,6 +22,10 @@ export class IdleWatcher {
 
     public setThreshold(thresholdSeconds: number) {
         this.threshold = Math.max(10, thresholdSeconds) * 1000;
+    }
+
+    public setAfkThreshold(minutes: number) {
+        this.afkThresholdMs = Math.max(1, minutes) * 60 * 1000;
     }
 
     public getIsIdle(): boolean {
@@ -66,6 +72,21 @@ export class IdleWatcher {
             this.isIdle = false;
             const idleDurationMs = Date.now() - this.idleStartTime;
             this.onStatusChange(false, idleDurationMs);
+
+            // 若闲置时长达到归因门槛，广播离桌唤醒事件供界面归因
+            if (idleDurationMs >= this.afkThresholdMs) {
+                try {
+                    window.dispatchEvent(new CustomEvent('siyuan-time-spent:afk-detected', {
+                        detail: {
+                            durationSec: Math.floor(idleDurationMs / 1000),
+                            startTime: this.idleStartTime,
+                            endTime: Date.now()
+                        }
+                    }));
+                } catch (e) {
+                    // 忽略事件分发异常
+                }
+            }
         }
     }
 
