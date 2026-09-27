@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   pomodoroBreakMinutes: 5,
   pomodoroSound: true,
   pomodoroNotification: true,
-  enableAfkPrompt: true,
+  enableAfkPrompt: false,
   afkPromptThresholdMinutes: 10,
   enableDailyNoteArchiving: false,
   dailyNoteAutoTime: "23:55",

@@ -316,6 +316,44 @@ export class SettingManager {
       },
     });
 
+    // 1.4 离桌归因提醒卡片开关项
+    this.setting.addItem({
+      title: t("settingEnableAfkPromptTitle"),
+      description: t("settingEnableAfkPromptDesc"),
+      createActionElement: () => {
+        const checkbox = document.createElement("input");
+        checkbox.dataset.settingKey = "enableAfkPrompt";
+        checkbox.type = "checkbox";
+        checkbox.className = "b3-switch fn__flex-center";
+        checkbox.checked = !!settings.enableAfkPrompt;
+        checkbox.addEventListener("change", async () => {
+          const isChecked = checkbox.checked;
+          settings.enableAfkPrompt = isChecked;
+          await this.plugin.saveSettings();
+        });
+        return checkbox;
+      },
+    });
+
+    // 1.5 自动沉淀至每日日记开关项
+    this.setting.addItem({
+      title: t("settingEnableDailyNoteTitle"),
+      description: t("settingEnableDailyNoteDesc"),
+      createActionElement: () => {
+        const checkbox = document.createElement("input");
+        checkbox.dataset.settingKey = "enableDailyNoteArchiving";
+        checkbox.type = "checkbox";
+        checkbox.className = "b3-switch fn__flex-center";
+        checkbox.checked = !!settings.enableDailyNoteArchiving;
+        checkbox.addEventListener("change", async () => {
+          const isChecked = checkbox.checked;
+          settings.enableDailyNoteArchiving = isChecked;
+          await this.plugin.saveSettings();
+        });
+        return checkbox;
+      },
+    });
+
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({
@@ -550,7 +588,14 @@ export class SettingManager {
       {
         id: "basic",
         title: t("settingsGroupBasic"),
-        keys: ["language", "enableLog", "openInTab", "idleThresholdMinutes"],
+        keys: [
+          "language",
+          "enableLog",
+          "openInTab",
+          "idleThresholdMinutes",
+          "enableAfkPrompt",
+          "enableDailyNoteArchiving",
+        ],
         open: true,
       },
       {
@@ -600,6 +645,8 @@ export class SettingManager {
       { key: "enableLog", desc: t("settingEnableLogDesc") },
       { key: "openInTab", desc: t("settingOpenInTabDesc") },
       { key: "idleThresholdMinutes", desc: t("settingIdleThresholdDesc") },
+      { key: "enableAfkPrompt", desc: t("settingEnableAfkPromptDesc") },
+      { key: "enableDailyNoteArchiving", desc: t("settingEnableDailyNoteDesc") },
       { key: "aiProvider", desc: t("settingsAiProviderDescription") },
       { key: "aiBaseUrl", desc: t("settingsAiBaseUrlDescription") },
       { key: "aiApiKey", desc: t("settingsAiApiKeyDescription") },

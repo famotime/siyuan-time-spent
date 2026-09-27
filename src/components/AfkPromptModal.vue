@@ -40,7 +40,36 @@
         <span class="text-xs text-indigo-200/80 group-hover:text-white transition-colors font-mono font-tabular">+{{ afkMinutes }}m</span>
       </button>
 
-      <!-- 选项 2: 离桌休息 -->
+      <!-- 选项 2: 自定义归因输入展开 -->
+      <div class="rounded-xl border sy-divider p-2 bg-black/5 dark:bg-white/5 flex flex-col gap-1.5">
+        <div class="flex items-center justify-between text-[11px] sy-text-secondary">
+          <span class="font-medium flex items-center gap-1">
+            <svg class="w-3 h-3 text-indigo-400 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            {{ t('afkCustomCategoryLabel') }}
+          </span>
+          <span class="text-[10px] sy-text-tertiary">按回车快捷保存</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <input 
+            type="text" 
+            v-model="customNote"
+            :placeholder="t('afkCustomCategoryPlaceholder')"
+            @keydown.enter="handleCustomSubmit"
+            class="flex-1 h-7 px-2.5 rounded-lg border sy-divider bg-transparent sy-text-primary text-xs outline-none focus:border-indigo-500 transition-colors"
+          />
+          <button 
+            @click="handleCustomSubmit"
+            :disabled="!customNote.trim()"
+            class="h-7 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold shrink-0 cursor-pointer shadow-xs transition-all"
+          >
+            {{ t('afkCustomSubmitBtn') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 选项 3: 离桌休息 -->
       <button 
         @click="handleSelectBreak" 
         class="w-full px-3 py-1.5 rounded-xl sy-btn-secondary hover:bg-black/5 dark:hover:bg-white/5 border sy-divider text-xs sy-text-secondary transition-all flex items-center justify-between cursor-pointer"
@@ -54,7 +83,7 @@
         <span class="text-xs sy-text-tertiary">{{ t('statIdleDeducted') }}</span>
       </button>
 
-      <!-- 选项 3: 忽略 -->
+      <!-- 选项 4: 忽略 -->
       <button 
         @click="handleClose" 
         class="w-full py-1 text-center text-xs sy-text-tertiary hover:sy-text-secondary transition-colors cursor-pointer"
@@ -77,12 +106,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'select-offline', data: { startTime: number; endTime: number; duration: number }): void;
+  (e: 'select-offline', data: { startTime: number; endTime: number; duration: number; note?: string }): void;
   (e: 'select-break'): void;
   (e: 'close'): void;
 }>();
 
-const remainingSeconds = ref(20);
+const remainingSeconds = ref(25);
+const customNote = ref('');
 let timer: ReturnType<typeof setInterval> | null = null;
 
 const afkMinutes = computed(() => {
@@ -91,7 +121,8 @@ const afkMinutes = computed(() => {
 
 watch(() => props.visible, (val) => {
   if (val) {
-    remainingSeconds.value = 20;
+    remainingSeconds.value = 25;
+    customNote.value = '';
     if (timer) clearInterval(timer);
     timer = setInterval(() => {
       remainingSeconds.value--;
@@ -113,7 +144,19 @@ const handleSelectOffline = () => {
   emit('select-offline', {
     startTime: props.afkStartTime,
     endTime: props.afkEndTime,
-    duration: props.afkDurationSec
+    duration: props.afkDurationSec,
+    note: t('afkOptionOffline')
+  });
+  handleClose();
+};
+
+const handleCustomSubmit = () => {
+  if (!customNote.value.trim()) return;
+  emit('select-offline', {
+    startTime: props.afkStartTime,
+    endTime: props.afkEndTime,
+    duration: props.afkDurationSec,
+    note: customNote.value.trim()
   });
   handleClose();
 };

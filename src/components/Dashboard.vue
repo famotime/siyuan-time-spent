@@ -636,7 +636,7 @@ const onAfkDetected = (e: Event) => {
   }
 };
 
-const handleAfkOffline = async (data: { startTime: number; endTime: number; duration: number }) => {
+const handleAfkOffline = async (data: { startTime: number; endTime: number; duration: number; note?: string }) => {
   if (plugin && plugin.timeTracker) {
     const activeDocId = plugin.timeTracker.getCurrentDocId() || (activeLogs.value[0]?.docId) || 'offline-study';
     const offlineLog: TimeLog = {
@@ -647,7 +647,7 @@ const handleAfkOffline = async (data: { startTime: number; endTime: number; dura
       duration: data.duration,
       idleTime: 0,
       type: 'offline',
-      note: t('afkOptionOffline')
+      note: data.note || t('afkOptionOffline')
     };
     await plugin.timeTracker.addManualLog(offlineLog);
     showMessage(t('afkRecordedMsg'));
