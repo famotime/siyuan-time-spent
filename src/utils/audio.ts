@@ -37,6 +37,18 @@ export function playPomodoroCompleteChord() {
   playTone(ctx, 1567.98, now + 0.16, 0.65, 0.18);
 }
 
+/**
+ * 播放柔和的休息结束提示音 (E5 - A5)
+ */
+export function playBreakCompleteChord() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  playTone(ctx, 659.25, now, 0.35, 0.12);
+  playTone(ctx, 880.0, now + 0.14, 0.5, 0.15);
+}
+
 function playTone(ctx: AudioContext, freq: number, startTime: number, duration: number, maxGain: number) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();

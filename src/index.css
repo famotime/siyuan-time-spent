@@ -40,6 +40,17 @@
 
   /* 焦点光晕 */
   --st-focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
+
+  /* 番茄钟双模专属 Token（默认与深色） */
+  --st-pomo-active-text: #fbbf24;
+  --st-pomo-active-bg: rgba(245, 158, 11, 0.12);
+  --st-pomo-active-border: rgba(245, 158, 11, 0.35);
+  --st-pomo-track-bg: rgba(255, 255, 255, 0.08);
+  --st-pomo-track-fill: #f59e0b;
+  --st-pomo-break-text: #2dd4bf;
+  --st-pomo-break-bg: rgba(20, 184, 166, 0.12);
+  --st-pomo-break-border: rgba(45, 212, 191, 0.35);
+  --st-pomo-break-track-fill: #14b8a6;
 }
 
 /* ==================== 亮色主题语义 Token (显式精准适配) ==================== */
@@ -82,6 +93,17 @@ body[data-theme-mode="light"],
 
   /* 焦点光晕 */
   --st-focus-ring: 0 0 0 2px rgba(79, 70, 229, 0.4);
+
+  /* 番茄钟双模专属 Token (亮色精准校准，文字对比度 >= 5.5:1) */
+  --st-pomo-active-text: #b45309;
+  --st-pomo-active-bg: rgba(217, 119, 6, 0.08);
+  --st-pomo-active-border: rgba(217, 119, 6, 0.28);
+  --st-pomo-track-bg: rgba(0, 0, 0, 0.06);
+  --st-pomo-track-fill: #d97706;
+  --st-pomo-break-text: #0f766e;
+  --st-pomo-break-bg: rgba(15, 118, 110, 0.08);
+  --st-pomo-break-border: rgba(15, 118, 110, 0.28);
+  --st-pomo-break-track-fill: #0d9488;
 }
 
 /* ==================== 暗色主题语义 Token (显式精准适配) ==================== */
@@ -118,6 +140,17 @@ body[data-theme-mode="dark"],
   --st-info: #06b6d4;
 
   --st-focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.5);
+
+  /* 番茄钟双模专属 Token (暗色精准校准) */
+  --st-pomo-active-text: #fbbf24;
+  --st-pomo-active-bg: rgba(245, 158, 11, 0.14);
+  --st-pomo-active-border: rgba(245, 158, 11, 0.35);
+  --st-pomo-track-bg: rgba(255, 255, 255, 0.08);
+  --st-pomo-track-fill: #f59e0b;
+  --st-pomo-break-text: #2dd4bf;
+  --st-pomo-break-bg: rgba(20, 184, 166, 0.14);
+  --st-pomo-break-border: rgba(45, 212, 191, 0.35);
+  --st-pomo-break-track-fill: #14b8a6;
 }
 
 @layer base {
@@ -201,7 +234,7 @@ svg[style*="fill: none"] {
   background-color: var(--st-text-tertiary, rgba(148, 163, 184, 0.45));
 }
 
-/* ==================== 状态栏专注胶囊抗污染防护 ==================== */
+/* ==================== 状态栏专注胶囊抗污染防护与视觉规范 ==================== */
 .plugin-time-spent-status-item {
   display: inline-flex;
   align-items: center;
@@ -210,4 +243,53 @@ svg[style*="fill: none"] {
 .plugin-time-spent-status-item svg {
   fill: none !important;
 }
+
+/* 番茄钟常驻胶囊 */
+.sy-pomo-capsule {
+  background-color: var(--st-bg-surface);
+  color: var(--st-text-secondary);
+  border: 1px solid var(--st-border-subtle);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sy-pomo-capsule:hover {
+  border-color: var(--st-border-strong);
+  color: var(--st-text-primary);
+}
+.sy-pomo-capsule.is-running {
+  background-color: var(--st-pomo-active-bg);
+  color: var(--st-pomo-active-text);
+  border-color: var(--st-pomo-active-border);
+}
+.sy-pomo-capsule.is-paused {
+  background-color: var(--st-bg-subtle);
+  color: var(--st-text-tertiary);
+  border-color: var(--st-border-subtle);
+}
+.sy-pomo-capsule.is-break {
+  background-color: var(--st-pomo-break-bg);
+  color: var(--st-pomo-break-text);
+  border-color: var(--st-pomo-break-border);
+}
+
+/* 番茄钟弹窗卡片与控件防穿透规范 */
+.sy-pomo-card {
+  background-color: var(--st-bg-elevated);
+  border-color: var(--st-border-subtle);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.35), 0 8px 16px -6px rgba(0, 0, 0, 0.2);
+}
+.sy-pomo-stepper-btn {
+  color: var(--st-text-secondary);
+  border-color: var(--st-border-subtle);
+  background-color: var(--st-bg-surface);
+  transition: all 0.15s ease;
+}
+.sy-pomo-stepper-btn:hover {
+  color: var(--st-text-primary);
+  border-color: var(--st-border-strong);
+  background-color: var(--st-bg-hover);
+}
+.sy-pomo-stepper-btn:active {
+  transform: scale(0.96);
+}
+
 
