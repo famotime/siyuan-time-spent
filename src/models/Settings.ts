@@ -1,5 +1,6 @@
 export interface PluginSettings {
   // 基础设置
+  language?: 'auto' | 'zh_CN' | 'en_US';
   enableLog: boolean;
   openInTab: boolean;
   idleThresholdMinutes?: number;
@@ -16,6 +17,7 @@ export interface PluginSettings {
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
+  language: 'auto',
   enableLog: false,
   openInTab: true,
   idleThresholdMinutes: 5,

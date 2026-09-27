@@ -6,7 +6,7 @@
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
           <span class="text-xs sm:text-sm font-semibold sy-text-primary">
-            {{ proportionMode === 'doc' ? '文档投入分布' : proportionMode === 'notebook' ? '笔记本投入分布' : '标签投入分布' }}
+            {{ proportionMode === 'doc' ? t('chartDocDistribution') : proportionMode === 'notebook' ? t('chartNotebookDistribution') : t('chartTagDistribution') }}
           </span>
         </div>
 
@@ -17,21 +17,21 @@
             class="px-2 py-0.5 rounded transition-all cursor-pointer"
             :class="proportionMode === 'doc' ? 'bg-indigo-600 text-white font-semibold shadow-xs' : 'sy-text-secondary hover:sy-text-primary'"
           >
-            按文档
+            {{ t('chartByDoc') }}
           </button>
           <button
             @click="proportionMode = 'notebook'"
             class="px-2 py-0.5 rounded transition-all cursor-pointer"
             :class="proportionMode === 'notebook' ? 'bg-indigo-600 text-white font-semibold shadow-xs' : 'sy-text-secondary hover:sy-text-primary'"
           >
-            按笔记本
+            {{ t('chartByNotebook') }}
           </button>
           <button
             @click="proportionMode = 'tag'"
             class="px-2 py-0.5 rounded transition-all cursor-pointer"
             :class="proportionMode === 'tag' ? 'bg-indigo-600 text-white font-semibold shadow-xs' : 'sy-text-secondary hover:sy-text-primary'"
           >
-            按标签
+            {{ t('chartByTag') }}
           </button>
         </div>
       </div>
@@ -47,7 +47,7 @@
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block shadow-[0_0_8px_rgba(6,182,212,0.5)]"></span>
           <span class="text-xs sm:text-sm font-semibold sy-text-primary">
-            {{ rightChartMode === 'trend' ? trendTitle : '专注耗时排行 Top 10' }}
+            {{ rightChartMode === 'trend' ? trendTitle : t('chartRankingTop10') }}
           </span>
         </div>
 
@@ -58,14 +58,14 @@
             class="px-2 py-0.5 rounded transition-all cursor-pointer"
             :class="rightChartMode === 'trend' ? 'bg-cyan-600 text-white font-semibold shadow-xs' : 'sy-text-secondary hover:sy-text-primary'"
           >
-            时段走势
+            {{ t('chartModeTrend') }}
           </button>
           <button
             @click="rightChartMode = 'ranking'"
             class="px-2 py-0.5 rounded transition-all cursor-pointer"
             :class="rightChartMode === 'ranking' ? 'bg-cyan-600 text-white font-semibold shadow-xs' : 'sy-text-secondary hover:sy-text-primary'"
           >
-            耗时排行
+            {{ t('chartModeRanking') }}
           </button>
         </div>
       </div>
@@ -92,6 +92,7 @@ import {
 import VChart from 'vue-echarts';
 import type { TimeLog } from '../models/TimeLog';
 import { docTitles, fetchDocTitle, getDocMeta } from '../utils/title-cache';
+import { t, formatDurationI18n, currentLang, getWeekdayNames } from '../i18n';
 
 use([
   CanvasRenderer,
@@ -212,7 +213,7 @@ watch(
 const sortedDocs = computed(() => {
   const aggregated: Record<string, number> = {};
   props.logs.forEach((log) => {
-    const title = docTitles.value[log.docId] || log.docId || '未知文档';
+    const title = docTitles.value[log.docId] || log.docId || t('unknownDoc');
     if (!aggregated[title]) {
       aggregated[title] = 0;
     }
@@ -232,7 +233,7 @@ const sortedNotebooks = computed(() => {
   const aggregated: Record<string, number> = {};
   props.logs.forEach((log) => {
     const meta = getDocMeta(log.docId);
-    const nbName = meta.notebookName || '默认笔记本';
+    const nbName = meta.notebookName || t('chartUnknownNotebook');
     if (!aggregated[nbName]) {
       aggregated[nbName] = 0;
     }
@@ -252,7 +253,7 @@ const sortedTags = computed(() => {
   const aggregated: Record<string, number> = {};
   props.logs.forEach((log) => {
     const meta = getDocMeta(log.docId);
-    const tags = meta.tags && meta.tags.length > 0 ? meta.tags : ['未打标签'];
+    const tags = meta.tags && meta.tags.length > 0 ? meta.tags : [t('chartNoTag')];
     tags.forEach((tag) => {
       const tagName = tag.startsWith('#') ? tag : `#${tag}#`;
       aggregated[tagName] = (aggregated[tagName] || 0) + log.duration;
@@ -313,10 +314,10 @@ const pieOption = computed(() => {
   const tc = themeColors.value;
   const dimensionName =
     proportionMode.value === 'doc'
-      ? '文档'
+      ? t('chartDimensionDoc')
       : proportionMode.value === 'notebook'
-      ? '笔记本'
-      : '标签';
+      ? t('chartDimensionNotebook')
+      : t('chartDimensionTag');
 
   return {
     backgroundColor: 'transparent',
@@ -330,11 +331,11 @@ const pieOption = computed(() => {
         const dur = formatDuration(params.value);
         if (params.name === '...') {
           const restCount = currentPieList.value.length - 10;
-          return `<div class="font-sans font-semibold">剩余 ${restCount} 个${dimensionName}</div>
-                  <div class="text-xs text-indigo-400 mt-0.5">总时长: ${dur} (${params.percent}%)</div>`;
+          return `<div class="font-sans font-semibold">${t('chartRemainingCount', { count: restCount, dimension: dimensionName })}</div>
+                  <div class="text-xs text-indigo-400 mt-0.5">${t('chartTotalDuration', { duration: dur })} (${params.percent}%)</div>`;
         }
         return `<div class="font-sans font-semibold">${params.name}</div>
-                <div class="text-xs text-indigo-400 mt-0.5">投入时长: ${dur} (${params.percent}%)</div>`;
+                <div class="text-xs text-indigo-400 mt-0.5">${t('chartTotalInvested', { duration: dur })} (${params.percent}%)</div>`;
       },
     },
     legend: {
@@ -355,7 +356,7 @@ const pieOption = computed(() => {
     },
     series: [
       {
-        name: `${dimensionName}专注分布`,
+        name: `${dimensionName}${t('chartFocusTime')}`,
         type: 'pie',
         radius: ['45%', '72%'],
         center: ['30%', '50%'],
@@ -375,16 +376,16 @@ const pieOption = computed(() => {
             shadowColor: 'rgba(0, 0, 0, 0.4)',
           },
         },
-        data: hasData ? data : [{ name: '暂无数据', value: 0, itemStyle: { color: isDarkMode.value ? '#21262d' : '#e2e8f0' } }],
+        data: hasData ? data : [{ name: t('chartNoData'), value: 0, itemStyle: { color: isDarkMode.value ? '#21262d' : '#e2e8f0' } }],
       },
     ],
   };
 });
 
 const trendTitle = computed(() => {
-  if (props.scopeType === 'day') return '24小时时段分布 (分钟)';
-  if (props.scopeType === 'week') return '周内每日专注对比 (小时)';
-  return '整月每日专注走势 (小时)';
+  if (props.scopeType === 'day') return `${t('chartTrendToday')} (${t('chartUnitMinutes')})`;
+  if (props.scopeType === 'week') return `${t('chartTrendWeek')} (${t('chartUnitHours')})`;
+  return `${t('chartTrendMonth')} (${t('chartUnitHours')})`;
 });
 
 // 时段趋势走势图配置 (自适应明暗主题)
@@ -411,7 +412,7 @@ const barOption = computed(() => {
         textStyle: { color: tc.tooltipText, fontSize: 12 },
         formatter: (params: any) => {
           const item = params[0];
-          return `${item.name}<br/><span class="text-cyan-500 font-bold font-mono">${item.value} 分钟</span>`;
+          return `${item.name}<br/><span class="text-cyan-500 font-bold font-mono">${item.value} ${t('chartUnitMinutes')}</span>`;
         },
       },
       xAxis: {
@@ -422,14 +423,14 @@ const barOption = computed(() => {
       },
       yAxis: {
         type: 'value',
-        name: '分钟',
+        name: t('chartUnitMinutes'),
         nameTextStyle: { color: tc.axisText, fontSize: 11 },
         splitLine: { lineStyle: { color: tc.splitLine, type: 'dashed' } },
         axisLabel: { color: tc.axisText, fontSize: 11, fontFamily: 'monospace' },
       },
       series: [
         {
-          name: '专注时长',
+          name: t('chartFocusTime'),
           type: 'bar',
           data: minutes,
           barWidth: '60%',
@@ -457,7 +458,7 @@ const barOption = computed(() => {
     const labels =
       props.dayLabels.length === 7
         ? props.dayLabels.map((d) => d.label)
-        : ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        : getWeekdayNames(currentLang.value);
 
     const hoursData = props.dayLabels.map((d) => {
       const dayLogs = props.dayMap[d.key] || [];
@@ -477,7 +478,7 @@ const barOption = computed(() => {
           const item = params[0];
           const hrs = item.value;
           const mins = Math.round(hrs * 60);
-          return `${item.name}<br/><span class="text-indigo-500 font-bold font-mono">${hrs} 小时</span> (${mins} 分钟)`;
+          return `${item.name}<br/><span class="text-indigo-500 font-bold font-mono">${hrs} ${t('chartUnitHours')}</span> (${mins} ${t('chartUnitMinutes')})`;
         },
       },
       xAxis: {
@@ -488,14 +489,14 @@ const barOption = computed(() => {
       },
       yAxis: {
         type: 'value',
-        name: '小时',
+        name: t('chartUnitHours'),
         nameTextStyle: { color: tc.axisText, fontSize: 11 },
         splitLine: { lineStyle: { color: tc.splitLine, type: 'dashed' } },
         axisLabel: { color: tc.axisText, fontSize: 11, fontFamily: 'monospace' },
       },
       series: [
         {
-          name: '专注时长',
+          name: t('chartFocusTime'),
           type: 'bar',
           data: hoursData,
           barWidth: '45%',
@@ -537,7 +538,7 @@ const barOption = computed(() => {
         textStyle: { color: tc.tooltipText, fontSize: 12 },
         formatter: (params: any) => {
           const item = params[0];
-          return `${item.name}号: <span class="text-emerald-500 font-bold font-mono">${item.value} 小时</span>`;
+          return `${item.name}${t('chartDaySuffix')}: <span class="text-emerald-500 font-bold font-mono">${item.value} ${t('chartUnitHours')}</span>`;
         },
       },
       xAxis: {
@@ -548,14 +549,14 @@ const barOption = computed(() => {
       },
       yAxis: {
         type: 'value',
-        name: '小时',
+        name: t('chartUnitHours'),
         nameTextStyle: { color: tc.axisText, fontSize: 11 },
         splitLine: { lineStyle: { color: tc.splitLine, type: 'dashed' } },
         axisLabel: { color: tc.axisText, fontSize: 11, fontFamily: 'monospace' },
       },
       series: [
         {
-          name: '每日专注',
+          name: t('chartDailyFocus'),
           type: 'line',
           smooth: true,
           showSymbol: false,
@@ -603,12 +604,12 @@ const rankingBarOption = computed(() => {
         const fullTitle = fullTitles[dataIdx] || item.name;
         const dur = formatDuration(item.value * 60);
         return `<div class="font-sans font-semibold">${fullTitle}</div>
-                <div class="text-xs text-cyan-500 mt-1">总投入: ${dur} (${item.value} 分钟)</div>`;
+                <div class="text-xs text-cyan-500 mt-1">${t('chartTotalInvested', { duration: dur })} (${item.value} ${t('chartUnitMinutes')})</div>`;
       },
     },
     xAxis: {
       type: 'value',
-      name: '分钟',
+      name: t('chartUnitMinutes'),
       nameTextStyle: { color: tc.axisText, fontSize: 11 },
       splitLine: { lineStyle: { color: tc.splitLine, type: 'dashed' } },
       axisLabel: { color: tc.axisText, fontSize: 11, fontFamily: 'monospace' },
@@ -621,7 +622,7 @@ const rankingBarOption = computed(() => {
     },
     series: [
       {
-        name: '投入时长',
+        name: t('chartInvestedTime'),
         type: 'bar',
         data: minutes,
         barWidth: '55%',
@@ -648,12 +649,7 @@ const rankingBarOption = computed(() => {
 });
 
 const formatDuration = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+  return formatDurationI18n(seconds, currentLang.value);
 };
 </script>
 

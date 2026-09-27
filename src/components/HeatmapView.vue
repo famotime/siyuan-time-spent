@@ -5,22 +5,22 @@
       <div class="flex items-center gap-2.5">
         <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block shadow-[0_0_10px_rgba(6,182,212,0.6)]"></span>
         <h3 class="text-xs sm:text-sm font-bold sy-text-primary tracking-wide">
-          {{ year }} 年度笔记专注活跃度 (365天热力图)
+          {{ t('heatmapAnnualHeader', { year }) }}
         </h3>
         <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-mono font-tabular">
-          共 {{ activeDaysCount }} 天保持专注
+          {{ t('heatmapActiveDays', { count: activeDaysCount }) }}
         </span>
       </div>
 
       <!-- Legend (图例) -->
       <div class="flex items-center gap-1.5 text-xs sy-text-secondary select-none">
-        <span>少</span>
-        <span class="w-3 h-3 rounded-xs sy-legend-0 inline-block" title="无活动"></span>
-        <span class="w-3 h-3 rounded-xs sy-legend-1 inline-block" title="< 30分钟"></span>
-        <span class="w-3 h-3 rounded-xs sy-legend-2 inline-block" title="30分钟 - 2小时"></span>
-        <span class="w-3 h-3 rounded-xs sy-legend-3 inline-block" title="2 - 4小时"></span>
-        <span class="w-3 h-3 rounded-xs sy-legend-4 inline-block shadow-[0_0_6px_rgba(6,182,212,0.5)]" title="> 4小时"></span>
-        <span>多</span>
+        <span>{{ t('heatmapLegendLess') }}</span>
+        <span class="w-3 h-3 rounded-xs sy-legend-0 inline-block" :title="t('heatmapNoActivity')"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-1 inline-block" :title="t('heatmapRange1')"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-2 inline-block" :title="t('heatmapRange2')"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-3 inline-block" :title="t('heatmapRange3')"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-4 inline-block shadow-[0_0_6px_rgba(6,182,212,0.5)]" :title="t('heatmapRange4')"></span>
+        <span>{{ t('heatmapLegendMore') }}</span>
       </div>
     </div>
 
@@ -44,10 +44,10 @@
         <div class="flex gap-1">
           <!-- Weekday Labels Column -->
           <div class="w-7 flex flex-col justify-between text-xs font-mono sy-text-tertiary select-none py-0.5">
-            <span>一</span>
-            <span>三</span>
-            <span>五</span>
-            <span>日</span>
+            <span>{{ weekdayShortLabels[0] }}</span>
+            <span>{{ weekdayShortLabels[2] }}</span>
+            <span>{{ weekdayShortLabels[4] }}</span>
+            <span>{{ weekdayShortLabels[6] }}</span>
           </div>
 
           <!-- Weeks Columns -->
@@ -76,15 +76,15 @@
     <!-- Bottom Stat Summary -->
     <div class="flex flex-wrap items-center justify-between text-xs sy-text-secondary pt-2 border-t sy-divider">
       <div class="flex items-center gap-3 font-tabular">
-        <span>年度累计有效专注: <strong class="text-indigo-500 font-mono font-bold">{{ formatDuration(totalYearSeconds) }}</strong></span>
+        <span>{{ t('heatmapTotalYearFocus') }}<strong class="text-indigo-500 font-mono font-bold">{{ formatDuration(totalYearSeconds) }}</strong></span>
         <span>·</span>
-        <span>最长连续专注: <strong class="text-cyan-500 font-mono font-bold">{{ maxStreakDays }} 天</strong></span>
+        <span>{{ t('heatmapMaxStreak') }}<strong class="text-cyan-500 font-mono font-bold">{{ maxStreakDays }} {{ t('heatmapDaysUnit') }}</strong></span>
       </div>
       <div class="text-xs sy-text-tertiary flex items-center gap-1">
         <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <span>点击任意方格可一键下钻至当天的日视图</span>
+        <span>{{ t('heatmapDrillDownHint') }}</span>
       </div>
     </div>
 
@@ -103,11 +103,11 @@
           {{ tooltip.durationStr }}
         </div>
         <div class="text-xs text-gray-300 font-tabular">
-          共 {{ tooltip.sessionsCount }} 次专注会话
-          <span v-if="tooltip.idleSec > 0" class="text-amber-400 ml-1">(-{{ tooltip.idleSec }}s 闲置)</span>
+          {{ t('sessionCount', { count: tooltip.sessionsCount }) }}
+          <span v-if="tooltip.idleSec > 0" class="text-amber-400 ml-1">(-{{ tooltip.idleSec }}s {{ t('idleDeducted') }})</span>
         </div>
         <div class="text-xs text-indigo-300/80 mt-1 select-none">
-          点击进入当日详情
+          {{ t('heatmapClickHint') }}
         </div>
       </div>
     </Teleport>
@@ -117,6 +117,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { TimeLog } from '../models/TimeLog';
+import { t, formatDurationI18n, currentLang, getMonthNames, getWeekdayNames } from '../i18n';
 
 interface DayItem {
   date: Date;
@@ -143,6 +144,12 @@ const emit = defineEmits<{
   (e: 'select-date', d: Date): void;
 }>();
 
+const weekdayShortLabels = computed(() => {
+  return currentLang.value === 'en_US'
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    : ['一', '二', '三', '四', '五', '六', '日'];
+});
+
 const formatDateKey = (d: Date): string => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -151,11 +158,7 @@ const formatDateKey = (d: Date): string => {
 };
 
 const formatDuration = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}小时 ${m}分钟`;
-  if (m > 0) return `${m}分钟`;
-  return `${seconds}秒`;
+  return formatDurationI18n(seconds, currentLang.value);
 };
 
 // Tooltip State
@@ -165,20 +168,21 @@ const tooltip = ref({
   y: 0,
   dateStr: '',
   dayName: '',
-  durationStr: '暂无活动',
+  durationStr: t('heatmapNoActivity'),
   sessionsCount: 0,
   idleSec: 0,
 });
 
 const showTooltip = (e: MouseEvent, day: DayItem) => {
-  const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const weekNames = getWeekdayNames(currentLang.value);
+  const dayIdx = day.date.getDay() === 0 ? 6 : day.date.getDay() - 1;
   tooltip.value = {
     visible: true,
     x: e.clientX + 10,
     y: e.clientY + 10,
     dateStr: day.dateStr,
-    dayName: weekNames[day.date.getDay()],
-    durationStr: day.totalDuration > 0 ? formatDuration(day.totalDuration) : '未记录专注',
+    dayName: weekNames[dayIdx],
+    durationStr: day.totalDuration > 0 ? formatDuration(day.totalDuration) : t('heatmapNoFocusRecorded'),
     sessionsCount: day.sessionCount,
     idleSec: day.idleDuration,
   };
@@ -256,7 +260,7 @@ const calendarWeeks = computed(() => {
 
 // 计算顶部月份标签位置
 const monthLabels = computed(() => {
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  const months = getMonthNames(currentLang.value);
   const labels: { name: string; colSpan: number }[] = [];
   let currentMonth = -1;
   let count = 0;

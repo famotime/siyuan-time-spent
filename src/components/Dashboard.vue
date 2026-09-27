@@ -10,19 +10,19 @@
         <div class="flex items-center gap-3.5">
           <!-- 品牌图标 -->
           <div class="w-11 h-11 sm:w-13 sm:h-13 flex items-center justify-center shrink-0 bg-transparent">
-            <img :src="iconUrl" alt="源时记" class="w-full h-full object-contain drop-shadow-md select-none" />
+            <img :src="iconUrl" :alt="t('title')" class="w-full h-full object-contain drop-shadow-md select-none" />
           </div>
           <div class="flex flex-col justify-center">
             <div class="flex flex-wrap items-center gap-2.5">
               <h1 class="text-xl sm:text-2xl font-black tracking-wide sy-text-primary">
-                源时记
+                {{ t('title') }}
               </h1>
               <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-medium">
-                时间记录与专注分析
+                {{ t('brandSubtitle') }}
               </span>
             </div>
             <p class="text-xs sy-text-secondary mt-0.5 leading-relaxed">
-              全自动深度工作追踪 · 智能防挂机 · 多维日历复盘
+              {{ t('brandSlogan') }}
             </p>
           </div>
         </div>
@@ -30,34 +30,34 @@
         <!-- Header Right Actions: Settings, Refresh & Close -->
         <div class="flex items-center gap-1.5 shrink-0">
           <!-- 刷新数据按钮 -->
-          <SyTooltip content="重新计算并载入最新时间数据" shortcut="R" placement="bottom">
+          <SyTooltip :content="t('refreshDataTooltip')" shortcut="R" placement="bottom">
             <SyIconButton 
               icon="refresh" 
               size="md" 
               variant="secondary" 
-              aria-label="刷新数据" 
+              :aria-label="t('refreshDataAria')" 
               @click="handleRefreshData" 
             />
           </SyTooltip>
 
           <!-- 插件设置按钮 -->
-          <SyTooltip content="打开源时记设置" shortcut="S" placement="bottom">
+          <SyTooltip :content="t('openSettingTooltip')" shortcut="S" placement="bottom">
             <SyIconButton 
               icon="settings" 
               size="md" 
               variant="secondary" 
-              aria-label="打开插件设置" 
+              :aria-label="t('openSettingAria')" 
               @click="handleOpenSetting" 
             />
           </SyTooltip>
 
           <!-- 关闭看板按钮 -->
-          <SyTooltip content="关闭看板" shortcut="Esc" placement="bottom">
+          <SyTooltip :content="t('closeDashboardTooltip')" shortcut="Esc" placement="bottom">
             <SyIconButton 
               icon="close" 
               size="md" 
               variant="ghost" 
-              aria-label="关闭看板" 
+              :aria-label="t('closeDashboardAria')" 
               @click="emit('close')" 
             />
           </SyTooltip>
@@ -72,7 +72,7 @@
           <div 
             @click="startEditingGoal"
             class="flex items-center gap-3.5 cursor-pointer group flex-1 min-w-0"
-            title="点击修改专注目标"
+            :title="t('focusGoalClickToEdit')"
           >
             <!-- 44px 精致靶心显式线框徽章 (防思源 CSS 污染) -->
             <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sy-goal-icon-badge flex items-center justify-center shrink-0 shadow-inner transition-transform group-hover:scale-105">
@@ -87,10 +87,10 @@
             <div class="flex flex-col min-w-0">
               <div class="flex items-center gap-2">
                 <span class="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400">
-                  FOCUS GOAL
+                  {{ t('focusGoalHeroBadge') }}
                 </span>
                 <span class="text-xs text-indigo-400/60">·</span>
-                <span class="text-xs text-indigo-300 font-medium">当前专注目标</span>
+                <span class="text-xs text-indigo-300 font-medium">{{ t('focusGoalCurrent') }}</span>
               </div>
               <div class="text-base sm:text-lg md:text-xl font-black sy-goal-title group-hover:text-indigo-300 transition-colors truncate tracking-wide mt-0.5" :title="focusGoal">
                 {{ focusGoal }}
@@ -105,11 +105,11 @@
               <svg class="w-4 h-4 text-emerald-400 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              <span>已保存</span>
+              <span>{{ t('saved') }}</span>
             </span>
 
             <!-- 编辑按钮 (显式线框) -->
-            <SyTooltip content="编辑当前专注目标" placement="top">
+            <SyTooltip :content="t('focusGoalEditing')" placement="top">
               <button 
                 @click.stop="startEditingGoal"
                 class="sy-btn-goal-action h-8.5 px-3 flex items-center gap-1.5 text-xs font-medium rounded-xl transition-all cursor-pointer shadow-xs"
@@ -117,12 +117,12 @@
                 <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                <span>编辑</span>
+                <span>{{ t('edit') }}</span>
               </button>
             </SyTooltip>
 
             <!-- 清除按钮 (显式线框) -->
-            <SyTooltip content="清除专注目标" placement="top">
+            <SyTooltip :content="t('clearGoal')" placement="top">
               <button 
                 @click.stop="clearFocusGoal"
                 class="sy-btn-goal-action h-8.5 w-8.5 flex items-center justify-center rounded-xl transition-all cursor-pointer shadow-xs hover:text-red-400"
@@ -150,10 +150,10 @@
               </span>
               <div class="flex flex-col">
                 <span class="text-xs font-mono uppercase tracking-wider text-indigo-400 font-bold">
-                  Focus Goal
+                  {{ t('focusGoalHeroBadge') }}
                 </span>
                 <span class="text-xs font-bold sy-goal-title tracking-wide">
-                  设定专注目标
+                  {{ t('focusGoalTitle') }}
                 </span>
               </div>
             </div>
@@ -173,7 +173,7 @@
                 v-if="editGoalInput" 
                 @click="editGoalInput = ''" 
                 class="absolute right-2.5 sy-text-tertiary hover:sy-text-primary transition-colors cursor-pointer"
-                title="清空输入">
+                :title="t('emptyInputHint')">
                 <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="15" y1="9" x2="9" y2="15" />
@@ -187,21 +187,21 @@
               <button 
                 @click="confirmGoalEdit"
                 class="h-10 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-600/30 cursor-pointer flex items-center gap-1.5"
-                title="保存目标 (Enter)"
+                :title="t('saveGoalHint')"
               >
                 <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                <span>保存</span>
+                <span>{{ t('save') }}</span>
               </button>
 
               <button 
                 v-if="focusGoal"
                 @click="cancelGoalEdit"
                 class="sy-btn-goal-action h-10 px-3.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer"
-                title="取消修改 (Esc)"
+                :title="t('cancelGoalHint')"
               >
-                取消
+                {{ t('cancel') }}
               </button>
             </div>
           </div>
@@ -212,7 +212,7 @@
               <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
-              {{ calendarMode === 'day' ? '今日推荐：' : calendarMode === 'week' ? '本周推荐：' : '本月推荐：' }}
+              {{ calendarMode === 'day' ? t('recommendedDay') : calendarMode === 'week' ? t('recommendedWeek') : t('recommendedMonth') }}
             </span>
             <button 
               v-for="(candidate, index) in currentGoalCandidates" 
@@ -233,11 +233,11 @@
           <!-- Date Navigator Group -->
           <div class="h-9 inline-flex items-center sy-pill-group p-0.5 rounded-xl shadow-xs gap-0.5 box-border">
             <!-- 上一周期 -->
-            <SyTooltip content="上一周期" shortcut="Alt + ←" placement="bottom">
+            <SyTooltip :content="t('navPrevPeriod')" shortcut="Alt + ←" placement="bottom">
               <button 
                 @click="navigatePeriod(-1)" 
                 class="w-7 h-7 flex items-center justify-center sy-text-secondary hover:sy-text-primary rounded-lg transition-colors cursor-pointer"
-                aria-label="上一周期"
+                :aria-label="t('navPrevPeriod')"
               >
                 <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -246,7 +246,7 @@
             </SyTooltip>
             
             <!-- 回到今天/当前周期 -->
-            <SyTooltip :content="`回到当前${calendarMode === 'day' ? '日期' : calendarMode === 'week' ? '周' : calendarMode === 'month' ? '月' : '年'}`" shortcut="T" placement="bottom">
+            <SyTooltip :content="t('navBackTo', { target: calendarMode === 'day' ? t('targetDate') : calendarMode === 'week' ? t('targetWeek') : calendarMode === 'month' ? t('targetMonth') : t('targetYear') })" shortcut="T" placement="bottom">
               <button 
                 @click="jumpToToday" 
                 class="px-3 h-7 flex items-center justify-center text-xs font-semibold sy-text-primary hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors border-x sy-divider cursor-pointer"
@@ -256,11 +256,11 @@
             </SyTooltip>
 
             <!-- 下一周期 -->
-            <SyTooltip content="下一周期" shortcut="Alt + →" placement="bottom">
+            <SyTooltip :content="t('navNextPeriod')" shortcut="Alt + →" placement="bottom">
               <button 
                 @click="navigatePeriod(1)" 
                 class="w-7 h-7 flex items-center justify-center sy-text-secondary hover:sy-text-primary rounded-lg transition-colors cursor-pointer"
-                aria-label="下一周期"
+                :aria-label="t('navNextPeriod')"
               >
                 <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -284,31 +284,31 @@
               @click="switchMode('day')" 
               class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
               :class="calendarMode === 'day' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
-              日视图
+              {{ t('viewDay') }}
             </button>
             <button 
               @click="switchMode('week')" 
               class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
               :class="calendarMode === 'week' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
-              周视图
+              {{ t('viewWeek') }}
             </button>
             <button 
               @click="switchMode('month')" 
               class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
               :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
-              月视图
+              {{ t('viewMonth') }}
             </button>
             <button 
               @click="switchMode('year')" 
               class="h-7 px-3 flex items-center justify-center text-xs rounded-lg transition-all cursor-pointer font-medium"
               :class="calendarMode === 'year' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'sy-text-secondary hover:sy-text-primary hover:bg-black/5 dark:hover:bg-white/5'">
-              年热力
+              {{ t('tabHeatmap') }}
             </button>
           </div>
 
           <!-- Export Dropdown -->
           <div class="relative">
-            <SyTooltip content="导出专注统计数据报表 (CSV / JSON)" placement="bottom">
+            <SyTooltip :content="t('exportTooltip')" placement="bottom">
               <button 
                 @click="isExportMenuOpen = !isExportMenuOpen" 
                 class="h-9 px-3 inline-flex items-center gap-1.5 sy-pill-group hover:bg-black/5 dark:hover:bg-white/10 sy-text-primary text-xs font-semibold rounded-xl transition-all cursor-pointer box-border shadow-xs"
@@ -316,7 +316,7 @@
                 <svg class="w-3.5 h-3.5 sy-wire-icon sy-text-secondary" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                <span>导出</span>
+                <span>{{ t('export') }}</span>
                 <svg class="w-3 h-3 sy-wire-icon sy-text-tertiary" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -329,33 +329,33 @@
               class="absolute right-0 mt-2 w-48 sy-dropdown-card rounded-xl py-1.5 z-[100] flex flex-col text-xs sy-text-primary shadow-2xl"
             >
               <div class="px-3.5 py-1 text-xs sy-text-tertiary font-mono border-b sy-divider">
-                当前周期 ({{ modeName }})
+                {{ t('exportCurrentScope', { scope: modeName }) }}
               </div>
               <button @click="handleExport('current', 'csv')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
-                <span>导出 CSV 表格</span>
+                <span>{{ t('exportCurrentCsv') }}</span>
                 <span class="text-xs sy-text-tertiary font-mono">.csv</span>
               </button>
               <button @click="handleExport('current', 'json')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
-                <span>导出 JSON 数据</span>
+                <span>{{ t('exportCurrentJson') }}</span>
                 <span class="text-xs sy-text-tertiary font-mono">.json</span>
               </button>
 
               <div class="px-3.5 py-1 text-xs sy-text-tertiary font-mono border-y sy-divider mt-1">
-                全部历史记录
+                {{ t('exportAllHistory') }}
               </div>
               <button @click="handleExport('all', 'csv')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
-                <span>导出全量 CSV</span>
+                <span>{{ t('exportAllCsv') }}</span>
                 <span class="text-xs sy-text-tertiary font-mono">.csv</span>
               </button>
               <button @click="handleExport('all', 'json')" class="px-3.5 py-2 text-left hover:bg-indigo-500/15 hover:text-indigo-400 flex items-center justify-between cursor-pointer transition-colors">
-                <span>导出全量 JSON</span>
+                <span>{{ t('exportAllJson') }}</span>
                 <span class="text-xs sy-text-tertiary font-mono">.json</span>
               </button>
             </div>
           </div>
 
           <!-- AI Summary Button -->
-          <SyTooltip content="AI 深度复盘与工作建议" shortcut="Ctrl + Enter" placement="bottom">
+          <SyTooltip :content="t('aiSummaryModalTitle')" shortcut="Ctrl + Enter" placement="bottom">
             <button 
               @click="openAiSummaryModal" 
               class="h-9 px-4 inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer box-border"
@@ -363,7 +363,7 @@
               <svg class="w-3.5 h-3.5 text-purple-200 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span>AI 总结</span>
+              <span>{{ t('aiSummaryBtn') }}</span>
             </button>
           </SyTooltip>
         </div>
@@ -379,7 +379,7 @@
         <!-- KPI 1: Total Focused Time -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-indigo-500/60">
           <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
-            <span>{{ modeName }}总专注</span>
+            <span>{{ modeName }} {{ t('statTotalDuration') }}</span>
             <span class="text-indigo-500 dark:text-indigo-400 font-mono font-medium">Total</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600 dark:from-indigo-400 dark:to-cyan-300">
@@ -407,42 +407,42 @@
         <!-- KPI 3: Total Sessions -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-emerald-500/60">
           <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
-            <span>专注会话数</span>
+            <span>{{ t('statSessions') }}</span>
             <span class="text-emerald-600 dark:text-emerald-400 font-mono font-medium">Sessions</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-            {{ activeLogs.length }} <span class="text-xs font-normal sy-text-secondary">次</span>
+            {{ activeLogs.length }} <span class="text-xs font-normal sy-text-secondary">{{ t('statSessionUnit') }}</span>
           </div>
           <div class="text-xs sy-text-secondary mt-1 truncate">
-            单会话均长 {{ formatDuration(sessionAverageSeconds) }}
+            {{ t('statAvgSessionPrefix') }}{{ formatDuration(sessionAverageSeconds) }}
           </div>
         </div>
 
         <!-- KPI 4: Idle Time Deducted -->
         <div class="kpi-card sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-amber-500/60">
           <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
-            <span>闲置扣除时长</span>
+            <span>{{ t('statIdleDeducted') }}</span>
             <span class="text-amber-600 dark:text-amber-400 font-mono font-medium">Idle Filter</span>
           </div>
           <div class="text-xl md:text-2xl font-black text-amber-600 dark:text-amber-400">
             {{ formatDuration(totalIdleSeconds) }}
           </div>
           <div class="text-xs sy-text-secondary mt-1 truncate">
-            精准剥离无操作挂机
+            {{ t('statIdleDeductedDesc') }}
           </div>
         </div>
 
         <!-- KPI 5: Top Focus Target -->
         <div class="kpi-card col-span-2 sm:col-span-1 sy-card p-3.5 rounded-xl shadow-sm transition-all hover:border-purple-500/60">
           <div class="flex items-center justify-between text-xs sy-text-secondary mb-1">
-            <span>主攻专注重心</span>
+            <span>{{ t('statTopFocus') }}</span>
             <span class="text-purple-600 dark:text-purple-400 font-mono font-medium">Top Focus</span>
           </div>
           <div class="text-sm font-bold sy-text-primary truncate mt-0.5" :title="topDocInfo.title">
             {{ topDocInfo.title }}
           </div>
           <div class="text-xs text-purple-600 dark:text-purple-300 mt-1 font-mono font-bold">
-            {{ topDocInfo.durationStr }} (占比 {{ topDocInfo.percent }}%)
+            {{ topDocInfo.durationStr }} ({{ t('statTopShare') }} {{ topDocInfo.percent }}%)
           </div>
         </div>
       </div>
@@ -468,10 +468,10 @@
           {{ calendarSectionTitle }}
         </h2>
         <span class="text-xs sy-text-secondary">
-          <template v-if="calendarMode === 'year'">点击任意方格可下钻至当天的日视图</template>
-          <template v-else-if="calendarMode === 'month'">点击任意日期可切换进入该日视图</template>
-          <template v-else-if="calendarMode === 'week'">点击表头日期可下钻至日视图</template>
-          <template v-else>点击色块直达思源对应文档</template>
+          <template v-if="calendarMode === 'year'">{{ t('hintDrilldownYear') }}</template>
+          <template v-else-if="calendarMode === 'month'">{{ t('hintDrilldownMonth') }}</template>
+          <template v-else-if="calendarMode === 'week'">{{ t('hintDrilldownWeek') }}</template>
+          <template v-else>{{ t('hintClickDoc') }}</template>
         </span>
       </div>
 
@@ -535,6 +535,7 @@ import { Exporter } from '../utils/exporter';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
 import Logger from '../utils/logger';
 import iconUrl from '../../icon.webp';
+import { t, formatDurationI18n, currentLang, getWeekdayNames } from '../i18n';
 
 const plugin = usePlugin();
 const emit = defineEmits<{
@@ -590,46 +591,30 @@ let focusGoalTipTimer: ReturnType<typeof setTimeout> | null = null;
 const currentGoalCandidates = computed(() => {
   if (calendarMode.value === 'day') {
     return [
-      '今天专注1小时，处理12篇笔记文档',
-      '今天专注2小时，深度推进核心课题',
-      '今天完成4个番茄钟深度工作',
-      '今天专注阅读与提炼1.5小时'
+      t('candidateDay1'),
+      t('candidateDay2'),
+      t('candidateDay3'),
+      t('candidateDay4'),
     ];
   } else if (calendarMode.value === 'week') {
     return [
-      '本周平均每天专注2小时',
-      '本周累计完成20个番茄钟',
-      '本周主攻核心知识库重构 (10小时)',
-      '最近一周每天保持深度专注'
+      t('candidateWeek1'),
+      t('candidateWeek2'),
+      t('candidateWeek3'),
     ];
   } else if (calendarMode.value === 'month') {
     return [
-      '本月累计深度工作50小时',
-      '本月攻克核心学习专题 (30小时)',
-      '本月平均每周专注12小时',
-      '本月养成每日深度工作习惯'
+      t('candidateMonth1'),
+      t('candidateMonth2'),
     ];
   } else {
-    return [
-      '本年累计深度工作500小时',
-      '本年构建核心知识体系与长青笔记',
-      '本年攻克专业考试与核心技能',
-      '保持每日无感专注与深度心流'
-    ];
+    return [];
   }
 });
 
 // 动态输入框占位符
 const currentGoalPlaceholder = computed(() => {
-  if (calendarMode.value === 'day') {
-    return '设定今日专注目标，如：今天专注2小时，深度推进核心课题...';
-  } else if (calendarMode.value === 'week') {
-    return '设定本周专注目标，如：本周平均每天专注2小时...';
-  } else if (calendarMode.value === 'month') {
-    return '设定本月专注目标，如：本月累计深度工作50小时...';
-  } else {
-    return '设定本年专注目标，如：本年累计深度工作500小时...';
-  }
+  return t('focusGoalPlaceholder');
 });
 
 // AI Summary Modal State
@@ -644,28 +629,23 @@ const formatDateKey = (d: Date): string => {
 };
 
 const formatDuration = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}小时 ${m}分钟`;
-  if (m > 0) return `${m}分钟`;
-  if (s > 0) return `${s}秒`;
-  return `0分钟`;
+  return formatDurationI18n(seconds, currentLang.value);
 };
 
 // Mode metadata
 const modeName = computed(() => {
-  if (calendarMode.value === 'day') return '日';
-  if (calendarMode.value === 'week') return '周';
-  if (calendarMode.value === 'month') return '月';
-  return '年';
+  if (calendarMode.value === 'day') return t('viewDay');
+  if (calendarMode.value === 'week') return t('viewWeek');
+  if (calendarMode.value === 'month') return t('viewMonth');
+  return t('tabHeatmap');
 });
 
 const todayButtonLabel = computed(() => {
-  if (calendarMode.value === 'day') return '今日';
-  if (calendarMode.value === 'week') return '本周';
-  if (calendarMode.value === 'month') return '本月';
-  return '本年';
+  const isEn = currentLang.value === 'en_US';
+  if (calendarMode.value === 'day') return isEn ? 'Today' : '今日';
+  if (calendarMode.value === 'week') return isEn ? 'This Week' : '本周';
+  if (calendarMode.value === 'month') return isEn ? 'This Month' : '本月';
+  return isEn ? 'This Year' : '本年';
 });
 
 // 计算指定日期的周序号（ISO/标准周）
@@ -683,8 +663,12 @@ const currentPeriodLabel = computed(() => {
   const year = d.getFullYear();
   const month = d.getMonth() + 1;
   const date = d.getDate();
+  const isEn = currentLang.value === 'en_US';
 
   if (calendarMode.value === 'day') {
+    if (isEn) {
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
     const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     return `${year}年${month}月${date}日 ${weekNames[d.getDay()]}`;
   } else if (calendarMode.value === 'week') {
@@ -697,10 +681,19 @@ const currentPeriodLabel = computed(() => {
 
     const mStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
     const sStr = `${sunday.getMonth() + 1}/${sunday.getDate()}`;
+    if (isEn) {
+      return `${mStr} - ${sStr}, ${year} (Week ${getWeekNumber(d)})`;
+    }
     return `${year}年 (周度 ${mStr} - ${sStr})`;
   } else if (calendarMode.value === 'month') {
+    if (isEn) {
+      return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
     return `${year}年 ${month}月`;
   } else {
+    if (isEn) {
+      return `${year} (Annual Heatmap)`;
+    }
     return `${year}年 (全年度热力)`;
   }
 });
@@ -711,8 +704,12 @@ const calendarSectionTitle = computed(() => {
   const year = d.getFullYear();
   const month = d.getMonth() + 1;
   const date = d.getDate();
+  const isEn = currentLang.value === 'en_US';
 
   if (calendarMode.value === 'day') {
+    if (isEn) {
+      return `Calendar View (${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })})`;
+    }
     const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     return `日历视图 (${year}年${month}月${date}日 ${weekNames[d.getDay()]})`;
   } else if (calendarMode.value === 'week') {
@@ -726,10 +723,19 @@ const calendarSectionTitle = computed(() => {
 
     const mStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
     const sStr = `${sunday.getMonth() + 1}/${sunday.getDate()}`;
+    if (isEn) {
+      return `Calendar View (${year} Week ${weekNum} · ${mStr} - ${sStr})`;
+    }
     return `日历视图 (${year}年 第${weekNum}周 · ${mStr} - ${sStr})`;
   } else if (calendarMode.value === 'month') {
+    if (isEn) {
+      return `Calendar View (${d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
+    }
     return `日历视图 (${year}年 第${month}月)`;
   } else {
+    if (isEn) {
+      return `Annual Focus Heatmap (${year})`;
+    }
     return `年度专注热力图 (${year}年)`;
   }
 });
@@ -750,7 +756,7 @@ const scopeDayLabels = computed(() => {
     monday.setHours(0, 0, 0, 0);
 
     const labels = [];
-    const weekNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    const weekNames = getWeekdayNames(currentLang.value);
     for (let i = 0; i < 7; i++) {
       const item = new Date(monday);
       item.setDate(monday.getDate() + i);
@@ -773,10 +779,13 @@ const scopeDayLabels = computed(() => {
     return labels;
   } else {
     const labels = [];
+    const monthNames = currentLang.value === 'en_US'
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      : ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
     for (let m = 1; m <= 12; m++) {
       labels.push({
         key: `${year}-${String(m).padStart(2, '0')}`,
-        label: `${m}月`
+        label: monthNames[m - 1]
       });
     }
     return labels;
@@ -793,15 +802,15 @@ const totalIdleSeconds = computed(() => {
 });
 
 const scopeFocusSubtitle = computed(() => {
-  if (calendarMode.value === 'day') return '今日净深度工作时间';
-  if (calendarMode.value === 'week') return '本周7日累计专注总时长';
-  if (calendarMode.value === 'month') return '本月度总累计投入时间';
-  return '本年度累计有效专注总时长';
+  if (calendarMode.value === 'day') return t('scopeFocusSubtitleDay');
+  if (calendarMode.value === 'week') return t('scopeFocusSubtitleWeek');
+  if (calendarMode.value === 'month') return t('scopeFocusSubtitleMonth');
+  return t('scopeFocusSubtitleYear');
 });
 
 const averageMetricLabel = computed(() => {
-  if (calendarMode.value === 'day') return '时段专注峰值';
-  return '日均专注时长';
+  if (calendarMode.value === 'day') return t('averageMetricPeakDay');
+  return t('averageMetricDailyAvg');
 });
 
 const averageFocusSeconds = computed(() => {
@@ -824,10 +833,10 @@ const averageFocusSeconds = computed(() => {
 });
 
 const averageMetricSubtitle = computed(() => {
-  if (calendarMode.value === 'day') return '今日最高单小时专注';
-  if (calendarMode.value === 'week') return '周内每日平均产出';
-  if (calendarMode.value === 'month') return '全月每日平均产出';
-  return '全年每日平均产出';
+  if (calendarMode.value === 'day') return t('averageSubtitlePeak');
+  if (calendarMode.value === 'week') return t('averageSubtitleWeek');
+  if (calendarMode.value === 'month') return t('averageSubtitleMonth');
+  return t('averageSubtitleYear');
 });
 
 const sessionAverageSeconds = computed(() => {
@@ -838,13 +847,13 @@ const sessionAverageSeconds = computed(() => {
 const topDocInfo = computed(() => {
   const aggregated: Record<string, number> = {};
   activeLogs.value.forEach(l => {
-    const title = docTitles.value[l.docId] || l.docId || '未知文档';
+    const title = docTitles.value[l.docId] || l.docId || t('timelineUnknownDoc');
     aggregated[title] = (aggregated[title] || 0) + l.duration;
   });
 
   const sorted = Object.entries(aggregated).sort((a, b) => b[1] - a[1]);
   if (sorted.length === 0) {
-    return { title: '暂无活动', durationStr: '0m', percent: 0 };
+    return { title: t('statNoActivity'), durationStr: '0m', percent: 0 };
   }
 
   const [topTitle, dur] = sorted[0];
@@ -904,7 +913,7 @@ const handleRefreshData = async () => {
     (plugin as any).storageManager.clearCache();
   }
   await loadDataForCurrentScope();
-  showToast('已重新载入并计算最新时间数据');
+  showToast(t('refreshSuccess'));
 };
 
 // 打开设置
@@ -968,7 +977,7 @@ const handleExport = (range: 'current' | 'all', format: 'csv' | 'json') => {
   }
 
   if (!logsToExport || logsToExport.length === 0) {
-    showToast('⚠️ 当前无任何可导出的数据');
+    showToast(t('noExportData'));
     return;
   }
 
@@ -978,7 +987,7 @@ const handleExport = (range: 'current' | 'all', format: 'csv' | 'json') => {
   } else {
     Exporter.exportToJson(logsToExport, filename);
   }
-  showToast(`成功导出 ${logsToExport.length} 条记录 (${format.toUpperCase()})`);
+  showToast(t('exportSuccess', { count: logsToExport.length, format: format.toUpperCase() }));
 };
 
 // Focus Goal Management
@@ -1012,6 +1021,7 @@ const confirmGoalEdit = () => {
   focusGoal.value = editGoalInput.value.trim();
   saveFocusGoal();
   isEditingFocusGoal.value = false;
+  showToast(t('saveGoalSuccess'));
 };
 
 const cancelGoalEdit = () => {
@@ -1024,6 +1034,7 @@ const selectGoalCandidate = (candidate: string) => {
   editGoalInput.value = candidate;
   saveFocusGoal();
   isEditingFocusGoal.value = false;
+  showToast(t('saveGoalSuccess'));
 };
 
 const clearFocusGoal = () => {
@@ -1031,6 +1042,7 @@ const clearFocusGoal = () => {
   editGoalInput.value = '';
   saveFocusGoal();
   isEditingFocusGoal.value = true;
+  showToast(t('clearGoalSuccess'));
   nextTick(() => {
     goalInputRef.value?.focus();
   });

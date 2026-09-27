@@ -17,7 +17,7 @@
           <div>
             <div class="flex flex-wrap items-center gap-2">
               <h3 class="text-sm sm:text-base font-bold sy-text-primary tracking-wide">
-                AI 深度复盘与工作建议
+                {{ t('aiSummaryModalTitle') }}
               </h3>
               <!-- 周期标签 -->
               <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-medium font-mono font-tabular">
@@ -35,18 +35,18 @@
                 <circle cx="12" cy="12" r="6" />
                 <circle cx="12" cy="12" r="2" />
               </svg>
-              <span>目标：{{ focusGoal }}</span>
+              <span>{{ t('aiModalTarget') }}{{ focusGoal }}</span>
             </p>
           </div>
         </div>
 
         <!-- Close Button -->
-        <SyTooltip content="关闭 (Esc)" placement="bottom">
+        <SyTooltip :content="`${t('aiModalClose')} (Esc)`" placement="bottom">
           <SyIconButton 
             icon="close" 
             size="md" 
             variant="ghost" 
-            aria-label="关闭" 
+            :aria-label="t('aiModalClose')" 
             @click="handleClose" 
           />
         </SyTooltip>
@@ -63,14 +63,13 @@
             </svg>
           </div>
           <div class="max-w-md">
-            <h4 class="text-sm sm:text-base font-bold sy-text-primary">尚未配置大模型 API</h4>
-            <p class="text-xs sy-text-secondary mt-2 leading-relaxed">
-              请先在插件设置中填写 API 接口地址与密钥，或者使用 <strong>API 旋钮 (siyuan-api-switch)</strong> 进行统一接管配置。
+            <h4 class="text-sm sm:text-base font-bold sy-text-primary">{{ t('aiModalNoConfigTitle') }}</h4>
+            <p class="text-xs sy-text-secondary mt-2 leading-relaxed" v-html="t('aiModalNoConfigDesc')">
             </p>
           </div>
           <button @click="handleOpenSettings" 
                   class="mt-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all cursor-pointer">
-            前往配置 AI 服务
+            {{ t('aiModalGoConfig') }}
           </button>
         </div>
 
@@ -84,7 +83,7 @@
             </svg>
           </div>
           <div class="max-w-lg">
-            <h4 class="text-xs sm:text-sm font-bold text-rose-500">生成 AI 总结失败</h4>
+            <h4 class="text-xs sm:text-sm font-bold text-rose-500">{{ t('aiModalErrorTitle') }}</h4>
             <p class="text-xs sy-text-secondary mt-1 font-mono sy-code-block p-3 rounded-lg border sy-divider break-all text-left">
               {{ errorMessage }}
             </p>
@@ -92,11 +91,11 @@
           <div class="flex items-center gap-3 mt-2">
             <button @click="generateSummary" 
                     class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
-              重新生成
+              {{ t('aiModalRegenerate') }}
             </button>
             <button @click="handleOpenSettings" 
                     class="px-4 py-2 rounded-xl sy-btn-secondary text-xs font-medium border transition-all cursor-pointer">
-              检查 AI 设置
+              {{ t('aiModalCheckSettings') }}
             </button>
           </div>
         </div>
@@ -110,8 +109,8 @@
             </svg>
           </div>
           <div class="text-center">
-            <div class="text-xs sm:text-sm font-semibold sy-text-primary">AI 正在深度复盘与分析...</div>
-            <div class="text-xs sy-text-secondary mt-1">正在融合时间统计指标与专注目标数据</div>
+            <div class="text-xs sm:text-sm font-semibold sy-text-primary">{{ t('aiModalThinking') }}</div>
+            <div class="text-xs sy-text-secondary mt-1">{{ t('aiModalThinkingDesc') }}</div>
           </div>
         </div>
 
@@ -130,16 +129,16 @@
         <div class="text-xs sy-text-secondary flex items-center gap-2 font-tabular">
           <span v-if="loading" class="flex items-center gap-1.5 text-indigo-500 font-medium">
             <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-            正在生成洞察与建议...
+            {{ t('aiModalGeneratingStatus') }}
           </span>
           <span v-else class="sy-text-secondary">
-            总计统计 {{ logs?.length || 0 }} 次专注会话
+            {{ t('aiModalTotalSessions', { count: logs?.length || 0 }) }}
           </span>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <!-- 导出为独立思源复盘文档 (核心生产力生态闭环) -->
-          <SyTooltip content="在思源笔记中创建独立复盘笔记文档" placement="top">
+          <SyTooltip :content="t('aiModalSaveDocTooltip')" placement="top">
             <button 
               @click="saveAsSiyuanDoc" 
               :disabled="loading || !summaryMarkdown || isSavingDoc"
@@ -148,12 +147,12 @@
               <svg class="w-3.5 h-3.5 text-indigo-500 sy-wire-icon" :class="{ 'animate-spin': isSavingDoc }" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <span>{{ isSavingDoc ? '正在保存...' : '沉淀为思源笔记' }}</span>
+              <span>{{ isSavingDoc ? t('aiModalSavingDoc') : t('aiModalSaveDoc') }}</span>
             </button>
           </SyTooltip>
 
           <!-- 复制总结 -->
-          <SyTooltip content="复制 Markdown 复盘内容至剪贴板" placement="top">
+          <SyTooltip :content="t('aiModalCopyTooltip')" placement="top">
             <button 
               @click="copySummary" 
               :disabled="loading || !summaryMarkdown"
@@ -166,7 +165,7 @@
               <svg v-else class="w-3.5 h-3.5 text-emerald-500 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              <span>{{ copySuccess ? '已复制' : '复制总结' }}</span>
+              <span>{{ copySuccess ? t('aiModalCopiedBtn') : t('aiModalCopyBtn') }}</span>
             </button>
           </SyTooltip>
 
@@ -179,7 +178,7 @@
             <svg class="w-3.5 h-3.5 sy-wire-icon" :class="{ 'animate-spin': loading }" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>重新生成</span>
+            <span>{{ t('aiModalRegenerate') }}</span>
           </button>
 
           <!-- 关闭 -->
@@ -187,7 +186,7 @@
             @click="handleClose" 
             class="px-3.5 py-1.5 rounded-xl sy-btn-secondary text-xs font-medium border transition-colors cursor-pointer"
           >
-            关闭
+            {{ t('aiModalClose') }}
           </button>
         </div>
       </div>
@@ -206,6 +205,7 @@ import { renderMarkdown } from '../utils/markdown';
 import SyTooltip from './Common/SyTooltip.vue';
 import SyIconButton from './Common/SyIconButton.vue';
 import { lsNotebooks, createDocWithMd } from '../api';
+import { t, currentLang } from '../i18n';
 
 const props = defineProps<{
   visible: boolean;
@@ -285,7 +285,7 @@ const copySummary = async () => {
     }, 2000);
   } catch (err) {
     console.error('Failed to copy summary:', err);
-    showMessage('复制总结失败，请手动选中文本复制', 3000, 'error');
+    showMessage(t('aiSummaryCopyFailed'), 3000, 'error');
   }
 };
 
@@ -297,28 +297,35 @@ const saveAsSiyuanDoc = async () => {
     const notebooksRes = await lsNotebooks();
     const openNotebook = notebooksRes?.notebooks?.find(nb => !nb.closed) || notebooksRes?.notebooks?.[0];
     if (!openNotebook) {
-      showMessage('未找到已打开的笔记本，无法创建复盘文档', 3000, 'error');
+      showMessage(t('aiModalSaveDocFailed'), 3000, 'error');
       return;
     }
 
+    const isEn = currentLang.value === 'en_US';
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const docPath = `/时间复盘/源时记 · ${props.scopeTitle} (${dateStr})`;
+    const folderName = isEn ? 'TimeReview' : '时间复盘';
+    const pluginName = isEn ? 'TimeSpent' : '源时记';
+    const docPath = `/${folderName}/${pluginName} · ${props.scopeTitle} (${dateStr})`;
     
     // 生成美观的 Markdown 头部
-    const content = `# 源时记 · ${props.scopeTitle} 深度复盘\n\n> ⏱️ 生成时间：${now.toLocaleString()} | 统计会话：${props.logs?.length || 0} 次${props.focusGoal ? ` | 专注目标：${props.focusGoal}` : ''}\n\n${summaryMarkdown.value}`;
+    const title = isEn ? `# TimeSpent · ${props.scopeTitle} Deep Review` : `# 源时记 · ${props.scopeTitle} 深度复盘`;
+    const metaTime = isEn ? `⏱️ Generated: ${now.toLocaleString()}` : `⏱️ 生成时间：${now.toLocaleString()}`;
+    const metaSessions = isEn ? `Sessions: ${props.logs?.length || 0}` : `统计会话：${props.logs?.length || 0} 次`;
+    const metaGoal = props.focusGoal ? (isEn ? ` | Goal: ${props.focusGoal}` : ` | 专注目标：${props.focusGoal}`) : '';
+    const content = `${title}\n\n> ${metaTime} | ${metaSessions}${metaGoal}\n\n${summaryMarkdown.value}`;
 
     const docId = await createDocWithMd(openNotebook.id, docPath, content);
     if (docId) {
-      showMessage('已成功保存为独立复盘笔记！', 3500, 'info');
+      showMessage(t('aiModalSaveDocSuccess'), 3500, 'info');
       // 打开新建的文档
       window.open(`siyuan://blocks/${docId}`);
     } else {
-      showMessage('创建文档失败，请检查思源存储空间', 3000, 'error');
+      showMessage(t('aiModalSaveDocFailed'), 3000, 'error');
     }
   } catch (err) {
     console.error('Failed to create siyuan doc:', err);
-    showMessage('保存复盘笔记失败，请重试', 3000, 'error');
+    showMessage(t('aiModalSaveDocFailed'), 3000, 'error');
   } finally {
     isSavingDoc.value = false;
   }

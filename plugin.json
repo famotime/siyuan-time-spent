@@ -27,7 +27,9 @@
     "en_US": "Automatic time tracking and deep work analytics for SiYuan with smart idle filtering, calendar dashboard, and AI review."
   },
   "readme": {
-    "default": "README.md"
+    "default": "README.md",
+    "zh_CN": "README.md",
+    "en_US": "README_en_US.md"
   },
   "keywords": [
     "time-tracking",

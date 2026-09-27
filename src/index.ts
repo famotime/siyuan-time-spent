@@ -14,6 +14,7 @@ import { SettingManager } from './utils/setting';
 import Logger from './utils/logger';
 import { DEFAULT_SETTINGS, PluginSettings } from './models/Settings';
 import type { SharedConfig } from './types/api-switch';
+import { initI18n, destroyI18n, t } from './i18n';
 
 const TAB_TYPE = "dashboard_tab";
 
@@ -76,6 +77,7 @@ export default class TimeSpentPlugin extends Plugin {
 
     // 1. 加载配置并初始化日志管理器（默认关闭日志输出）
     await this.loadSettings();
+    initI18n(this.settings.language || 'auto');
     Logger.setEnableLog(this.settings.enableLog);
     Logger.log('Plugin loading, platform:', this.platform, 'version:', this.version);
 
@@ -124,7 +126,7 @@ export default class TimeSpentPlugin extends Plugin {
     // 5. 注册思源顶栏图标
     this.addTopBar({
       icon: "iconClock",
-      title: this.i18n.title || "源时记",
+      title: t("addTopBarIcon"),
       callback: () => {
         this.openDashboard();
       },
@@ -157,6 +159,7 @@ export default class TimeSpentPlugin extends Plugin {
       }
     }
 
+    destroyI18n();
     destroy();
   }
 
@@ -186,7 +189,7 @@ export default class TimeSpentPlugin extends Plugin {
         custom: {
           id: this.name + TAB_TYPE,
           icon: "iconClock",
-          title: this.i18n.title || "源时记",
+          title: t("title"),
         },
       });
     } else {
@@ -224,7 +227,7 @@ export default class TimeSpentPlugin extends Plugin {
 
       window.siyuanApiSwitch.register(
         this.name,
-        this.i18n.title || "源时记",
+        t("title"),
         (config: SharedConfig | null) => {
           this.activeAiConfig.value = config;
           if (this.settings.enableLog) {

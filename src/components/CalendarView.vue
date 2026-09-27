@@ -8,9 +8,9 @@
         <div class="p-3 sy-section-header border-b sy-divider flex justify-between items-center text-xs sm:text-sm font-semibold sy-text-primary">
           <span class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-            24小时活动时间槽 ({{ formattedSelectedDate }})
+            {{ t('calendarActivitySlots', { date: formattedSelectedDate }) }}
           </span>
-          <span class="text-xs sy-text-secondary font-mono font-tabular">共 {{ currentDayLogs.length }} 条记录</span>
+          <span class="text-xs sy-text-secondary font-mono font-tabular">{{ t('calendarTotalRecords', { count: currentDayLogs.length }) }}</span>
         </div>
         
         <div class="flex-grow overflow-y-auto relative isolate sy-timeline-canvas" ref="dayScrollContainer">
@@ -46,12 +46,12 @@
                    @mousemove="updateBlockTooltip($event)"
                    @mouseleave="handleBlockMouseLeave">
                 <div class="px-2.5 py-1 flex items-center justify-between text-white drop-shadow font-semibold text-xs truncate">
-                  <span class="truncate">{{ block.title || '加载中...' }}</span>
+                  <span class="truncate">{{ block.title || t('calendarLoading') }}</span>
                   <span class="text-xs opacity-90 font-mono ml-2 shrink-0 font-tabular">{{ formatDuration(block.log.duration) }}</span>
                 </div>
                 <div v-if="block.height >= 38" class="px-2.5 text-xs text-white/90 truncate opacity-0 group-hover:opacity-100 transition-opacity font-tabular">
                   {{ formatTime(block.log.startTime) }} - {{ formatTime(block.log.endTime) }}
-                  <span v-if="block.log.idleTime > 0" class="ml-1 text-amber-300 font-normal">(-{{ block.log.idleTime }}s 闲置)</span>
+                  <span v-if="block.log.idleTime > 0" class="ml-1 text-amber-300 font-normal">(-{{ block.log.idleTime }}s {{ t('idleDeducted') }})</span>
                 </div>
               </div>
             </div>
@@ -75,12 +75,12 @@
       <!-- Right Column: Day Timeline & Doc Ranking (4-5 cols on lg) -->
       <div class="lg:col-span-4 flex flex-col sy-card-bg overflow-hidden">
         <div class="p-3 sy-section-header border-b sy-divider text-xs sm:text-sm font-semibold sy-text-primary flex justify-between items-center">
-          <span>今日活动清单</span>
-          <span class="text-xs text-indigo-500 font-mono font-semibold font-tabular">当日合计 {{ formatDuration(currentDayTotalSec) }}</span>
+          <span>{{ t('calendarTodayList') }}</span>
+          <span class="text-xs text-indigo-500 font-mono font-semibold font-tabular">{{ t('calendarDayTotal', { duration: formatDuration(currentDayTotalSec) }) }}</span>
         </div>
         <div class="flex-grow overflow-y-auto p-3.5 space-y-2.5">
           <div v-if="currentDayLogs.length === 0" class="text-center py-16 sy-text-tertiary text-xs">
-            该日期暂无时间记录
+            {{ t('calendarNoRecords') }}
           </div>
           <div v-for="log in sortedCurrentDayLogs" :key="log.id"
                class="p-3 rounded-xl sy-list-item-card transition-all cursor-pointer group"
@@ -95,15 +95,15 @@
             <div class="flex justify-between items-start mb-1">
               <div class="font-semibold text-xs sy-text-primary group-hover:text-indigo-400 transition-colors line-clamp-1 flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
-                <span class="truncate">{{ docTitles[log.docId] || log.docId || '未知文档' }}</span>
+                <span class="truncate">{{ docTitles[log.docId] || log.docId || t('timelineUnknownDoc') }}</span>
               </div>
               <span class="text-xs sy-text-secondary font-mono font-tabular shrink-0 ml-2">
                 {{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}
               </span>
             </div>
             <div class="flex justify-between items-center text-xs mt-1 sy-text-secondary">
-              <span class="text-indigo-500 font-mono font-semibold font-tabular">专注: {{ formatDuration(log.duration) }}</span>
-              <span v-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">扣除闲置: {{ log.idleTime }}s</span>
+              <span class="text-indigo-500 font-mono font-semibold font-tabular">{{ t('calendarFocus') }}: {{ formatDuration(log.duration) }}</span>
+              <span v-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">{{ t('calendarIdleDeducted', { seconds: log.idleTime }) }}</span>
             </div>
           </div>
         </div>
@@ -116,7 +116,7 @@
       <!-- 7 Day Header -->
       <div class="grid grid-cols-8 border-b sy-divider sy-section-header text-center text-xs font-semibold sy-text-secondary select-none">
         <div class="col-span-1 p-2.5 border-r sy-divider flex items-center justify-center sy-text-tertiary">
-          时刻
+          {{ t('calendarTime') }}
         </div>
         <div v-for="day in weekDays" :key="day.dateStr"
              class="col-span-1 p-2 border-r sy-divider last:border-r-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
@@ -171,7 +171,7 @@
                  @mousemove="updateBlockTooltip($event)"
                  @mouseleave="handleBlockMouseLeave">
               <div class="px-1.5 py-0.5 font-semibold text-white/95 truncate leading-tight drop-shadow-xs text-xs">
-                {{ block.title || '加载中...' }}
+                {{ block.title || t('calendarLoading') }}
               </div>
               <div v-if="block.height >= 34" class="px-1.5 text-xs text-white/80 truncate opacity-0 group-hover:opacity-100 transition-opacity font-tabular">
                 {{ formatTime(block.log.startTime) }} ({{ formatDuration(block.log.duration) }})
@@ -195,7 +195,7 @@
     <div v-else-if="mode === 'month'" class="month-view-container flex flex-col h-[680px] sy-card-bg">
       <!-- Weekday Headers -->
       <div class="grid grid-cols-7 border-b sy-divider sy-section-header text-center py-2 text-xs font-semibold sy-text-secondary">
-        <div v-for="w in ['周一', '周二', '周三', '周四', '周五', '周六', '周日']" :key="w" class="col-span-1">
+        <div v-for="w in getWeekdayNames(currentLang)" :key="w" class="col-span-1">
           {{ w }}
         </div>
       </div>
@@ -225,17 +225,17 @@
             <div v-for="(doc, idx) in cell.topDocs.slice(0, 2)" :key="idx"
                  class="text-xs truncate px-1.5 py-0.5 rounded sy-doc-tag flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: getDocColor(doc.docId) }"></span>
-              <span class="truncate">{{ docTitles[doc.docId] || doc.docId || '专注文档' }}</span>
+              <span class="truncate">{{ docTitles[doc.docId] || doc.docId || t('calendarFocusDoc') }}</span>
             </div>
             <div v-if="cell.topDocs.length > 2" class="text-xs sy-text-tertiary font-mono pl-1">
-              +{{ cell.topDocs.length - 2 }} 更多
+              {{ t('calendarMore', { count: cell.topDocs.length - 2 }) }}
             </div>
           </div>
 
           <!-- Bottom: Session Count / Hint -->
           <div class="flex justify-between items-center text-xs sy-text-tertiary font-mono font-tabular">
-            <span v-if="cell.sessionCount > 0">{{ cell.sessionCount }} 次会话</span>
-            <span v-else class="text-transparent group-hover:sy-text-tertiary">查看</span>
+            <span v-if="cell.sessionCount > 0">{{ cell.sessionCount }} {{ t('sessionCount') }}</span>
+            <span v-else class="text-transparent group-hover:sy-text-tertiary">{{ t('calendarViewAction') }}</span>
           </div>
         </div>
       </div>
@@ -281,6 +281,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import type { TimeLog } from '../models/TimeLog';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
 import { sql } from '../api';
+import { t, formatDurationI18n, currentLang, getWeekdayNames } from '../i18n';
 
 const props = defineProps<{
   logs: TimeLog[];
@@ -344,13 +345,7 @@ const formatTime = (ts: number): string => {
 };
 
 const formatDuration = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m`;
-  if (s > 0) return `${s}s`;
-  return `0m`;
+  return formatDurationI18n(seconds, currentLang.value);
 };
 
 // 莫兰迪色彩分配
@@ -395,9 +390,10 @@ const handleListMouseLeave = () => {
 
 const showBlockTooltip = async (event: MouseEvent, log: TimeLog) => {
   hoverTooltip.value.visible = true;
-  hoverTooltip.value.title = docTitles.value[log.docId] || log.docId || '未知文档';
+  hoverTooltip.value.title = docTitles.value[log.docId] || log.docId || t('unknownDoc');
   hoverTooltip.value.timeRange = `${formatTime(log.startTime)} - ${formatTime(log.endTime)}`;
-  hoverTooltip.value.durationStr = `专注 ${formatDuration(log.duration)}${log.idleTime > 0 ? ` (扣闲置 ${log.idleTime}s)` : ''}`;
+  const idleStr = log.idleTime > 0 ? ` (${t('calendarIdleDeducted', { seconds: log.idleTime })})` : '';
+  hoverTooltip.value.durationStr = `${t('calendarFocus')}: ${formatDuration(log.duration)}${idleStr}`;
   updateBlockTooltip(event);
 
   // 异步获取文档路径与属性
@@ -436,6 +432,9 @@ const selectedDateKey = computed(() => formatDateKey(props.currentDate));
 
 const formattedSelectedDate = computed(() => {
   const d = props.currentDate;
+  if (currentLang.value === 'en_US') {
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 });
 
@@ -596,7 +595,7 @@ const weekDays = computed(() => {
     days.push({
       dateStr,
       displayDate: `${d.getMonth() + 1}/${d.getDate()}`,
-      dayName: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][i],
+      dayName: getWeekdayNames(currentLang.value)[i],
       isToday: dateStr === todayKey,
       dateObj: d,
       totalDuration

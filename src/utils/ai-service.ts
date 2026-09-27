@@ -3,6 +3,7 @@ import type { TimeLog } from "../models/TimeLog";
 import { AIExportManager } from "./ai-export";
 import { docTitles } from "./title-cache";
 import Logger from "./logger";
+import { currentLang, formatDurationI18n } from "../i18n";
 
 export interface AISummaryRequestOptions {
   plugin: TimeSpentPlugin;
@@ -32,7 +33,7 @@ export class AIService {
   }
 
   /**
-   * 生成精炼高效的时间复盘 Prompt
+   * 生成精炼高效的时间复盘 Prompt（自适应中英双语）
    */
   public static buildPrompt(
     logs: TimeLog[],
@@ -40,13 +41,8 @@ export class AIService {
     scopeType: "day" | "week" | "month",
     focusGoal?: string
   ): { systemPrompt: string; userPrompt: string } {
+    const isEn = currentLang.value === "en_US";
     const safeLogs = logs || [];
-    const scopeLabels: Record<string, string> = {
-      day: "今日",
-      week: "本周",
-      month: "本月",
-    };
-    const scopeLabel = scopeLabels[scopeType] || "统计周期";
 
     const totalSeconds = safeLogs.reduce((acc, log) => acc + log.duration, 0);
     const totalIdle = safeLogs.reduce((acc, log) => acc + log.idleTime, 0);
@@ -54,7 +50,7 @@ export class AIService {
     // 聚合文档投入并取前 5 项
     const aggregated: Record<string, { duration: number; sessions: number }> = {};
     safeLogs.forEach((log) => {
-      const title = docTitles.value[log.docId] || log.docId || "未知文档";
+      const title = docTitles.value[log.docId] || log.docId || (isEn ? "Unknown Document" : "未知文档");
       if (!aggregated[title]) {
         aggregated[title] = { duration: 0, sessions: 0 };
       }
@@ -65,28 +61,85 @@ export class AIService {
     const sortedDocs = Object.entries(aggregated).sort((a, b) => b[1].duration - a[1].duration);
     const topDocs = sortedDocs.slice(0, 5);
 
-    let statsText = `【统计周期】: ${scopeTitle} (${scopeLabel})\n`;
-    statsText += `- 总专注时长: ${this.formatDuration(totalSeconds)}，会话次数: ${safeLogs.length} 次，闲置扣除: ${this.formatDuration(totalIdle)}\n`;
-    if (topDocs.length > 0) {
-      statsText += `- 核心投入文档 (Top ${topDocs.length}):\n`;
-      topDocs.forEach(([name, s]) => {
-        const pct = totalSeconds > 0 ? ((s.duration / totalSeconds) * 100).toFixed(0) : "0";
-        statsText += `  • ${name}: ${this.formatDuration(s.duration)} (${pct}%, ${s.sessions}次会话)\n`;
-      });
-    }
+    if (isEn) {
+      const scopeLabels: Record<string, string> = {
+        day: "Today",
+        week: "This Week",
+        month: "This Month",
+      };
+      const scopeLabel = scopeLabels[scopeType] || "Period";
 
-    const systemPrompt = `你是一位高效专注与深度工作复盘教练。
+      let statsText = `[Review Period]: ${scopeTitle} (${scopeLabel})\n`;
+      statsText += `- Total Focus Duration: ${formatDurationI18n(totalSeconds, "en_US")}, Total Sessions: ${safeLogs.length}, Idle Deducted: ${formatDurationI18n(totalIdle, "en_US")}\n`;
+      if (topDocs.length > 0) {
+        statsText += `- Core Documents (Top ${topDocs.length}):\n`;
+        topDocs.forEach(([name, s]) => {
+          const pct = totalSeconds > 0 ? ((s.duration / totalSeconds) * 100).toFixed(0) : "0";
+          statsText += `  • ${name}: ${formatDurationI18n(s.duration, "en_US")} (${pct}%, ${s.sessions} sessions)\n`;
+        });
+      }
+
+      const systemPrompt = `You are an elite productivity and deep work performance coach.
+Your task is to provide a concise, sharp, high-impact review and actionable insights based on the user's note-taking focus data.
+Principles:
+1. Extremely concise and direct. No pleasantries, no fluff, no meaningless intro or outro.
+2. No repetitive long paragraphs. Keep the whole response strictly under 250 words.
+3. Output format must be clean, tight Markdown with bullet points.`;
+
+      let userPrompt = `${statsText}\n`;
+      if (focusGoal && focusGoal.trim()) {
+        userPrompt += `[User Focus Goal]: ${focusGoal.trim()}\n\n`;
+        userPrompt += `Please provide a compact review directly using the following 3 sections (cut straight to the point):
+### 🎯 Goal Assessment
+(1-2 sentences directly evaluating pace and completion)
+
+### 🔍 Key Focus Insights
+(2 concise bullet points highlighting core time allocation, flow state or fragmentation)
+
+### 💡 Actionable Recommendations
+(2-3 concrete next steps to take, max 2 sentences each)`;
+      } else {
+        userPrompt += `Please provide a compact review directly using the following 3 sections (cut straight to the point):
+### ⚡ Efficiency Overview
+(1-2 sentences highlighting key achievements in this period)
+
+### 🔍 Key Focus Insights
+(2 concise bullet points highlighting focus distribution, flow state or fragmentation)
+
+### 💡 Actionable Recommendations
+(2-3 concrete, high-leverage steps, max 2 sentences each)`;
+      }
+
+      return { systemPrompt, userPrompt };
+    } else {
+      const scopeLabels: Record<string, string> = {
+        day: "今日",
+        week: "本周",
+        month: "本月",
+      };
+      const scopeLabel = scopeLabels[scopeType] || "统计周期";
+
+      let statsText = `【统计周期】: ${scopeTitle} (${scopeLabel})\n`;
+      statsText += `- 总专注时长: ${formatDurationI18n(totalSeconds, "zh_CN")}，会话次数: ${safeLogs.length} 次，闲置扣除: ${formatDurationI18n(totalIdle, "zh_CN")}\n`;
+      if (topDocs.length > 0) {
+        statsText += `- 核心投入文档 (Top ${topDocs.length}):\n`;
+        topDocs.forEach(([name, s]) => {
+          const pct = totalSeconds > 0 ? ((s.duration / totalSeconds) * 100).toFixed(0) : "0";
+          statsText += `  • ${name}: ${formatDurationI18n(s.duration, "zh_CN")} (${pct}%, ${s.sessions}次会话)\n`;
+        });
+      }
+
+      const systemPrompt = `你是一位高效专注与深度工作复盘教练。
 你的任务是对用户的笔记专注数据给出短小精悍、直击本质的复盘与建议。
 原则：
 1. 语言极其精炼、干货直接，严禁寒暄客套、废话与无意义铺垫；
 2. 严禁冗长长篇段落和大段复述数据，全篇严格控制在 200~350 字以内；
 3. 输出格式必须为清晰紧凑的 Markdown 结构与简短要点（Bullet points）。`;
 
-    let userPrompt = `${statsText}\n`;
-
-    if (focusGoal && focusGoal.trim()) {
-      userPrompt += `【用户设定的专注目标】: ${focusGoal.trim()}\n\n`;
-      userPrompt += `请直接按以下 3 个模块给出极其精简的复盘（拒绝套话，直奔主题）：
+      let userPrompt = `${statsText}\n`;
+      if (focusGoal && focusGoal.trim()) {
+        userPrompt += `【用户设定的专注目标】: ${focusGoal.trim()}\n\n`;
+        userPrompt += `请直接按以下 3 个模块给出极其精简的复盘（拒绝套话，直奔主题）：
 ### 🎯 目标达成度评估
 （用 1~2 句话直接评估推进节奏与完成情况）
 
@@ -95,8 +148,8 @@ export class AIService {
 
 ### 💡 改进建议
 （给出 2~3 条可立即执行的具体动作，每条不超过两句话）`;
-    } else {
-      userPrompt += `请直接按以下 3 个模块给出极其精简的复盘（拒绝套话，直奔主题）：
+      } else {
+        userPrompt += `请直接按以下 3 个模块给出极其精简的复盘（拒绝套话，直奔主题）：
 ### ⚡ 效率概览
 （用 1~2 句话指出当前周期投入核心亮点）
 
@@ -105,18 +158,14 @@ export class AIService {
 
 ### 💡 行动建议
 （给出 2~3 条精简可落地的动作建议，每条不超过两句话）`;
-    }
+      }
 
-    return { systemPrompt, userPrompt };
+      return { systemPrompt, userPrompt };
+    }
   }
 
   private static formatDuration(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    if (h > 0) return `${h}小时${m > 0 ? ` ${m}分钟` : ""}`;
-    if (m > 0) return `${m}分钟`;
-    return `${s}秒`;
+    return formatDurationI18n(seconds, currentLang.value);
   }
 
   /**

@@ -1,7 +1,7 @@
 <template>
   <div class="timeline-container relative pl-4 border-l-2 sy-divider max-h-96 overflow-y-auto">
     <div v-if="logs.length === 0" class="sy-text-tertiary italic text-sm py-4">
-      今日无活动记录。
+      {{ t('timelineNoRecords') }}
     </div>
     
     <div v-for="log in sortedLogs" :key="log.id" class="timeline-item relative mb-6">
@@ -9,14 +9,14 @@
       
       <div class="group block p-3 rounded-lg sy-timeline-card border sy-divider hover:border-indigo-500 transition-colors duration-200 cursor-pointer">
         <div class="flex justify-between items-center mb-1">
-          <span class="text-sm font-semibold sy-text-primary truncate pr-2">{{ docTitles[log.docId] || log.docId || '未知文档' }}</span>
+          <span class="text-sm font-semibold sy-text-primary truncate pr-2">{{ docTitles[log.docId] || log.docId || t('timelineUnknownDoc') }}</span>
           <span class="text-xs sy-text-secondary whitespace-nowrap">{{ formatTime(log.startTime) }} - {{ formatTime(log.endTime) }}</span>
         </div>
         <div class="text-xs text-indigo-600 dark:text-indigo-300 font-medium mt-1">
-          专注时长: {{ formatDuration(log.duration) }}
+          {{ t('timelineFocusDuration', { duration: formatDuration(log.duration) }) }}
         </div>
         <div class="text-xs sy-text-tertiary mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          扣除闲置: {{ log.idleTime }}s
+          {{ t('timelineIdleDeducted', { seconds: log.idleTime }) }}
         </div>
       </div>
     </div>
@@ -27,6 +27,7 @@
 import { computed, watch } from 'vue';
 import type { TimeLog } from '../models/TimeLog';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
+import { t, formatDurationI18n, currentLang } from '../i18n';
 
 const props = defineProps<{
   logs: TimeLog[]
@@ -48,9 +49,7 @@ const formatTime = (ts: number) => {
 };
 
 const formatDuration = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}分 ${s}秒`;
+  return formatDurationI18n(seconds, currentLang.value);
 };
 </script>
 

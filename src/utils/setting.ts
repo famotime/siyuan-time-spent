@@ -2,6 +2,7 @@ import { Setting, showMessage } from "siyuan";
 import type TimeSpentPlugin from "../index";
 import Logger from "./logger";
 import { PluginSettings } from "../models/Settings";
+import { t, setLangSetting, type LangSetting } from "../i18n";
 
 /**
  * 插件设置面板管理器
@@ -36,7 +37,7 @@ export class SettingManager {
       let retryCount = 0;
       const isControlled = this.plugin.isAiControlled();
       const tryCategorize = () => {
-        const anchorEl = document.querySelector('[data-setting-key="enableLog"]');
+        const anchorEl = document.querySelector('[data-setting-key="language"]') || document.querySelector('[data-setting-key="enableLog"]');
         if (anchorEl) {
           try {
             this.categorizeSettings(isControlled);
@@ -158,8 +159,8 @@ export class SettingManager {
       if (badge) {
         badge.className = `siyuan-time-spent-ai-badge ${isNowControlled ? "siyuan-time-spent-ai-badge--managed" : ""}`;
         badge.textContent = isNowControlled
-          ? (this.plugin.i18n.settingsAiBadgeManaged || "API 旋钮已接管")
-          : (this.plugin.i18n.settingsAiBadgeLocal || "本地配置");
+          ? t("settingsAiBadgeManaged")
+          : t("settingsAiBadgeLocal");
       }
 
       // 切换横幅
@@ -210,12 +211,48 @@ export class SettingManager {
     const activeAiConfig = this.plugin.getActiveAiConfig();
 
     // ================= 1. 基础设置项 =================
+    // 1.0 界面语言设置项
+    this.setting.addItem({
+      title: t("settingLanguageTitle"),
+      description: t("settingLanguageDesc"),
+      createActionElement: () => {
+        const select = document.createElement("select");
+        select.dataset.settingKey = "language";
+        select.className = "b3-select fn__flex-center";
+        select.style.width = "180px";
+
+        const options: { value: LangSetting; text: string }[] = [
+          { value: "auto", text: t("settingLanguageAuto") },
+          { value: "zh_CN", text: t("settingLanguageZh") },
+          { value: "en_US", text: t("settingLanguageEn") },
+        ];
+
+        options.forEach(opt => {
+          const optEl = document.createElement("option");
+          optEl.value = opt.value;
+          optEl.textContent = opt.text;
+          if ((settings.language || "auto") === opt.value) {
+            optEl.selected = true;
+          }
+          select.appendChild(optEl);
+        });
+
+        select.addEventListener("change", async () => {
+          const val = select.value as LangSetting;
+          settings.language = val;
+          setLangSetting(val);
+          await this.plugin.saveSettings();
+          showMessage(t("settingLanguageUpdatedMsg"));
+        });
+
+        return select;
+      },
+    });
+
     // 1.1 日志打印开关项
     this.setting.addItem({
-      title: this.plugin.i18n.settingEnableLogTitle || "日志打印",
-      description:
-        this.plugin.i18n.settingEnableLogDesc ||
-        "开启后在开发者工具控制台输出时间追踪与调试日志（默认关闭）",
+      title: t("settingEnableLogTitle"),
+      description: t("settingEnableLogDesc"),
       createActionElement: () => {
         const checkbox = document.createElement("input");
         checkbox.dataset.settingKey = "enableLog";
@@ -234,10 +271,8 @@ export class SettingManager {
 
     // 1.2 在页签打开开关项
     this.setting.addItem({
-      title: this.plugin.i18n.settingOpenInTabTitle || "在页签打开",
-      description:
-        this.plugin.i18n.settingOpenInTabDesc ||
-        "开启后点击顶栏图标将在新页签中打开看板，关闭后以弹窗形式打开（默认开启）",
+      title: t("settingOpenInTabTitle"),
+      description: t("settingOpenInTabDesc"),
       createActionElement: () => {
         const checkbox = document.createElement("input");
         checkbox.dataset.settingKey = "openInTab";
@@ -255,10 +290,8 @@ export class SettingManager {
 
     // 1.3 闲置判定阈值（分钟）
     this.setting.addItem({
-      title: this.plugin.i18n.settingIdleThresholdTitle || "闲置判定阈值 (分钟)",
-      description:
-        this.plugin.i18n.settingIdleThresholdDesc ||
-        "无任何键鼠或触控操作超过该时长后自动暂停计时并标记为闲置（1-60 分钟，默认 5 分钟）",
+      title: t("settingIdleThresholdTitle"),
+      description: t("settingIdleThresholdDesc"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "idleThresholdMinutes";
@@ -286,10 +319,8 @@ export class SettingManager {
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiProviderTitle || "API 提供商",
-      description:
-        this.plugin.i18n.settingsAiProviderDescription ||
-        "大模型服务提供商，如 openai、anthropic 等。",
+      title: t("settingsAiProviderTitle"),
+      description: t("settingsAiProviderDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiProvider";
@@ -311,10 +342,8 @@ export class SettingManager {
 
     // 2.2 API 接口地址
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiBaseUrlTitle || "API 接口地址",
-      description:
-        this.plugin.i18n.settingsAiBaseUrlDescription ||
-        "API 的 Base URL 地址，如 https://api.openai.com/v1。",
+      title: t("settingsAiBaseUrlTitle"),
+      description: t("settingsAiBaseUrlDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiBaseUrl";
@@ -336,10 +365,8 @@ export class SettingManager {
 
     // 2.3 API 密钥
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiApiKeyTitle || "API 密钥",
-      description:
-        this.plugin.i18n.settingsAiApiKeyDescription ||
-        "大模型 API 的安全密钥，通常为 Bearer Key。",
+      title: t("settingsAiApiKeyTitle"),
+      description: t("settingsAiApiKeyDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiApiKey";
@@ -361,10 +388,8 @@ export class SettingManager {
 
     // 2.4 模型名称
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiModelTitle || "模型名称",
-      description:
-        this.plugin.i18n.settingsAiModelDescription ||
-        "当前使用的大语言模型名称，如 gpt-4o。",
+      title: t("settingsAiModelTitle"),
+      description: t("settingsAiModelDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiModel";
@@ -386,10 +411,8 @@ export class SettingManager {
 
     // 2.5 可选模型列表
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiModelsTitle || "可选模型列表",
-      description:
-        this.plugin.i18n.settingsAiModelsDescription ||
-        "逗号分隔的模型列表，用于快速切换。",
+      title: t("settingsAiModelsTitle"),
+      description: t("settingsAiModelsDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiModels";
@@ -413,10 +436,8 @@ export class SettingManager {
 
     // 2.6 请求超时 (秒)
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiRequestTimeoutSecondsTitle || "请求超时 (秒)",
-      description:
-        this.plugin.i18n.settingsAiRequestTimeoutSecondsDescription ||
-        "大模型 API 请求的超时时长（5-300 秒），默认为 30 秒。",
+      title: t("settingsAiRequestTimeoutSecondsTitle"),
+      description: t("settingsAiRequestTimeoutSecondsDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiRequestTimeoutSeconds";
@@ -444,10 +465,8 @@ export class SettingManager {
 
     // 2.7 温度 (Temperature)
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiTemperatureTitle || "温度 (Temperature)",
-      description:
-        this.plugin.i18n.settingsAiTemperatureDescription ||
-        "采样温度（0-2），值越高输出越随机和有创造性，默认为 0.7。",
+      title: t("settingsAiTemperatureTitle"),
+      description: t("settingsAiTemperatureDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiTemperature";
@@ -476,10 +495,8 @@ export class SettingManager {
 
     // 2.8 最大 Token 数
     this.setting.addItem({
-      title: this.plugin.i18n.settingsAiMaxTokensTitle || "最大 Token 数",
-      description:
-        this.plugin.i18n.settingsAiMaxTokensDescription ||
-        "单次生成内容时限制的最大 Token 数量，默认为 4096。",
+      title: t("settingsAiMaxTokensTitle"),
+      description: t("settingsAiMaxTokensDescription"),
       createActionElement: () => {
         const input = document.createElement("input");
         input.dataset.settingKey = "aiMaxTokens";
@@ -514,7 +531,7 @@ export class SettingManager {
    * 彻底避免混排和分栏挤压，保证所有卡片及条目完全左对齐
    */
   private categorizeSettings(isControlled: boolean) {
-    const anchorEl = document.querySelector('[data-setting-key="enableLog"]') as HTMLElement | null;
+    const anchorEl = (document.querySelector('[data-setting-key="language"]') || document.querySelector('[data-setting-key="enableLog"]')) as HTMLElement | null;
     if (!anchorEl) return;
 
     let wrapper: HTMLElement | null = anchorEl;
@@ -532,13 +549,13 @@ export class SettingManager {
     const groups = [
       {
         id: "basic",
-        title: this.plugin.i18n.settingsGroupBasic || "基础设置",
-        keys: ["enableLog", "openInTab", "idleThresholdMinutes"],
+        title: t("settingsGroupBasic"),
+        keys: ["language", "enableLog", "openInTab", "idleThresholdMinutes"],
         open: true,
       },
       {
         id: "ai",
-        title: this.plugin.i18n.settingsGroupAi || "AI 服务",
+        title: t("settingsGroupAi"),
         keys: [
           "aiProvider",
           "aiBaseUrl",
@@ -579,17 +596,18 @@ export class SettingManager {
 
     // 描述信息转为悬浮 Tooltip（参照 siyuan-canvas 设计，隐藏占位文本，保持整洁统一单行行高）
     const settingKeysMapping = [
-      { key: "enableLog", desc: this.plugin.i18n.settingEnableLogDesc || "开启后在开发者工具控制台输出时间追踪与调试日志（默认关闭）" },
-      { key: "openInTab", desc: this.plugin.i18n.settingOpenInTabDesc || "开启后点击顶栏图标将在新页签中打开看板，关闭后以弹窗形式打开（默认开启）" },
-      { key: "idleThresholdMinutes", desc: this.plugin.i18n.settingIdleThresholdDesc || "无任何键鼠或触控操作超过该时长后自动暂停计时并标记为闲置（1-60 分钟，默认 5 分钟）" },
-      { key: "aiProvider", desc: this.plugin.i18n.settingsAiProviderDescription || "大模型服务提供商，如 openai、anthropic 等。" },
-      { key: "aiBaseUrl", desc: this.plugin.i18n.settingsAiBaseUrlDescription || "API 的 Base URL 地址，如 https://api.openai.com/v1。" },
-      { key: "aiApiKey", desc: this.plugin.i18n.settingsAiApiKeyDescription || "大模型 API 的安全密钥，通常为 Bearer Key。" },
-      { key: "aiModel", desc: this.plugin.i18n.settingsAiModelDescription || "当前使用的大语言模型名称，如 gpt-4o。" },
-      { key: "aiModels", desc: this.plugin.i18n.settingsAiModelsDescription || "逗号分隔的模型列表，用于快速切换。" },
-      { key: "aiRequestTimeoutSeconds", desc: this.plugin.i18n.settingsAiRequestTimeoutSecondsDescription || "大模型 API 请求的超时时长（5-300 秒），默认为 30 秒。" },
-      { key: "aiTemperature", desc: this.plugin.i18n.settingsAiTemperatureDescription || "采样温度（0-2），值越高输出越随机和有创造性，默认为 0.7。" },
-      { key: "aiMaxTokens", desc: this.plugin.i18n.settingsAiMaxTokensDescription || "单次生成内容时限制的最大 Token 数量，默认为 4096。" },
+      { key: "language", desc: t("settingLanguageDesc") },
+      { key: "enableLog", desc: t("settingEnableLogDesc") },
+      { key: "openInTab", desc: t("settingOpenInTabDesc") },
+      { key: "idleThresholdMinutes", desc: t("settingIdleThresholdDesc") },
+      { key: "aiProvider", desc: t("settingsAiProviderDescription") },
+      { key: "aiBaseUrl", desc: t("settingsAiBaseUrlDescription") },
+      { key: "aiApiKey", desc: t("settingsAiApiKeyDescription") },
+      { key: "aiModel", desc: t("settingsAiModelDescription") },
+      { key: "aiModels", desc: t("settingsAiModelsDescription") },
+      { key: "aiRequestTimeoutSeconds", desc: t("settingsAiRequestTimeoutSecondsDescription") },
+      { key: "aiTemperature", desc: t("settingsAiTemperatureDescription") },
+      { key: "aiMaxTokens", desc: t("settingsAiMaxTokensDescription") },
     ];
 
     settingKeysMapping.forEach(({ key, desc }) => {
@@ -684,8 +702,8 @@ export class SettingManager {
         const badge = document.createElement("span");
         badge.className = `siyuan-time-spent-ai-badge ${isControlled ? "siyuan-time-spent-ai-badge--managed" : ""}`;
         badge.textContent = isControlled
-          ? (this.plugin.i18n.settingsAiBadgeManaged || "API 旋钮已接管")
-          : (this.plugin.i18n.settingsAiBadgeLocal || "本地配置");
+          ? t("settingsAiBadgeManaged")
+          : t("settingsAiBadgeLocal");
         summary.appendChild(badge);
       }
 
@@ -708,7 +726,7 @@ export class SettingManager {
           separator.className = "siyuan-time-spent-settings-separator siyuan-time-spent-settings-separator--first";
           const title = document.createElement("div");
           title.className = "siyuan-time-spent-settings-separator-title";
-          title.textContent = this.plugin.i18n.settingsGroupAiApiSubTitle || "API 基础设置";
+          title.textContent = t("settingsGroupAiApiSubTitle");
           separator.appendChild(title);
           contentDiv.appendChild(separator);
         }
@@ -733,7 +751,7 @@ export class SettingManager {
 
       const titleSpan = document.createElement("span");
       titleSpan.className = "siyuan-time-spent-settings-summary-title";
-      titleSpan.textContent = this.plugin.i18n.settingsGroupOther || "其他设置";
+      titleSpan.textContent = t("settingsGroupOther");
 
       summary.appendChild(arrowIcon);
       summary.appendChild(titleSpan);
@@ -754,9 +772,7 @@ export class SettingManager {
    */
   public getBannerHtml(config: { profileName?: string } | null): string {
     const profileText = config?.profileName ? ` (${config.profileName})` : "";
-    const rawTpl =
-      this.plugin.i18n.settingsAiControlledHint ||
-      "当前已由 API 旋钮 (siyuan-api-switch) 插件接管配置{profile}，本地设置已失效。";
+    const rawTpl = t("settingsAiControlledHint");
     return rawTpl.replace("{profile}", profileText);
   }
 

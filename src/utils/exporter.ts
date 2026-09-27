@@ -1,5 +1,6 @@
 import type { TimeLog } from '../models/TimeLog';
 import { getDocMeta } from './title-cache';
+import { t, formatDurationI18n, currentLang } from '../i18n';
 
 export interface ExportableTimeRecord {
   id: string;
@@ -20,6 +21,7 @@ export class Exporter {
    * 将 TimeLog 列表转换为包含元数据的扁平化结构
    */
   public static transformLogs(logs: TimeLog[]): ExportableTimeRecord[] {
+    const isEn = currentLang.value === 'en_US';
     return (logs || []).map((log) => {
       const meta = getDocMeta(log.docId);
       const startDate = new Date(log.startTime);
@@ -30,7 +32,7 @@ export class Exporter {
         id: log.id,
         docId: log.docId,
         title: meta.title || log.docId,
-        notebook: meta.notebookName || '未知笔记本',
+        notebook: meta.notebookName || (isEn ? 'Uncategorized' : '未知笔记本'),
         path: meta.hpath || '',
         tags: tagsStr,
         startTime: this.formatDateTime(startDate),
@@ -58,17 +60,17 @@ export class Exporter {
   public static exportToCsv(logs: TimeLog[], filename = 'siyuan-time-spent.csv') {
     const data = this.transformLogs(logs);
     const headers = [
-      '记录ID',
-      '文档ID',
-      '文档标题',
-      '所属笔记本',
-      '文档路径',
-      '文档标签',
-      '开始时间',
-      '结束时间',
-      '有效专注时长(秒)',
-      '专注时长',
-      '闲置扣除时长(秒)',
+      t('csvRecordId'),
+      t('csvDocId'),
+      t('csvDocTitle'),
+      t('csvNotebook'),
+      t('csvDocPath'),
+      t('csvDocTags'),
+      t('csvStartTime'),
+      t('csvEndTime'),
+      t('csvDurationSeconds'),
+      t('csvDurationFormatted'),
+      t('csvIdleSeconds'),
     ];
 
     const rows = data.map((item) => {
@@ -110,12 +112,7 @@ export class Exporter {
   }
 
   private static formatDuration(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    if (h > 0) return `${h}小时 ${m}分钟`;
-    if (m > 0) return `${m}分钟 ${s}秒`;
-    return `${s}秒`;
+    return formatDurationI18n(seconds, currentLang.value);
   }
 
   private static downloadBlob(blob: Blob, filename: string) {
