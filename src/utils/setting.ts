@@ -354,6 +354,166 @@ export class SettingManager {
       },
     });
 
+    // ================= 1.6~1.11 番茄钟与心流专属设置项 =================
+    // 交互设计形态
+    this.setting.addItem({
+      title: t("settingPomodoroThemeStyleTitle"),
+      description: t("settingPomodoroThemeStyleDesc"),
+      createActionElement: () => {
+        const select = document.createElement("select");
+        select.dataset.settingKey = "pomodoroThemeStyle";
+        select.className = "b3-select fn__flex-center";
+        select.style.width = "220px";
+
+        const options = [
+          { value: "zen", text: t("settingPomodoroThemeStyleZen") },
+          { value: "chrono", text: t("settingPomodoroThemeStyleChrono") },
+          { value: "hourglass", text: t("settingPomodoroThemeStyleHourglass") },
+        ];
+
+        options.forEach(opt => {
+          const optEl = document.createElement("option");
+          optEl.value = opt.value;
+          optEl.textContent = opt.text;
+          if ((settings.pomodoroThemeStyle || "zen") === opt.value) {
+            optEl.selected = true;
+          }
+          select.appendChild(optEl);
+        });
+
+        select.addEventListener("change", async () => {
+          settings.pomodoroThemeStyle = select.value as 'zen' | 'chrono' | 'hourglass';
+          await this.plugin.saveSettings();
+          window.dispatchEvent(new CustomEvent("siyuan-time-spent:pomodoro-config-changed", { detail: settings }));
+        });
+
+        return select;
+      },
+    });
+
+    // 动效仪式感级别
+    this.setting.addItem({
+      title: t("settingPomodoroAnimationTitle"),
+      description: t("settingPomodoroAnimationDesc"),
+      createActionElement: () => {
+        const select = document.createElement("select");
+        select.dataset.settingKey = "pomodoroAnimationIntensity";
+        select.className = "b3-select fn__flex-center";
+        select.style.width = "220px";
+
+        const options = [
+          { value: "expressive", text: t("settingPomodoroAnimationExpressive") },
+          { value: "calm", text: t("settingPomodoroAnimationCalm") },
+        ];
+
+        options.forEach(opt => {
+          const optEl = document.createElement("option");
+          optEl.value = opt.value;
+          optEl.textContent = opt.text;
+          if ((settings.pomodoroAnimationIntensity || "expressive") === opt.value) {
+            optEl.selected = true;
+          }
+          select.appendChild(optEl);
+        });
+
+        select.addEventListener("change", async () => {
+          settings.pomodoroAnimationIntensity = select.value as 'calm' | 'expressive';
+          await this.plugin.saveSettings();
+          window.dispatchEvent(new CustomEvent("siyuan-time-spent:pomodoro-config-changed", { detail: settings }));
+        });
+
+        return select;
+      },
+    });
+
+    // 默认专注时长（分钟）
+    this.setting.addItem({
+      title: t("settingPomodoroWorkMinutesTitle"),
+      description: t("settingPomodoroWorkMinutesDesc"),
+      createActionElement: () => {
+        const input = document.createElement("input");
+        input.dataset.settingKey = "pomodoroWorkMinutes";
+        input.type = "number";
+        input.min = "1";
+        input.max = "180";
+        input.className = "b3-text-field fn__flex-center";
+        input.style.width = "90px";
+        input.value = (settings.pomodoroWorkMinutes ?? 25).toString();
+        input.addEventListener("change", async () => {
+          let val = parseInt(input.value, 10);
+          if (isNaN(val) || val < 1) val = 1;
+          if (val > 180) val = 180;
+          input.value = val.toString();
+          settings.pomodoroWorkMinutes = val;
+          await this.plugin.saveSettings();
+          window.dispatchEvent(new CustomEvent("siyuan-time-spent:pomodoro-config-changed", { detail: settings }));
+        });
+        return input;
+      },
+    });
+
+    // 默认短休息时长（分钟）
+    this.setting.addItem({
+      title: t("settingPomodoroBreakMinutesTitle"),
+      description: t("settingPomodoroBreakMinutesDesc"),
+      createActionElement: () => {
+        const input = document.createElement("input");
+        input.dataset.settingKey = "pomodoroBreakMinutes";
+        input.type = "number";
+        input.min = "1";
+        input.max = "60";
+        input.className = "b3-text-field fn__flex-center";
+        input.style.width = "90px";
+        input.value = (settings.pomodoroBreakMinutes ?? 5).toString();
+        input.addEventListener("change", async () => {
+          let val = parseInt(input.value, 10);
+          if (isNaN(val) || val < 1) val = 1;
+          if (val > 60) val = 60;
+          input.value = val.toString();
+          settings.pomodoroBreakMinutes = val;
+          await this.plugin.saveSettings();
+          window.dispatchEvent(new CustomEvent("siyuan-time-spent:pomodoro-config-changed", { detail: settings }));
+        });
+        return input;
+      },
+    });
+
+    // 和弦音效开关
+    this.setting.addItem({
+      title: t("settingPomodoroSoundTitle"),
+      description: t("settingPomodoroSoundDesc"),
+      createActionElement: () => {
+        const checkbox = document.createElement("input");
+        checkbox.dataset.settingKey = "pomodoroSound";
+        checkbox.type = "checkbox";
+        checkbox.className = "b3-switch fn__flex-center";
+        checkbox.checked = settings.pomodoroSound ?? true;
+        checkbox.addEventListener("change", async () => {
+          settings.pomodoroSound = checkbox.checked;
+          await this.plugin.saveSettings();
+        });
+        return checkbox;
+      },
+    });
+
+    // 系统桌面通知开关
+    this.setting.addItem({
+      title: t("settingPomodoroNotificationTitle"),
+      description: t("settingPomodoroNotificationDesc"),
+      createActionElement: () => {
+        const checkbox = document.createElement("input");
+        checkbox.dataset.settingKey = "pomodoroNotification";
+        checkbox.type = "checkbox";
+        checkbox.className = "b3-switch fn__flex-center";
+        checkbox.checked = settings.pomodoroNotification ?? true;
+        checkbox.addEventListener("change", async () => {
+          settings.pomodoroNotification = checkbox.checked;
+          await this.plugin.saveSettings();
+        });
+        return checkbox;
+      },
+    });
+
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({
@@ -595,6 +755,19 @@ export class SettingManager {
           "idleThresholdMinutes",
           "enableAfkPrompt",
           "enableDailyNoteArchiving",
+        ],
+        open: true,
+      },
+      {
+        id: "pomodoro",
+        title: t("settingsGroupPomodoro"),
+        keys: [
+          "pomodoroThemeStyle",
+          "pomodoroAnimationIntensity",
+          "pomodoroWorkMinutes",
+          "pomodoroBreakMinutes",
+          "pomodoroSound",
+          "pomodoroNotification",
         ],
         open: true,
       },

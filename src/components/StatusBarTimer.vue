@@ -1,6 +1,6 @@
 <template>
   <div class="sy-status-timer-root relative inline-flex items-center text-xs select-none">
-    <!-- 常驻状态栏胶囊按钮 (清退 Emoji，采用 1.75px 线框矢量图标) -->
+    <!-- 常驻状态栏灵动微胶囊 (Ambient Micro-Capsule) -->
     <div 
       ref="capsuleEl"
       @click="togglePopover"
@@ -10,67 +10,45 @@
         'is-paused': pomodoro.state.value === 'paused',
         'is-break': pomodoro.state.value === 'break'
       }"
+      :style="capsuleStyle"
       :title="capsuleTooltip"
     >
-      <!-- 状态图标 -->
-      <span class="w-3.5 h-3.5 flex items-center justify-center shrink-0">
-        <!-- 运行中：极简番茄/靶心线框图标 -->
-        <svg 
+      <!-- 16px 矢量微进度环 (Peripheral Micro-Dial) -->
+      <span class="w-4 h-4 flex items-center justify-center shrink-0 relative">
+        <svg class="w-4 h-4 transform -rotate-90" viewBox="0 0 24 24">
+          <!-- 微底轨 -->
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke-width="2.2"
+            stroke="currentColor"
+            class="opacity-20"
+            style="fill: none !important;"
+          />
+          <!-- 动态微进度弧 -->
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke="var(--b3-theme-primary)"
+            :stroke-dasharray="56.54"
+            :stroke-dashoffset="56.54 * (1 - currentProgress)"
+            class="transition-all duration-300"
+            style="fill: none !important;"
+          />
+        </svg>
+
+        <!-- 运行中心流呼吸光点 -->
+        <span 
           v-if="pomodoro.state.value === 'running'" 
-          class="w-3.5 h-3.5 sy-wire-icon animate-pulse" 
-          style="fill: none !important;" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          stroke-width="1.75"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 3" />
-        </svg>
-
-        <!-- 暂停中：双竖线线框图标 -->
-        <svg 
-          v-else-if="pomodoro.state.value === 'paused'" 
-          class="w-3.5 h-3.5 sy-wire-icon" 
-          style="fill: none !important;" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          stroke-width="1.75"
-        >
-          <rect x="6" y="5" width="4" height="14" rx="1" />
-          <rect x="14" y="5" width="4" height="14" rx="1" />
-        </svg>
-
-        <!-- 休息中：咖啡杯线框图标 -->
-        <svg 
-          v-else-if="pomodoro.state.value === 'break'" 
-          class="w-3.5 h-3.5 sy-wire-icon text-teal-500" 
-          style="fill: none !important;" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          stroke-width="1.75"
-        >
-          <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-          <line x1="6" y1="1" x2="6" y2="4" />
-          <line x1="10" y1="1" x2="10" y2="4" />
-          <line x1="14" y1="1" x2="14" y2="4" />
-        </svg>
-
-        <!-- 待机态：极简时钟图标 -->
-        <svg 
-          v-else 
-          class="w-3.5 h-3.5 sy-wire-icon opacity-80" 
-          style="fill: none !important;" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          stroke-width="1.75"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <polyline points="12 7 12 12 15 15" />
-        </svg>
+          class="absolute w-1.5 h-1.5 rounded-full bg-primary animate-ping opacity-75"
+        ></span>
       </span>
 
-      <!-- 时间与状态文本 -->
+      <!-- 等宽数字与状态文本 -->
       <span class="font-mono font-bold tracking-tight font-tabular">
         {{ capsuleDisplayText }}
       </span>
@@ -80,19 +58,19 @@
     <Teleport to="body">
       <div 
         v-if="isOpen" 
-        class="fixed inset-0 z-[9990] bg-black/10 dark:bg-black/35 backdrop-blur-[1.5px] transition-opacity" 
+        class="fixed inset-0 z-[9990] bg-black/15 dark:bg-black/40 backdrop-blur-[2px] transition-opacity" 
         @click="closePopover"
       >
         <div 
-          class="fixed rounded-2xl p-4 sy-pomo-card w-80 flex flex-col gap-3.5 z-[9991] border select-none transition-all"
+          class="fixed rounded-2xl p-4 sy-pomo-card w-84 flex flex-col gap-3.5 z-[9991] border select-none transition-all shadow-xl"
           :style="popoverStyle"
           @click.stop
         >
-          <!-- 1. Popover Header -->
+          <!-- 1. Popover Header: 标题、风格切换药丸、关闭按钮 -->
           <div class="flex items-center justify-between pb-2 border-b border-subtle">
-            <div class="flex items-center gap-2">
-              <span class="p-1 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <div class="flex items-center gap-1.5">
+              <span class="p-1 rounded-lg bg-primary-subtle text-primary flex items-center justify-center">
+                <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="9" />
                   <path d="M12 7v5l3 3" />
                 </svg>
@@ -104,96 +82,92 @@
                 v-if="pomodoro.state.value !== 'idle'" 
                 class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                 :class="{
-                  'bg-amber-500/15 text-amber-600 dark:text-amber-400': pomodoro.state.value === 'running',
-                  'bg-slate-500/15 text-slate-600 dark:text-slate-400': pomodoro.state.value === 'paused',
-                  'bg-teal-500/15 text-teal-600 dark:text-teal-400': pomodoro.state.value === 'break'
+                  'bg-primary-subtle text-primary': pomodoro.state.value === 'running',
+                  'bg-subtle text-secondary': pomodoro.state.value === 'paused',
+                  'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400': pomodoro.state.value === 'break'
                 }"
               >
                 {{ statusBadgeText }}
               </span>
             </div>
 
-            <!-- 关闭按钮 -->
-            <button 
-              @click="closePopover" 
-              class="text-tertiary hover:text-primary transition-colors cursor-pointer p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5"
-            >
-              <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            <!-- 右侧：皮肤形态极简分段器与关闭 -->
+            <div class="flex items-center gap-1">
+              <!-- 形态切换极简分段开关 -->
+              <div class="flex items-center bg-subtle p-0.5 rounded-lg text-[10px] font-medium" :title="t('pomodoroSwitchTheme')">
+                <button 
+                  v-for="skin in skinList" 
+                  :key="skin.key"
+                  @click="switchThemeStyle(skin.key)"
+                  class="px-1.5 py-0.5 rounded cursor-pointer transition-all"
+                  :class="currentThemeStyle === skin.key ? 'bg-surface text-primary font-bold shadow-xs' : 'text-tertiary hover:text-primary'"
+                >
+                  {{ skin.label }}
+                </button>
+              </div>
+
+              <!-- 关闭按钮 -->
+              <button 
+                @click="closePopover" 
+                class="text-tertiary hover:text-primary transition-colors cursor-pointer p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <!-- 2. 当前关联笔记小条 -->
-          <div class="flex items-center gap-1.5 text-xs text-secondary px-2 py-1.5 rounded-lg bg-subtle truncate" :title="currentDocName">
-            <svg class="w-3.5 h-3.5 shrink-0 opacity-70" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+          <!-- 2. 当前关联笔记小条 (知识沉淀隐喻) -->
+          <div class="flex items-center gap-1.5 text-xs text-secondary px-2.5 py-1.5 rounded-xl bg-subtle truncate" :title="currentDocName">
+            <svg class="w-3.5 h-3.5 shrink-0 opacity-70 text-primary" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>
             <span class="truncate flex-1 font-medium">{{ currentDocName }}</span>
           </div>
 
-          <!-- 3. 核心表盘与环形进度条 (SVG Radial Progress) -->
-          <div class="flex flex-col items-center justify-center py-2 relative">
-            <div class="relative w-32 h-32 flex items-center justify-center">
-              <!-- SVG 环形进度槽 -->
-              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-                <!-- 背景圆轨 -->
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="52"
-                  stroke-width="5"
-                  stroke="currentColor"
-                  class="text-slate-200 dark:text-slate-800/80"
-                  style="fill: none !important;"
-                />
-                <!-- 动态高亮进度弧 (平滑过渡) -->
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="52"
-                  stroke-width="5"
-                  stroke-linecap="round"
-                  stroke="currentColor"
-                  :class="progressArcColorClass"
-                  :stroke-dasharray="326.72"
-                  :stroke-dashoffset="dashOffset"
-                  style="fill: none !important; transition: stroke-dashoffset 0.4s ease;"
-                />
-              </svg>
-
-              <!-- 表盘中央大字 -->
-              <div class="absolute inset-0 flex flex-col items-center justify-center select-text">
-                <div 
-                  class="text-2xl font-black font-mono font-tabular tracking-wide transition-colors"
-                  :class="timerTextColorClass"
-                >
-                  {{ timerDisplayText }}
-                </div>
-                <div class="text-[11px] text-tertiary mt-0.5 font-medium">
-                  {{ subDisplayText }}
-                </div>
-              </div>
-            </div>
+          <!-- 3. 核心表盘区 (根据当前选中的交互形态动态渲染) -->
+          <div class="flex flex-col items-center justify-center py-1 relative">
+            <ZenFlowDial
+              v-if="currentThemeStyle === 'zen'"
+              :progress="currentProgress"
+              :timer-display-text="timerDisplayText"
+              :sub-display-text="subDisplayText"
+              :state="pomodoro.state.value"
+            />
+            <ChronoDial
+              v-else-if="currentThemeStyle === 'chrono'"
+              :progress="currentProgress"
+              :timer-display-text="timerDisplayText"
+              :sub-display-text="subDisplayText"
+              :state="pomodoro.state.value"
+            />
+            <HourglassDial
+              v-else
+              :progress="currentProgress"
+              :timer-display-text="timerDisplayText"
+              :sub-display-text="subDisplayText"
+              :state="pomodoro.state.value"
+            />
           </div>
 
-          <!-- 4. 交互操作区：Case A: 待机态 (选择模式与设定自定义时间) -->
-          <div v-if="pomodoro.state.value === 'idle'" class="flex flex-col gap-3">
+          <!-- 4. 交互操作区：待机态 (选择模式、时长预设与入定启动) -->
+          <div v-if="pomodoro.state.value === 'idle'" class="flex flex-col gap-2.5">
             <!-- 模式分段切换胶囊 -->
             <div class="grid grid-cols-2 p-1 rounded-xl bg-subtle text-xs font-semibold">
               <button 
                 @click="isStopwatchMode = false"
                 class="py-1 rounded-lg transition-all text-center cursor-pointer"
-                :class="!isStopwatchMode ? 'bg-surface text-primary shadow-sm' : 'text-secondary hover:text-primary'"
+                :class="!isStopwatchMode ? 'bg-surface text-primary shadow-xs' : 'text-secondary hover:text-primary'"
               >
                 {{ t('pomodoroModeCountdown') }}
               </button>
               <button 
                 @click="isStopwatchMode = true"
                 class="py-1 rounded-lg transition-all text-center cursor-pointer"
-                :class="isStopwatchMode ? 'bg-surface text-primary shadow-sm' : 'text-secondary hover:text-primary'"
+                :class="isStopwatchMode ? 'bg-surface text-primary shadow-xs' : 'text-secondary hover:text-primary'"
               >
                 {{ t('pomodoroStopwatch') }}
               </button>
@@ -207,18 +181,16 @@
                   v-for="min in [15, 25, 45, 60]" 
                   :key="min"
                   @click="selectedMinutes = min"
-                  class="py-1.5 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5"
-                  :class="selectedMinutes === min 
-                    ? 'border-indigo-500 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-black' 
-                    : 'border-subtle bg-surface text-secondary hover:border-slate-400 dark:hover:border-slate-600'"
+                  class="py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5"
+                  :style="selectedMinutes === min ? activePresetStyle : inactivePresetStyle"
                 >
                   <span>{{ min }}</span>
                   <span class="text-[9px] font-normal opacity-70">m</span>
                 </button>
               </div>
 
-              <!-- 精密步进器与自由自定义时间输入 -->
-              <div class="p-2 rounded-xl border border-subtle bg-surface flex flex-col gap-2">
+              <!-- 阻尼微调滑块与步进 -->
+              <div class="p-2 rounded-xl border border-subtle bg-surface flex flex-col gap-1.5">
                 <div class="flex items-center justify-between text-xs">
                   <span class="text-secondary font-medium">{{ t('pomodoroCustomDuration') }}</span>
                   <div class="flex items-center gap-1 font-mono font-bold">
@@ -227,20 +199,19 @@
                       v-model.number="selectedMinutes"
                       min="1"
                       max="180"
-                      class="w-12 text-center text-sm font-bold bg-subtle rounded-md border border-subtle focus:outline-none focus:border-indigo-500"
+                      class="w-12 text-center text-sm font-bold bg-subtle rounded-md border border-subtle focus:outline-none"
                     />
                     <span class="text-secondary text-[11px]">{{ t('pomodoroMinutesUnit') }}</span>
                   </div>
                 </div>
 
-                <!-- 滑块与步进按钮联动 -->
                 <div class="flex items-center gap-2">
                   <button 
                     @click="adjustMinutes(-5)"
-                    class="p-1 rounded-lg sy-pomo-stepper-btn border cursor-pointer shrink-0"
+                    class="p-1 rounded-lg border border-subtle hover:bg-subtle cursor-pointer shrink-0"
                     :title="t('pomodoroDecrease')"
                   >
-                    <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                   </button>
@@ -251,15 +222,15 @@
                     min="5"
                     max="120"
                     step="5"
-                    class="flex-1 accent-indigo-600 cursor-pointer h-1.5 bg-subtle rounded-lg"
+                    class="flex-1 cursor-pointer h-1.5 bg-subtle rounded-lg accent-current text-primary"
                   />
 
                   <button 
                     @click="adjustMinutes(5)"
-                    class="p-1 rounded-lg sy-pomo-stepper-btn border cursor-pointer shrink-0"
+                    class="p-1 rounded-lg border border-subtle hover:bg-subtle cursor-pointer shrink-0"
                     :title="t('pomodoroIncrease')"
                   >
-                    <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
@@ -268,21 +239,22 @@
               </div>
             </template>
 
-            <!-- 启动按钮 (克制高级质感，拒绝廉价 AI Slop 渐变) -->
+            <!-- 启动入定按钮 (思源原生主题色全宽按钮) -->
             <button 
               @click="handleStart"
-              class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-2 mt-0.5"
+              class="w-full py-2.5 rounded-xl text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 mt-0.5 active:scale-[0.98]"
+              :style="primaryBtnStyle"
             >
-              <svg class="w-3.5 h-3.5 sy-wire-icon text-white" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="w-3.5 h-3.5 text-white" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
               <span>{{ isStopwatchMode ? t('pomodoroStart') + ' (秒表)' : `${t('pomodoroStart')} (${selectedMinutes}m)` }}</span>
             </button>
           </div>
 
-          <!-- 4. 交互操作区：Case B: 正在专注或已暂停 -->
+          <!-- 4. 交互操作区：专注运行中或已暂停 -->
           <div v-else-if="pomodoro.state.value === 'running' || pomodoro.state.value === 'paused'" class="flex flex-col gap-2.5">
-            <!-- 正在确认放弃时显示的防误触安全卡片 -->
+            <!-- 防误触确认放弃卡片 -->
             <div v-if="isConfirmingDiscard" class="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 flex flex-col gap-2 animate-fadeIn">
               <div class="text-xs font-bold text-rose-600 dark:text-rose-400">
                 {{ t('pomodoroDiscardConfirmTitle') }}
@@ -293,13 +265,13 @@
               <div class="flex items-center gap-2 mt-1">
                 <button 
                   @click="doDiscard"
-                  class="flex-1 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors cursor-pointer"
+                  class="flex-1 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors cursor-pointer"
                 >
                   {{ t('pomodoroConfirmDiscard') }}
                 </button>
                 <button 
                   @click="isConfirmingDiscard = false"
-                  class="flex-1 py-1 rounded-lg border border-subtle hover:bg-surface text-secondary text-xs transition-colors cursor-pointer"
+                  class="flex-1 py-1.5 rounded-lg border border-subtle hover:bg-surface text-secondary text-xs transition-colors cursor-pointer"
                 >
                   {{ t('pomodoroCancelDiscard') }}
                 </button>
@@ -313,9 +285,9 @@
                 <button 
                   v-if="pomodoro.state.value === 'running'"
                   @click="pomodoro.pause()" 
-                  class="flex-1 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  class="flex-1 py-2 rounded-xl border border-subtle bg-subtle hover:opacity-85 text-primary font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <rect x="6" y="5" width="4" height="14" rx="1" />
                     <rect x="14" y="5" width="4" height="14" rx="1" />
                   </svg>
@@ -324,9 +296,10 @@
                 <button 
                   v-else
                   @click="pomodoro.resume()" 
-                  class="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  class="flex-1 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                  :style="primaryBtnStyle"
                 >
-                  <svg class="w-3.5 h-3.5 sy-wire-icon text-white" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg class="w-3.5 h-3.5 text-white" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <polygon points="5 3 19 12 5 21 5 3" />
                   </svg>
                   <span>{{ t('pomodoroResume') }}</span>
@@ -338,21 +311,21 @@
                   class="py-2 px-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-xs transition-all cursor-pointer flex items-center gap-1"
                   :title="t('pomodoroFinish')"
                 >
-                  <svg class="w-3.5 h-3.5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg class="w-3.5 h-3.5" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   <span>{{ t('pomodoroFinish') }}</span>
                 </button>
               </div>
 
-              <!-- 放弃按钮 (置于次级操作区，防误触) -->
+              <!-- 放弃按钮 (次级操作，轻量化) -->
               <div class="flex justify-end">
                 <button 
                   @click="isConfirmingDiscard = true" 
                   class="text-[11px] text-tertiary hover:text-rose-500 transition-colors cursor-pointer flex items-center gap-1 py-1 px-1.5 rounded"
                   :title="t('pomodoroCancel')"
                 >
-                  <svg class="w-3 h-3 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                  <svg class="w-3 h-3" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   </svg>
@@ -362,17 +335,18 @@
             </div>
           </div>
 
-          <!-- 4. 交互操作区：Case C: 短休息阶段 (Break Phase) -->
+          <!-- 4. 交互操作区：短休息阶段 (Break Phase) -->
           <div v-else-if="pomodoro.state.value === 'break'" class="flex flex-col gap-2.5">
-            <div class="p-2.5 rounded-xl border border-teal-500/30 bg-teal-500/10 text-xs flex flex-col gap-1">
-              <span class="font-bold text-teal-600 dark:text-teal-400">{{ t('pomodoroBreakTitle') }}</span>
-              <span class="text-[11px] text-secondary">{{ t('pomodoroBreakMsg') }}</span>
+            <!-- 舒缓节拍微卡片 -->
+            <div class="p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs flex flex-col gap-1">
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ t('pomodoroBreakTitle') }}</span>
+              <span class="text-[11px] text-secondary">{{ t('pomodoroBreathIn') }} · {{ t('pomodoroBreathOut') }}</span>
             </div>
 
             <div class="flex items-center gap-2">
               <button 
                 @click="pomodoro.skipBreak()"
-                class="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>{{ t('pomodoroSkipBreak') }}</span>
               </button>
@@ -386,14 +360,14 @@
             </div>
           </div>
 
-          <!-- 5. Popover Footer -->
+          <!-- 5. Popover Footer: 看板跳转与署名 -->
           <div class="pt-2 border-t border-subtle flex items-center justify-between text-xs text-secondary">
             <button 
               @click="openDashboard" 
-              class="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors cursor-pointer flex items-center gap-1 font-medium"
+              class="hover:text-primary transition-colors cursor-pointer flex items-center gap-1 font-medium"
             >
               <span>{{ t('pomodoroOpenDashboard') }}</span>
-              <svg class="w-3 h-3 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="w-3 h-3" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </button>
@@ -407,11 +381,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import type TimeSpentPlugin from '../index';
 import { PomodoroManager } from '../utils/pomodoro';
 import { docTitles } from '../utils/title-cache';
 import { t } from '../i18n';
+import ZenFlowDial from './Pomodoro/ZenFlowDial.vue';
+import ChronoDial from './Pomodoro/ChronoDial.vue';
+import HourglassDial from './Pomodoro/HourglassDial.vue';
 
 const props = defineProps<{
   plugin: TimeSpentPlugin;
@@ -423,6 +400,44 @@ const isOpen = ref(false);
 const selectedMinutes = ref(props.plugin.settings?.pomodoroWorkMinutes || 25);
 const isStopwatchMode = ref(false);
 const isConfirmingDiscard = ref(false);
+
+// 当前交互形态风格：zen | chrono | hourglass
+const currentThemeStyle = ref<'zen' | 'chrono' | 'hourglass'>(
+  props.plugin.settings?.pomodoroThemeStyle || 'zen'
+);
+
+const skinList = computed(() => [
+  { key: 'zen' as const, label: t('pomodoroThemeZenName') },
+  { key: 'chrono' as const, label: t('pomodoroThemeChronoName') },
+  { key: 'hourglass' as const, label: t('pomodoroThemeHourglassName') }
+]);
+
+const switchThemeStyle = async (skin: 'zen' | 'chrono' | 'hourglass') => {
+  currentThemeStyle.value = skin;
+  if (props.plugin.settings) {
+    props.plugin.settings.pomodoroThemeStyle = skin;
+    await props.plugin.saveSettings();
+  }
+};
+
+// 监听全局设置变更热更新
+const onSettingsChanged = (e: Event) => {
+  const detail = (e as CustomEvent).detail;
+  if (detail?.pomodoroThemeStyle) {
+    currentThemeStyle.value = detail.pomodoroThemeStyle;
+  }
+  if (detail?.pomodoroWorkMinutes && props.pomodoro.state.value === 'idle') {
+    selectedMinutes.value = detail.pomodoroWorkMinutes;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('siyuan-time-spent:pomodoro-config-changed', onSettingsChanged);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('siyuan-time-spent:pomodoro-config-changed', onSettingsChanged);
+});
 
 const popoverStyle = ref({
   right: '16px',
@@ -486,6 +501,27 @@ const subDisplayText = computed(() => {
   return props.pomodoro.isStopwatch.value ? t('pomodoroStopwatch') : `${t('pomodoroTarget')} ${props.pomodoro.targetMinutes.value}m`;
 });
 
+// 计算通用归一化进度 (0 到 1)
+const currentProgress = computed(() => {
+  const state = props.pomodoro.state.value;
+  if (state === 'idle') return 0;
+
+  if (state === 'break') {
+    const total = props.pomodoro.breakTotalSeconds.value || 300;
+    const remaining = props.pomodoro.breakRemainingSeconds.value;
+    return Math.max(0, Math.min(1, 1 - remaining / total));
+  }
+
+  if (props.pomodoro.isStopwatch.value) {
+    const s = props.pomodoro.elapsedSeconds.value % 60;
+    return s / 60;
+  }
+
+  const total = props.pomodoro.totalSeconds.value || (props.pomodoro.targetMinutes.value * 60) || 1500;
+  const remaining = props.pomodoro.remainingSeconds.value;
+  return Math.max(0, Math.min(1, 1 - remaining / total));
+});
+
 // 状态栏胶囊内文案
 const capsuleDisplayText = computed(() => {
   const state = props.pomodoro.state.value;
@@ -513,63 +549,46 @@ const capsuleTooltip = computed(() => {
   return `${t('pomodoroTimerTitle')} · 点击开启专注`;
 });
 
-// 表盘大字颜色类（严格遵从双模 WCAG 2.2 对比度）
-const timerTextColorClass = computed(() => {
+// 主题动态样式派生
+const capsuleStyle = computed(() => {
   const state = props.pomodoro.state.value;
   if (state === 'running') {
-    return 'text-amber-600 dark:text-amber-400';
+    return {
+      background: 'color-mix(in srgb, var(--b3-theme-primary) 12%, var(--b3-theme-surface))',
+      border: '1px solid color-mix(in srgb, var(--b3-theme-primary) 35%, transparent)',
+      color: 'var(--b3-theme-on-background)'
+    };
   }
   if (state === 'break') {
-    return 'text-teal-600 dark:text-teal-400';
+    return {
+      background: 'color-mix(in srgb, var(--st-success, #10b981) 12%, var(--b3-theme-surface))',
+      border: '1px solid color-mix(in srgb, var(--st-success, #10b981) 35%, transparent)',
+      color: 'var(--b3-theme-on-background)'
+    };
   }
-  if (state === 'paused') {
-    return 'text-slate-500 dark:text-slate-400';
-  }
-  return 'text-primary';
+  return {
+    background: 'color-mix(in srgb, var(--b3-theme-surface) 90%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--b3-theme-on-background) 12%, transparent)',
+    color: 'var(--b3-theme-on-background)'
+  };
 });
 
-// 表盘圆弧高亮色
-const progressArcColorClass = computed(() => {
-  const state = props.pomodoro.state.value;
-  if (state === 'running') {
-    return 'text-amber-500';
-  }
-  if (state === 'break') {
-    return 'text-teal-500';
-  }
-  if (state === 'paused') {
-    return 'text-slate-400 dark:text-slate-500';
-  }
-  return 'text-indigo-500/40';
-});
+const activePresetStyle = computed(() => ({
+  borderColor: 'var(--b3-theme-primary)',
+  background: 'color-mix(in srgb, var(--b3-theme-primary) 12%, transparent)',
+  color: 'var(--b3-theme-primary)'
+}));
 
-// SVG 环形进度偏移量 (周长 2 * PI * 52 ≈ 326.72)
-const dashOffset = computed(() => {
-  const circumference = 326.72;
-  const state = props.pomodoro.state.value;
+const inactivePresetStyle = computed(() => ({
+  borderColor: 'color-mix(in srgb, var(--b3-theme-on-background) 12%, transparent)',
+  background: 'var(--b3-theme-surface)',
+  color: 'var(--b3-theme-on-surface)'
+}));
 
-  if (state === 'idle') {
-    return 0; // 满环或底环
-  }
-
-  if (state === 'break') {
-    const total = props.pomodoro.breakTotalSeconds.value || 300;
-    const remaining = props.pomodoro.breakRemainingSeconds.value;
-    const progress = Math.max(0, Math.min(1, remaining / total));
-    return circumference * (1 - progress);
-  }
-
-  if (props.pomodoro.isStopwatch.value) {
-    // 秒表按每 60 秒循环一圈
-    const s = props.pomodoro.elapsedSeconds.value % 60;
-    return circumference * (1 - s / 60);
-  }
-
-  const total = props.pomodoro.totalSeconds.value || (props.pomodoro.targetMinutes.value * 60) || 1500;
-  const remaining = props.pomodoro.remainingSeconds.value;
-  const progress = Math.max(0, Math.min(1, remaining / total));
-  return circumference * (1 - progress);
-});
+const primaryBtnStyle = computed(() => ({
+  background: 'var(--b3-theme-primary)',
+  boxShadow: '0 4px 12px color-mix(in srgb, var(--b3-theme-primary) 35%, transparent)'
+}));
 
 // 打开与智能锚定位置
 const togglePopover = async () => {
@@ -590,7 +609,7 @@ const togglePopover = async () => {
 const updatePopoverPosition = () => {
   if (!capsuleEl.value) return;
   const rect = capsuleEl.value.getBoundingClientRect();
-  const popoverWidth = 320;
+  const popoverWidth = 336;
   const margin = 12;
 
   const bottom = Math.max(margin, window.innerHeight - rect.top + 8);
@@ -638,24 +657,33 @@ const openDashboard = () => {
 </script>
 
 <style scoped>
-/* 语义 Token 辅助映射 */
 .text-primary {
-  color: var(--st-text-primary, #0f172a);
+  color: var(--b3-theme-primary);
 }
 .text-secondary {
-  color: var(--st-text-secondary, #475569);
+  color: var(--b3-theme-on-surface);
 }
 .text-tertiary {
-  color: var(--st-text-tertiary, #94a3b8);
+  color: var(--b3-theme-on-surface-light, #94a3b8);
 }
 .bg-surface {
-  background-color: var(--st-bg-surface, #ffffff);
+  background-color: var(--b3-theme-surface);
 }
 .bg-subtle {
-  background-color: var(--st-bg-subtle, rgba(148, 163, 184, 0.08));
+  background-color: color-mix(in srgb, var(--b3-theme-on-background) 6%, transparent);
+}
+.bg-primary-subtle {
+  background-color: color-mix(in srgb, var(--b3-theme-primary) 14%, transparent);
 }
 .border-subtle {
-  border-color: var(--st-border-subtle, rgba(148, 163, 184, 0.2));
+  border-color: color-mix(in srgb, var(--b3-theme-on-background) 12%, transparent);
+}
+
+.sy-pomo-card {
+  background-color: color-mix(in srgb, var(--b3-theme-surface) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: color-mix(in srgb, var(--b3-theme-on-background) 14%, transparent);
 }
 
 @keyframes fadeIn {

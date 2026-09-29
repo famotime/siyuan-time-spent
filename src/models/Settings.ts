@@ -11,6 +11,8 @@ export interface PluginSettings {
   pomodoroBreakMinutes?: number;     // 短休息时长（默认 5）
   pomodoroSound?: boolean;           // 是否播放和弦完成提示音
   pomodoroNotification?: boolean;    // 是否弹出系统通知
+  pomodoroThemeStyle?: 'zen' | 'chrono' | 'hourglass'; // 交互设计形态：禅意流体 / 精密机械 / 时空沙漏
+  pomodoroAnimationIntensity?: 'calm' | 'expressive'; // 动效仪式感强度：沉浸克制 / 灵动充沛
 
   // 离桌归因设置
   enableAfkPrompt?: boolean;         // 离桌唤醒后是否弹窗询问归因
@@ -41,6 +43,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   pomodoroBreakMinutes: 5,
   pomodoroSound: true,
   pomodoroNotification: true,
+  pomodoroThemeStyle: 'zen',
+  pomodoroAnimationIntensity: 'expressive',
   enableAfkPrompt: false,
   afkPromptThresholdMinutes: 10,
   enableDailyNoteArchiving: false,
