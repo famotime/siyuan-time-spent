@@ -15,6 +15,8 @@
   "settingOpenInTabDisabledMsg": "已设置为以弹窗打开",
   "settingIdleThresholdTitle": "闲置判定阈值 (分钟)",
   "settingIdleThresholdDesc": "无任何键鼠或触控操作超过该时长后自动暂停计时并标记为闲置（1-60 分钟，默认 5 分钟）",
+  "settingMinBrowseThresholdTitle": "浏览阈值下限 (秒)",
+  "settingMinBrowseThresholdDesc": "低于该时长的浏览时间不纳入统计。若设置为 0 则不限最低浏览时间，均纳入统计（默认 5 秒）",
   "settingEnableAfkPromptTitle": "离桌归因提醒卡片",
   "settingEnableAfkPromptDesc": "开启后当离开思源超过闲置阈值返回时，自动浮现归因卡片供选择或自定义输入离桌活动（默认关闭）",
   "settingEnableDailyNoteTitle": "自动沉淀至每日日记",

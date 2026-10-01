@@ -141,7 +141,8 @@ export default class TimeSpentPlugin extends Plugin {
     
     // 7. 初始化并启动时间追踪器
     const idleSeconds = (this.settings.idleThresholdMinutes || 5) * 60;
-    this.timeTracker = new TimeTracker(this, this.storageManager, idleSeconds);
+    const minBrowseSeconds = this.settings.minBrowseThresholdSeconds ?? 5;
+    this.timeTracker = new TimeTracker(this, this.storageManager, idleSeconds, minBrowseSeconds);
     this.timeTracker.start();
 
     // 8. 初始化番茄钟双模引擎与状态栏常驻胶囊
@@ -210,6 +211,10 @@ export default class TimeSpentPlugin extends Plugin {
     try {
       await this.loadSettings();
       Logger.setEnableLog(this.settings.enableLog);
+      if (this.timeTracker) {
+        this.timeTracker.updateIdleThreshold(this.settings.idleThresholdMinutes || 5);
+        this.timeTracker.updateMinBrowseThreshold(this.settings.minBrowseThresholdSeconds ?? 5);
+      }
       if (this.storageManager) {
         this.storageManager.clearCache();
       }

@@ -8,21 +8,28 @@ export class TimeTracker {
     private plugin: Plugin;
     private idleWatcher: IdleWatcher;
     private storageManager: StorageManager;
+    private minBrowseThresholdSeconds: number = 5;
     
     private currentDocId: string | null = null;
     private currentSessionStart: number = 0;
     private currentSessionIdleTime: number = 0;
 
-    constructor(plugin: Plugin, storageManager: StorageManager, idleThresholdSeconds = 300) {
+    constructor(plugin: Plugin, storageManager: StorageManager, idleThresholdSeconds = 300, minBrowseThresholdSeconds = 5) {
         this.plugin = plugin;
         this.storageManager = storageManager;
         this.idleWatcher = new IdleWatcher(idleThresholdSeconds, this.handleIdleStatusChange.bind(this));
+        this.minBrowseThresholdSeconds = minBrowseThresholdSeconds;
     }
 
     public updateIdleThreshold(minutes: number) {
         const seconds = Math.max(1, minutes) * 60;
         this.idleWatcher.setThreshold(seconds);
         Logger.log(`Updated idle threshold to ${minutes} minutes (${seconds}s)`);
+    }
+
+    public updateMinBrowseThreshold(seconds: number) {
+        this.minBrowseThresholdSeconds = Math.max(0, seconds);
+        Logger.log(`Updated min browse threshold to ${this.minBrowseThresholdSeconds} seconds`);
     }
 
     public updateAfkThreshold(minutes: number) {
@@ -143,7 +150,10 @@ export class TimeTracker {
             const totalIdleSecs = this.currentSessionIdleTime + ongoingIdleSecs;
             const effectiveDuration = Math.max(0, durationSecs - totalIdleSecs);
             
-            if (effectiveDuration > 0) {
+            const minThreshold = this.minBrowseThresholdSeconds ?? 5;
+            const isEligible = minThreshold <= 0 ? effectiveDuration > 0 : effectiveDuration >= minThreshold;
+
+            if (isEligible) {
                 const log: TimeLog = {
                     id: this.generateId(),
                     docId: this.currentDocId,
@@ -155,6 +165,8 @@ export class TimeTracker {
                 };
                 
                 this.saveLog(log);
+            } else {
+                Logger.log(`Session duration (${effectiveDuration}s) is below min browse threshold (${minThreshold}s), not recorded.`);
             }
         }
         

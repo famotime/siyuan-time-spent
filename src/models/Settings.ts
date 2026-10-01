@@ -4,6 +4,7 @@ export interface PluginSettings {
   enableLog: boolean;
   openInTab: boolean;
   idleThresholdMinutes?: number;
+  minBrowseThresholdSeconds?: number;// 浏览阈值下限（默认 5 秒），低于阈值不纳入统计，为0则不限最低浏览时间
 
   // 番茄钟双模设置
   enableStatusBarTimer?: boolean;    // 是否在状态栏显示专注计时胶囊
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   enableLog: false,
   openInTab: true,
   idleThresholdMinutes: 5,
+  minBrowseThresholdSeconds: 5,
   enableStatusBarTimer: true,
   pomodoroWorkMinutes: 25,
   pomodoroBreakMinutes: 5,

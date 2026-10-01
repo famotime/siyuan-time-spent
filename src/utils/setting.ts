@@ -316,6 +316,34 @@ export class SettingManager {
       },
     });
 
+    // 1.3.1 浏览阈值下限（秒）
+    this.setting.addItem({
+      title: t("settingMinBrowseThresholdTitle"),
+      description: t("settingMinBrowseThresholdDesc"),
+      createActionElement: () => {
+        const input = document.createElement("input");
+        input.dataset.settingKey = "minBrowseThresholdSeconds";
+        input.type = "number";
+        input.min = "0";
+        input.max = "3600";
+        input.className = "b3-text-field fn__flex-center";
+        input.style.width = "90px";
+        input.value = (settings.minBrowseThresholdSeconds ?? 5).toString();
+        input.addEventListener("change", async () => {
+          let val = parseInt(input.value, 10);
+          if (isNaN(val) || val < 0) val = 0;
+          if (val > 3600) val = 3600;
+          input.value = val.toString();
+          settings.minBrowseThresholdSeconds = val;
+          if (this.plugin.timeTracker) {
+            this.plugin.timeTracker.updateMinBrowseThreshold(val);
+          }
+          await this.plugin.saveSettings();
+        });
+        return input;
+      },
+    });
+
     // 1.4 离桌归因提醒卡片开关项
     this.setting.addItem({
       title: t("settingEnableAfkPromptTitle"),
@@ -753,6 +781,7 @@ export class SettingManager {
           "enableLog",
           "openInTab",
           "idleThresholdMinutes",
+          "minBrowseThresholdSeconds",
           "enableAfkPrompt",
           "enableDailyNoteArchiving",
         ],
@@ -818,6 +847,7 @@ export class SettingManager {
       { key: "enableLog", desc: t("settingEnableLogDesc") },
       { key: "openInTab", desc: t("settingOpenInTabDesc") },
       { key: "idleThresholdMinutes", desc: t("settingIdleThresholdDesc") },
+      { key: "minBrowseThresholdSeconds", desc: t("settingMinBrowseThresholdDesc") },
       { key: "enableAfkPrompt", desc: t("settingEnableAfkPromptDesc") },
       { key: "enableDailyNoteArchiving", desc: t("settingEnableDailyNoteDesc") },
       { key: "aiProvider", desc: t("settingsAiProviderDescription") },

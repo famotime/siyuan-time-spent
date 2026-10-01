@@ -15,6 +15,8 @@
   "settingOpenInTabDisabledMsg": "Set to open in modal dialog",
   "settingIdleThresholdTitle": "Idle Timeout (Minutes)",
   "settingIdleThresholdDesc": "Pause tracking and deduct idle time after no user input exceeds this duration (1-60 mins, default 5 mins)",
+  "settingMinBrowseThresholdTitle": "Minimum Browse Threshold (Seconds)",
+  "settingMinBrowseThresholdDesc": "Browse sessions shorter than this duration are excluded from statistics. Set to 0 to record all sessions without minimum limit (default 5s)",
   "settingEnableAfkPromptTitle": "AFK Reason Prompt Card",
   "settingEnableAfkPromptDesc": "Prompt an away-from-keyboard card to record or categorize offline study upon return (disabled by default)",
   "settingEnableDailyNoteTitle": "Auto-Archive to Daily Note",
