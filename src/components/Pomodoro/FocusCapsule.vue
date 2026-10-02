@@ -23,6 +23,7 @@
       <svg
         class="w-4 h-4 transform -rotate-90 st-pomo-heat-channel"
         viewBox="0 0 24 24"
+        style="fill: none !important;"
       >
         <!-- 微底轨 -->
         <circle
