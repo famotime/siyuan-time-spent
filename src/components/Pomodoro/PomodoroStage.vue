@@ -194,6 +194,25 @@ const digitStyle = computed(() => {
   pointer-events: none;
 }
 
+/* 柔和微光磨砂遮罩：保护中央数字不受底层钟表指针和沙漏流沙穿行干扰 */
+.stage-face::before {
+  content: '';
+  position: absolute;
+  width: 154px;
+  height: 98px;
+  border-radius: 49px;
+  background: radial-gradient(
+    ellipse 66% 56% at center,
+    color-mix(in srgb, var(--st-pomo-surface, #ffffff) 88%, transparent) 0%,
+    color-mix(in srgb, var(--st-pomo-surface, #ffffff) 64%, transparent) 55%,
+    transparent 100%
+  );
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: -1;
+  pointer-events: none;
+}
+
 .stage-time {
   max-width: 88%;
   font-family: inherit;
@@ -203,6 +222,7 @@ const digitStyle = computed(() => {
   letter-spacing: -0.04em;
   line-height: 1;
   white-space: nowrap;
+  text-shadow: 0 1px 3px color-mix(in srgb, var(--st-pomo-surface, #ffffff) 75%, transparent);
 }
 
 @supports (font-size: 1cqi) {
