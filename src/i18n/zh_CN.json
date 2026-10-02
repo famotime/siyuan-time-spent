@@ -110,6 +110,8 @@
   "calendarIdleDeducted": "扣除闲置: {seconds}s",
   "calendarDocTodayTotal": "今日累计",
   "calendarDocDayTotal": "当日累计",
+  "calendarDocThisWeekTotal": "本周累计",
+  "calendarDocWeekTotal": "当周累计",
   "calendarDocSessionTimes": "(共 {count} 次)",
   "calendarLoading": "加载中...",
   "chartDocDistribution": "文档投入分布",

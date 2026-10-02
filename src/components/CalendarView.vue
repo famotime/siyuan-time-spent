@@ -326,11 +326,11 @@
           <div class="flex justify-between items-center text-gray-300 pt-1 border-t border-white/5">
             <span class="text-emerald-400/90 flex items-center gap-1.5 font-medium">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-              {{ hoverTooltip.docDayTotalLabel }}
+              {{ hoverTooltip.docTotalLabel }}
             </span>
             <span class="font-bold text-emerald-400 flex items-center gap-1">
-              <span>{{ hoverTooltip.docDayTotalStr }}</span>
-              <span class="text-xs text-gray-400 font-normal">{{ hoverTooltip.docDayCountStr }}</span>
+              <span>{{ hoverTooltip.docTotalStr }}</span>
+              <span class="text-xs text-gray-400 font-normal">{{ hoverTooltip.docCountStr }}</span>
             </span>
           </div>
         </div>
@@ -399,9 +399,9 @@ const hoverTooltip = ref({
   tags: [] as string[],
   timeRange: '',
   durationStr: '',
-  docDayTotalLabel: '',
-  docDayTotalStr: '',
-  docDayCountStr: ''
+  docTotalLabel: '',
+  docTotalStr: '',
+  docCountStr: ''
 });
 
 // Formatters
@@ -473,19 +473,36 @@ const showBlockTooltip = async (event: MouseEvent, log: TimeLog) => {
   const idleStr = log.idleTime > 0 ? ` (${t('calendarIdleDeducted', { seconds: log.idleTime })})` : '';
   hoverTooltip.value.durationStr = `${t('calendarFocus')}: ${formatDuration(log.duration)}${idleStr}`;
 
-  // 统计该卡片对应所属日期下，同一文档的全天总计投入时间与频次
-  const logDateKey = formatDateKey(new Date(log.startTime));
-  const todayKey = formatDateKey(new Date());
-  const isLogToday = logDateKey === todayKey;
+  // 统计同一文档的累计时间与频次：周视图统计当周，日视图统计当日
+  if (props.mode === 'week') {
+    const isThisWeek = weekDays.value.some(d => d.isToday);
+    let weekLogs: TimeLog[] = [];
+    for (const day of weekDays.value) {
+      const logs = props.dayMap[day.dateStr] || props.logs.filter(l => formatDateKey(new Date(l.startTime)) === day.dateStr);
+      weekLogs = weekLogs.concat(logs);
+    }
+    const sameDocLogs = weekLogs.filter(l => l.docId === log.docId);
+    const docWeekTotalDuration = sameDocLogs.reduce((acc, l) => acc + l.duration, 0);
+    const docWeekCount = sameDocLogs.length;
 
-  const dayLogs = props.dayMap[logDateKey] || props.logs.filter(l => formatDateKey(new Date(l.startTime)) === logDateKey);
-  const sameDocLogs = dayLogs.filter(l => l.docId === log.docId);
-  const docDayTotalDuration = sameDocLogs.reduce((acc, l) => acc + l.duration, 0);
-  const docDayCount = sameDocLogs.length;
+    hoverTooltip.value.docTotalLabel = isThisWeek ? t('calendarDocThisWeekTotal') : t('calendarDocWeekTotal');
+    hoverTooltip.value.docTotalStr = formatDuration(docWeekTotalDuration > 0 ? docWeekTotalDuration : log.duration);
+    hoverTooltip.value.docCountStr = t('calendarDocSessionTimes', { count: docWeekCount > 0 ? docWeekCount : 1 });
+  } else {
+    // 统计该卡片对应所属日期下，同一文档的全天总计投入时间与频次
+    const logDateKey = formatDateKey(new Date(log.startTime));
+    const todayKey = formatDateKey(new Date());
+    const isLogToday = logDateKey === todayKey;
 
-  hoverTooltip.value.docDayTotalLabel = isLogToday ? t('calendarDocTodayTotal') : t('calendarDocDayTotal');
-  hoverTooltip.value.docDayTotalStr = formatDuration(docDayTotalDuration > 0 ? docDayTotalDuration : log.duration);
-  hoverTooltip.value.docDayCountStr = t('calendarDocSessionTimes', { count: docDayCount > 0 ? docDayCount : 1 });
+    const dayLogs = props.dayMap[logDateKey] || props.logs.filter(l => formatDateKey(new Date(l.startTime)) === logDateKey);
+    const sameDocLogs = dayLogs.filter(l => l.docId === log.docId);
+    const docDayTotalDuration = sameDocLogs.reduce((acc, l) => acc + l.duration, 0);
+    const docDayCount = sameDocLogs.length;
+
+    hoverTooltip.value.docTotalLabel = isLogToday ? t('calendarDocTodayTotal') : t('calendarDocDayTotal');
+    hoverTooltip.value.docTotalStr = formatDuration(docDayTotalDuration > 0 ? docDayTotalDuration : log.duration);
+    hoverTooltip.value.docCountStr = t('calendarDocSessionTimes', { count: docDayCount > 0 ? docDayCount : 1 });
+  }
 
   updateBlockTooltip(event);
 

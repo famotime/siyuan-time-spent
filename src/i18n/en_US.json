@@ -110,6 +110,8 @@
   "calendarIdleDeducted": "Idle deducted: {seconds}s",
   "calendarDocTodayTotal": "Today's Total",
   "calendarDocDayTotal": "Daily Total",
+  "calendarDocThisWeekTotal": "This Week's Total",
+  "calendarDocWeekTotal": "Weekly Total",
   "calendarDocSessionTimes": "({count} sessions)",
   "calendarLoading": "Loading...",
   "chartDocDistribution": "Focus by Document",
