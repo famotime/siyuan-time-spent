@@ -8,15 +8,19 @@ import {
   it,
   vi,
 } from 'vitest'
-import { nextTick } from 'vue'
+import {
+  nextTick,
+  ref,
+} from 'vue'
+import { usePomodoroPresenter } from '../../src/components/Pomodoro/composables/usePomodoroPresenter'
 import ChronoDial from '../../src/components/Pomodoro/dials/ChronoDial.vue'
 import { DEFAULT_SETTINGS } from '../../src/models/Settings'
 import { PomodoroManager } from '../../src/utils/pomodoro'
 
 const wrappers: ReturnType<typeof mount>[] = []
 
-function makeManager(): PomodoroManager {
-  const plugin = {
+function makePlugin(): TimeSpentPlugin {
+  return {
     settings: {
       ...DEFAULT_SETTINGS,
       pomodoroSound: false,
@@ -24,13 +28,15 @@ function makeManager(): PomodoroManager {
     },
     timeTracker: null,
   } as unknown as TimeSpentPlugin
-  return new PomodoroManager(plugin)
+}
+
+function makeManager(): PomodoroManager {
+  return new PomodoroManager(makePlugin())
 }
 
 function mountChrono(extra: Record<string, unknown>) {
   const wrapper = mount(ChronoDial, {
     props: {
-      uiPhase: 'focus',
       smoothMotion: false,
       ...extra,
     } as any,
@@ -178,5 +184,38 @@ describe('pomodoro time base', () => {
     // 恢复后基线仍从 120s 起算，暂停的 90s 没有算进指针与墙钟时长
     expect(resumed.live).toBe(true)
     expect(resumed.elapsedMs).toBeLessThan(126_000)
+  })
+
+  it('keep re-sampling the basis so reopening the panel does not restart the hands', () => {
+    const plugin = makePlugin()
+    const pomodoro = new PomodoroManager(plugin)
+    const view = usePomodoroPresenter(
+      pomodoro,
+      plugin,
+      ref(25),
+      ref(false),
+    )
+    pomodoro.start(1)
+    vi.advanceTimersByTime(500)
+    expect(view.motionElapsedMs.value).toBeGreaterThanOrEqual(500)
+
+    // 会话运行期间没有任何 state 变化，锚点只能靠 tick 采样往前推
+    vi.advanceTimersByTime(10_000)
+    expect(view.motionElapsedMs.value).toBeGreaterThanOrEqual(10_500)
+    expect(view.motionLive.value).toBe(true)
+
+    vi.advanceTimersByTime(10_000)
+    expect(view.motionElapsedMs.value).toBeGreaterThanOrEqual(20_500)
+  })
+
+  it('rest the basis at zero once the session is discarded', () => {
+    const pomodoro = makeManager()
+    pomodoro.start(1)
+    vi.advanceTimersByTime(5_000)
+    pomodoro.discard()
+    expect(pomodoro.timeBasis.value).toMatchObject({
+      elapsedMs: 0,
+      live: false,
+    })
   })
 })

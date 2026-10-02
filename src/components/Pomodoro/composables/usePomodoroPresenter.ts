@@ -78,10 +78,11 @@ export function usePomodoroPresenter(
   const afkReturn = computed(() => pomodoro.afkReturn.value)
 
   /**
-   * 走时基线集中在一个 computed 里取：每次 tick 只算一次墙钟采样，
-   * 三个表盘复用同一锚点，避免彼此错位。
+   * 走时基线直接读采样快照：墙钟不可响应，采样由每个 tick 与每次状态切换负责。
+   * 若改成在这里现算，computed 会把毫秒锚点缓存成上次求值时的旧值——面板重开时
+   * 指针就回到 0 点重新起步。
    */
-  const timeBase = computed(() => pomodoro.getTimeBase())
+  const timeBase = computed(() => pomodoro.timeBasis.value)
   const motionElapsedMs = computed(() => timeBase.value.elapsedMs)
   const motionLive = computed(() => timeBase.value.live)
   const motionTotalMs = computed(() => timeBase.value.totalMs)

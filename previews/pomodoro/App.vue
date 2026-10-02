@@ -200,6 +200,8 @@ function applyState() {
     clock.targetEndTime = clock.sessionStartTime + 1500_000
     clock.pausedElapsedMs = state.value === 'paused' ? clock.afkFreezeElapsedMs : 0
   }
+  // 墙钟基线是采样出来的：直接改 ref 之后必须重新采一次，表盘才认新位置
+  pomodoro.sampleTimeBasis()
 }
 onMounted(async () => {
   applyTheme()

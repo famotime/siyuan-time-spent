@@ -4,6 +4,7 @@ import { showMessage } from 'siyuan'
 import {
   computed,
   ref,
+  shallowRef,
 } from 'vue'
 import { t } from '../i18n'
 import {
@@ -20,6 +21,21 @@ export type BreakKind = 'short' | 'long'
 
 /** 派生视图相位。UI 只认这一个轴，冻结态对外表现为 paused，既有视觉分支自动走灰化 */
 export type UiPhase = 'idle' | 'focus' | 'paused' | 'short-break' | 'long-break'
+
+/**
+ * 表盘走时基线：毫秒级已过时长、是否按墙钟推进、会话总时长与是否走秒环。
+ * 表盘据此在两次 tick 之间做帧级插值，指针速度与真实钟表一致。
+ */
+export interface PomodoroTimeBasis {
+  /** 会话已过毫秒；暂停与离桌冻结时是各自的快照 */
+  elapsedMs: number
+  /** 是否按墙钟推进：就绪、暂停、冻结都为 false */
+  live: boolean
+  /** 一整圈的毫秒数；休息阶段为休息总时长 */
+  totalMs: number
+  /** 正计时走秒环（一圈一分钟），倒计时与休息走整段进度 */
+  sweep: boolean
+}
 
 export class PomodoroManager {
   private plugin: TimeSpentPlugin
@@ -97,6 +113,7 @@ export class PomodoroManager {
     this.breakTotalSeconds.value = defaultBreak * 60
 
     this.cycleSize.value = Math.max(2, Math.min(8, this.plugin.settings?.pomodoroCycleSize ?? 4))
+    this.sampleTimeBasis()
   }
 
   /**
@@ -130,6 +147,7 @@ export class PomodoroManager {
     this.armAfk()
 
     this.timerId = setInterval(() => this.tick(), 500)
+    this.sampleTimeBasis()
     Logger.log(`Pomodoro started: ${minutes}m on doc: ${this.currentDocId.value}`)
   }
 
@@ -147,6 +165,7 @@ export class PomodoroManager {
     this.armAfk()
 
     this.timerId = setInterval(() => this.tickStopwatch(), 500)
+    this.sampleTimeBasis()
     Logger.log(`Stopwatch started on doc: ${this.currentDocId.value}`)
   }
 
@@ -167,6 +186,7 @@ export class PomodoroManager {
             this.totalSeconds.value * 1000 - (this.targetEndTime - Date.now()),
           )
       this.stopTimer()
+      this.sampleTimeBasis()
     }
   }
 
@@ -187,6 +207,7 @@ export class PomodoroManager {
       }
       this.afkArmedAt = Date.now()
       this.afkFrozen.value = false
+      this.sampleTimeBasis()
     }
   }
 
@@ -263,6 +284,7 @@ export class PomodoroManager {
       this.breakTotalSeconds.value += extraMinutes * 60
       this.breakRemainingSeconds.value += extraMinutes * 60
       this.targetEndTime += extraMinutes * 60 * 1000
+      this.sampleTimeBasis()
     }
   }
 
@@ -323,6 +345,7 @@ export class PomodoroManager {
     if (diff <= 0) {
       this.handleComplete()
     }
+    this.sampleTimeBasis()
   }
 
   private tickStopwatch() {
@@ -332,6 +355,7 @@ export class PomodoroManager {
       0,
       Math.ceil((now - this.sessionStartTime) / 1000),
     )
+    this.sampleTimeBasis()
   }
 
   private tickBreak() {
@@ -342,6 +366,7 @@ export class PomodoroManager {
     if (diff <= 0) {
       this.handleBreakComplete()
     }
+    this.sampleTimeBasis()
   }
 
   private handleComplete() {
@@ -411,6 +436,7 @@ export class PomodoroManager {
     this.afkIdleSeconds.value = 0
 
     this.timerId = setInterval(() => this.tickBreak(), 500)
+    this.sampleTimeBasis()
   }
 
   /**
@@ -462,6 +488,7 @@ export class PomodoroManager {
           }
         : null
     }
+    this.sampleTimeBasis()
   }
 
   /**
@@ -502,16 +529,29 @@ export class PomodoroManager {
   }
 
   /**
-   * 表盘走时基线：毫秒级已过时长、是否按墙钟推进、会话总时长与是否走秒环。
-   * 表盘据此在两次 tick 之间做帧级插值，指针速度与真实钟表一致；
-   * 暂停 / 离桌冻结时 live=false，指针停在快照处，与数字层的凝滞语义对齐。
+   * 走时基线快照。墙钟时间本身不可响应，所以由 tick 与状态切换处主动采样：
+   * 视图层读这个 ref，才不会把毫秒锚点缓存成上次求值时的旧值
+   * （那会让每次重开面板，指针都回到 0 点重新起步）。
+   * 采样点漏一次不要紧——下一次 tick 会在 500ms 内把它纠正回来。
    */
-  public getTimeBase(): {
-    elapsedMs: number
-    live: boolean
-    totalMs: number
-    sweep: boolean
-  } {
+  public timeBasis = shallowRef<PomodoroTimeBasis>({
+    elapsedMs: 0,
+    live: false,
+    totalMs: 25 * 60_000,
+    sweep: false,
+  })
+
+  /** 重新采样走时基线；状态被外部直接改写后（预览页、状态恢复）也走这里 */
+  public sampleTimeBasis() {
+    this.timeBasis.value = this.computeTimeBasis()
+  }
+
+  /** 现算一份走时基线，不经过采样缓存 */
+  public getTimeBase(): PomodoroTimeBasis {
+    return this.computeTimeBasis()
+  }
+
+  private computeTimeBasis(): PomodoroTimeBasis {
     const sweep = this.isStopwatch.value && this.state.value !== 'break'
     if (this.afkFrozen.value) {
       // 冻结：表盘与数字层一起停在离桌瞬间
@@ -627,5 +667,6 @@ export class PomodoroManager {
     this.lastCompletion.value = null
     this.lastRecord.value = null
     this.pausedElapsedMs = 0
+    this.sampleTimeBasis()
   }
 }
