@@ -16,3 +16,4 @@ playwright-report/
 
 # Claude Code local settings
 .claude/
+developer_docs/
