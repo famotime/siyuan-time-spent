@@ -41,18 +41,6 @@
         :stroke-dashoffset="56.55 * (1 - view.progress.value)"
         transform="rotate(-90 12 12)"
       />
-      <path
-        v-if="view.state.value === 'paused'"
-        d="M10 9v6m4-6v6"
-        stroke="currentColor"
-        stroke-width="1.5"
-      />
-      <path
-        v-else
-        d="M10 6h4v9l-2-2-2 2z"
-        stroke="currentColor"
-        stroke-width="1.3"
-      />
     </svg>
     <span>{{ notice || view.capsuleText.value }}</span>
   </button>

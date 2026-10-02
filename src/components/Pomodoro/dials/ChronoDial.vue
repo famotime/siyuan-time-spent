@@ -18,25 +18,76 @@
       <line
         v-for="tick in ticks"
         :key="tick.index"
-        class="chrono-tick st-pomo-anim-soft"
+        class="chrono-tick"
         :class="{
           'chrono-tick--major': tick.major,
-          'chrono-tick--lit': !stopwatch && fraction > tick.index / 60,
+          'chrono-tick--lit': fraction > tick.index / 60,
         }"
         :x1="tick.x1"
         :y1="tick.y1"
         :x2="tick.x2"
         :y2="tick.y2"
       />
-      <!-- 不穿过中心数字的页签游标，不再制造第二个旋转表圈。 -->
-      <g
-        v-if="!stopwatch"
-        class="chrono-cursor st-pomo-anim-soft"
-        :style="{ transform: `rotate(${fraction * 360}deg)` }"
-      >
-        <path
-          class="chrono-tab"
-          d="M105 1 H111 Q112 1 112 2 V11 L108 14 L104 11 V2 Q104 1 105 1 Z"
+      <!-- 仿时钟指针：倒计时、正计时、休息三种计时共用同一套走时 -->
+      <g class="chrono-hands">
+        <!-- 时针：短而粗，锥形；12h/圈 -->
+        <g
+          class="chrono-hand chrono-hand--hour"
+          :style="{ transform: `rotate(${hourAngle}deg)` }"
+        >
+          <path
+            d="M105 108 L108 62 L111 108 Z"
+            fill="currentColor"
+            opacity=".92"
+          />
+        </g>
+        <!-- 分针：长而细，锥形；60min/圈 -->
+        <g
+          class="chrono-hand chrono-hand--minute"
+          :style="{ transform: `rotate(${minuteAngle}deg)` }"
+        >
+          <path
+            d="M106.5 108 L108 40 L109.5 108 Z"
+            fill="currentColor"
+            opacity=".78"
+          />
+        </g>
+        <!-- 秒针：最细最长，60s/圈，真实钟表速度扫动 -->
+        <g
+          class="chrono-hand chrono-hand--second"
+          :style="{ transform: `rotate(${secondAngle}deg)` }"
+        >
+          <line
+            x1="108"
+            y1="118"
+            x2="108"
+            y2="36"
+            stroke="#e04040"
+            stroke-width="1"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="108"
+            cy="108"
+            r="2.5"
+            fill="#e04040"
+            opacity=".85"
+          />
+        </g>
+        <!-- 中心铆钉 -->
+        <circle
+          cx="108"
+          cy="108"
+          r="3.2"
+          fill="currentColor"
+          opacity=".8"
+        />
+        <circle
+          cx="108"
+          cy="108"
+          r="1.8"
+          fill="var(--st-pomo-surface, #fff)"
+          opacity=".6"
         />
       </g>
     </svg>
@@ -44,31 +95,44 @@
 </template>
 
 <script setup lang="ts">
-import type { UiPhase } from '../../../utils/pomodoro'
 import { computed } from 'vue'
+import { useDialMotion } from '../composables/useDialMotion'
 
 const props = withDefaults(
   defineProps<{
-    progress: number
-    uiPhase: UiPhase
-    isStopwatch?: boolean
+    elapsedMs?: number
+    motionLive?: boolean
+    totalMs?: number
+    motionSweep?: boolean
+    smoothMotion?: boolean
   }>(),
-  { isStopwatch: false },
+  {
+    elapsedMs: 0,
+    motionLive: false,
+    totalMs: 0,
+    motionSweep: false,
+    smoothMotion: false,
+  },
 )
 
-const stopwatch = computed(
-  () =>
-    props.isStopwatch
-    && props.uiPhase !== 'short-break'
-    && props.uiPhase !== 'long-break',
-)
-const fraction = computed(() =>
-  props.uiPhase === 'idle' || !Number.isFinite(props.progress)
-    ? 0
-    : Math.max(0, Math.min(1, props.progress)),
-)
+const {
+  motionMs,
+  fraction,
+} = useDialMotion({
+  anchorMs: () => props.elapsedMs,
+  live: () => props.motionLive,
+  smooth: () => props.smoothMotion,
+  totalMs: () => props.totalMs,
+  sweep: () => props.motionSweep,
+})
 
-// 60 个固定刻度；仅目标进度改变时着色，无时钟、轮询或装饰转动。
+// 仿真钟表的角速度：秒针 6°/s、分针 0.1°/s、时针 1/120°/s
+const seconds = computed(() => motionMs.value / 1000)
+const hourAngle = computed(() => ((seconds.value / 3600) % 12) / 12 * 360)
+const minuteAngle = computed(() => ((seconds.value / 60) % 60) / 60 * 360)
+const secondAngle = computed(() => (((seconds.value % 60) / 60) * 360))
+
+// 60 个固定刻度；着色刻度只跟随同一根走时基线，无轮询、无装饰转动。
 const ticks = Array.from({ length: 60 }, (_, index) => {
   const angle = (index * Math.PI) / 30 - Math.PI / 2
   const major = index % 5 === 0
@@ -131,7 +195,6 @@ const ticks = Array.from({ length: 60 }, (_, index) => {
   );
   stroke-width: 1;
   stroke-linecap: round;
-  transition: stroke 180ms ease;
 }
 
 .chrono-tick--major {
@@ -143,19 +206,8 @@ const ticks = Array.from({ length: 60 }, (_, index) => {
   stroke: var(--st-pomo-accent, var(--b3-theme-primary));
 }
 
-.chrono-cursor {
+/* 角度由 useDialMotion 每帧写入，不靠 CSS 过渡补间 */
+.chrono-hand {
   transform-origin: 108px 108px;
-  transition: transform 240ms linear;
-}
-
-.chrono-tab {
-  fill: var(--st-pomo-accent, var(--b3-theme-primary));
-  stroke: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .st-pomo-anim-soft {
-    transition: none !important;
-  }
 }
 </style>

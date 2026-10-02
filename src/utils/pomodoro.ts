@@ -72,9 +72,13 @@ export class PomodoroManager {
   private sessionStartTime: number = 0
   private targetEndTime: number = 0
   private pausedRemaining: number = 0
+  /** 暂停瞬间的已过毫秒：表盘指针与墙钟恢复都以它为基线，暂停时长不计入 */
+  private pausedElapsedMs: number = 0
 
   private sessionIdleAccumSec: number = 0
   private afkFreezeProgress: number = 0
+  /** 冻结瞬间的已过毫秒，与进度快照同时取样 */
+  private afkFreezeElapsedMs: number = 0
   private afkArmedAt: number = 0
   /** 番茄启动后的宽容窗口：用户可能正在点按钮，且开始前若已闲置，IdleWatcher 的 lastActivity 已陈旧会误判 */
   private static readonly AFK_GRACE_MS = 10_000
@@ -121,6 +125,7 @@ export class PomodoroManager {
     this.currentDocId.value = docId || this.plugin.timeTracker?.getCurrentDocId() || null
     this.sessionStartTime = Date.now()
     this.targetEndTime = this.sessionStartTime + minutes * 60 * 1000
+    this.pausedElapsedMs = 0
     this.state.value = 'running'
     this.armAfk()
 
@@ -137,6 +142,7 @@ export class PomodoroManager {
     this.elapsedSeconds.value = 0
     this.currentDocId.value = docId || this.plugin.timeTracker?.getCurrentDocId() || null
     this.sessionStartTime = Date.now()
+    this.pausedElapsedMs = 0
     this.state.value = 'running'
     this.armAfk()
 
@@ -153,6 +159,13 @@ export class PomodoroManager {
       this.commitAfk()
       this.state.value = 'paused'
       this.pausedRemaining = this.remainingSeconds.value
+      // 按 targetEndTime 取毫秒基线：tick 的 ceil 取整会让整数秒快半秒到一秒
+      this.pausedElapsedMs = this.isStopwatch.value
+        ? this.elapsedSeconds.value * 1000
+        : Math.max(
+            0,
+            this.totalSeconds.value * 1000 - (this.targetEndTime - Date.now()),
+          )
       this.stopTimer()
     }
   }
@@ -167,6 +180,8 @@ export class PomodoroManager {
         this.sessionStartTime = Date.now() - this.elapsedSeconds.value * 1000
         this.timerId = setInterval(() => this.tickStopwatch(), 500)
       } else {
+        // 把暂停区间从墙钟起点里剔除：指针续转与统计时长都不该含暂停
+        this.sessionStartTime = Date.now() - this.pausedElapsedMs
         this.targetEndTime = Date.now() + this.pausedRemaining * 1000
         this.timerId = setInterval(() => this.tick(), 500)
       }
@@ -292,7 +307,7 @@ export class PomodoroManager {
       return (this.elapsedSeconds.value % 60) / 60
     }
     const total = this.totalSeconds.value || (this.targetMinutes.value * 60) || 1500
-    return Math.max(0, Math.min(1, 1 - this.remainingSeconds.value / total))
+    return Math.max(0, Math.min(1, this.elapsedSeconds.value / total))
   }
 
   private tick() {
@@ -300,6 +315,10 @@ export class PomodoroManager {
     const now = Date.now()
     const diff = Math.max(0, Math.ceil((this.targetEndTime - now) / 1000))
     this.remainingSeconds.value = diff
+    this.elapsedSeconds.value = Math.max(
+      0,
+      this.totalSeconds.value - diff,
+    )
 
     if (diff <= 0) {
       this.handleComplete()
@@ -309,7 +328,10 @@ export class PomodoroManager {
   private tickStopwatch() {
     this.probeAfk()
     const now = Date.now()
-    this.elapsedSeconds.value = Math.max(0, Math.floor((now - this.sessionStartTime) / 1000))
+    this.elapsedSeconds.value = Math.max(
+      0,
+      Math.ceil((now - this.sessionStartTime) / 1000),
+    )
   }
 
   private tickBreak() {
@@ -423,6 +445,7 @@ export class PomodoroManager {
       // 刚跨过闲置阈值：冻结表现层，快照进度
       this.afkFrozen.value = true
       this.afkFreezeProgress = this.computeRawProgress()
+      this.afkFreezeElapsedMs = this.wallElapsedMs()
       this.afkIdleSeconds.value = 0
       this.afkReturn.value = null
     } else if (idle && this.afkFrozen.value) {
@@ -463,6 +486,53 @@ export class PomodoroManager {
    */
   public getFrozenProgress(): number {
     return this.afkFreezeProgress
+  }
+
+  /**
+   * 当前会话的墙钟已过毫秒，暂停与冻结取各自快照
+   */
+  private wallElapsedMs(): number {
+    if (this.state.value === 'idle') return 0
+    if (this.state.value === 'break') {
+      const breakTotalMs = this.breakTotalSeconds.value * 1000
+      return Math.max(0, Date.now() - (this.targetEndTime - breakTotalMs))
+    }
+    if (this.state.value === 'paused') return this.pausedElapsedMs
+    return Math.max(0, Date.now() - this.sessionStartTime)
+  }
+
+  /**
+   * 表盘走时基线：毫秒级已过时长、是否按墙钟推进、会话总时长与是否走秒环。
+   * 表盘据此在两次 tick 之间做帧级插值，指针速度与真实钟表一致；
+   * 暂停 / 离桌冻结时 live=false，指针停在快照处，与数字层的凝滞语义对齐。
+   */
+  public getTimeBase(): {
+    elapsedMs: number
+    live: boolean
+    totalMs: number
+    sweep: boolean
+  } {
+    const sweep = this.isStopwatch.value && this.state.value !== 'break'
+    if (this.afkFrozen.value) {
+      // 冻结：表盘与数字层一起停在离桌瞬间
+      return {
+        elapsedMs: this.afkFreezeElapsedMs,
+        live: false,
+        totalMs: this.totalMs(),
+        sweep,
+      }
+    }
+    return {
+      elapsedMs: this.wallElapsedMs(),
+      live: this.state.value !== 'idle' && this.state.value !== 'paused',
+      totalMs: this.totalMs(),
+      sweep,
+    }
+  }
+
+  private totalMs(): number {
+    if (this.state.value === 'break') return this.breakTotalSeconds.value * 1000
+    return this.totalSeconds.value * 1000
   }
 
   /**
@@ -556,5 +626,6 @@ export class PomodoroManager {
     this.pendingNote.value = ''
     this.lastCompletion.value = null
     this.lastRecord.value = null
+    this.pausedElapsedMs = 0
   }
 }

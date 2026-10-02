@@ -19,23 +19,29 @@
     <AuroraDial
       v-if="form === 'zen'"
       class="stage-dial"
-      :progress="progress"
-      :ui-phase="uiPhase"
-      :is-stopwatch="stopwatch"
+      :elapsed-ms="elapsedMs"
+      :motion-live="motionLive"
+      :total-ms="totalMs"
+      :motion-sweep="motionSweep"
+      :smooth-motion="smoothMotion"
     />
     <ChronoDial
       v-else-if="form === 'chrono'"
       class="stage-dial"
-      :progress="progress"
-      :ui-phase="uiPhase"
-      :is-stopwatch="stopwatch"
+      :elapsed-ms="elapsedMs"
+      :motion-live="motionLive"
+      :total-ms="totalMs"
+      :motion-sweep="motionSweep"
+      :smooth-motion="smoothMotion"
     />
     <SandfallDial
       v-else
       class="stage-dial"
-      :progress="progress"
-      :ui-phase="uiPhase"
-      :is-stopwatch="stopwatch"
+      :elapsed-ms="elapsedMs"
+      :motion-live="motionLive"
+      :total-ms="totalMs"
+      :motion-sweep="motionSweep"
+      :smooth-motion="smoothMotion"
     />
 
     <!-- 秒级视觉更新不进入读屏；三个载体共用同一数字层。 -->
@@ -81,8 +87,21 @@ const props = withDefaults(
     intensity: 'calm' | 'expressive'
     isStopwatch?: boolean
     breathing?: boolean
+    elapsedMs?: number
+    motionLive?: boolean
+    totalMs?: number
+    motionSweep?: boolean
+    reduced?: boolean
   }>(),
-  { isStopwatch: false, breathing: false },
+  {
+    isStopwatch: false,
+    breathing: false,
+    elapsedMs: 0,
+    motionLive: false,
+    totalMs: 0,
+    motionSweep: false,
+    reduced: false,
+  },
 )
 
 const stagePhase = computed(() => (props.frozen ? 'frozen' : props.uiPhase))
@@ -91,6 +110,13 @@ const stopwatch = computed(
     props.isStopwatch
     && props.uiPhase !== 'short-break'
     && props.uiPhase !== 'long-break',
+)
+/**
+ * 帧插值总开关：系统减弱动效或配置为 calm 时退化为秒级阶跃。
+ * 指针的走动本身属于计时信息，两种档位下都保留。
+ */
+const smoothMotion = computed(
+  () => !props.reduced && props.intensity !== 'calm',
 )
 const percent = computed(() =>
   Math.round(

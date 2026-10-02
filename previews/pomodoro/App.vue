@@ -164,12 +164,26 @@ function applyState() {
   pomodoro.targetMinutes.value = 25
   pomodoro.remainingSeconds.value = 18 * 60 + 42
   pomodoro.cycleCompleted.value = 1
+  // 预览只写 ref、不走 start()，所以墙钟基线也一并对齐，表盘指针才走到 18:42
+  const clock = pomodoro as unknown as {
+    sessionStartTime: number
+    targetEndTime: number
+    pausedElapsedMs: number
+    afkFreezeElapsedMs: number
+  }
+  clock.afkFreezeElapsedMs = (1500 - (18 * 60 + 42)) * 1000
   if (['break', 'long-break', 'saved', 'error'].includes(state.value)) {
     pomodoro.state.value = 'break'
     pomodoro.breakKind.value = state.value === 'long-break' ? 'long' : 'short'
     pomodoro.breakTotalSeconds.value = state.value === 'long-break' ? 900 : 300
     pomodoro.breakRemainingSeconds.value =
       state.value === 'long-break' ? 812 : 263
+    const breakElapsedMs =
+      (pomodoro.breakTotalSeconds.value - pomodoro.breakRemainingSeconds.value)
+      * 1000
+    clock.sessionStartTime = Date.now() - breakElapsedMs
+    clock.targetEndTime = clock.sessionStartTime + pomodoro.breakTotalSeconds.value * 1000
+    clock.pausedElapsedMs = 0
     if (state.value === 'saved' || state.value === 'error') {
       pomodoro.lastRecord.value = {
         id: 'demo-completion',
@@ -182,6 +196,9 @@ function applyState() {
     pomodoro.state.value = state.value === 'paused' ? 'paused' : 'running'
     pomodoro.afkFrozen.value = state.value === 'away'
     pomodoro.afkIdleSeconds.value = state.value === 'away' ? 183 : 0
+    clock.sessionStartTime = Date.now() - clock.afkFreezeElapsedMs
+    clock.targetEndTime = clock.sessionStartTime + 1500_000
+    clock.pausedElapsedMs = state.value === 'paused' ? clock.afkFreezeElapsedMs : 0
   }
 }
 onMounted(async () => {

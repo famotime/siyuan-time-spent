@@ -17,8 +17,8 @@
         r="97"
       />
       <circle
-        v-if="!stopwatch && fraction > 0"
-        class="aurora-arc st-pomo-anim-soft"
+        v-if="fraction > 0"
+        class="aurora-arc"
         cx="108"
         cy="108"
         r="97"
@@ -27,45 +27,37 @@
         stroke-dasharray="1 1"
         :stroke-dashoffset="1 - fraction"
       />
-      <!-- 页签形游标：唯一强调，位置只由实际进度驱动。 -->
-      <g
-        v-if="!stopwatch"
-        class="aurora-cursor st-pomo-anim-soft"
-        :style="{ transform: `rotate(${fraction * 360}deg)` }"
-      >
-        <path
-          class="aurora-tab"
-          d="M105 5 H111 Q112 5 112 6 V15 L108 18 L104 15 V6 Q104 5 105 5 Z"
-        />
-      </g>
     </svg>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { UiPhase } from '../../../utils/pomodoro'
-import { computed } from 'vue'
+import { useDialMotion } from '../composables/useDialMotion'
 
 const props = withDefaults(
   defineProps<{
-    progress: number
-    uiPhase: UiPhase
-    isStopwatch?: boolean
+    elapsedMs?: number
+    motionLive?: boolean
+    totalMs?: number
+    motionSweep?: boolean
+    smoothMotion?: boolean
   }>(),
-  { isStopwatch: false },
+  {
+    elapsedMs: 0,
+    motionLive: false,
+    totalMs: 0,
+    motionSweep: false,
+    smoothMotion: false,
+  },
 )
 
-const stopwatch = computed(
-  () =>
-    props.isStopwatch
-    && props.uiPhase !== 'short-break'
-    && props.uiPhase !== 'long-break',
-)
-const fraction = computed(() =>
-  props.uiPhase === 'idle' || !Number.isFinite(props.progress)
-    ? 0
-    : Math.max(0, Math.min(1, props.progress)),
-)
+const { fraction } = useDialMotion({
+  anchorMs: () => props.elapsedMs,
+  live: () => props.motionLive,
+  smooth: () => props.smoothMotion,
+  totalMs: () => props.totalMs,
+  sweep: () => props.motionSweep,
+})
 </script>
 
 <style scoped>
@@ -116,22 +108,5 @@ const fraction = computed(() =>
   stroke: var(--st-pomo-accent, var(--b3-theme-primary));
   stroke-width: 2.25;
   stroke-linecap: round;
-  transition: stroke-dashoffset 240ms linear;
-}
-
-.aurora-cursor {
-  transform-origin: 108px 108px;
-  transition: transform 240ms linear;
-}
-
-.aurora-tab {
-  fill: var(--st-pomo-accent, var(--b3-theme-primary));
-  stroke: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .st-pomo-anim-soft {
-    transition: none !important;
-  }
 }
 </style>

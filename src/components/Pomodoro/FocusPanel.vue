@@ -84,6 +84,11 @@
                 ? pomodoro.preferStopwatch.value
                 : view.isStopwatch.value
             "
+            :reduced="reduced"
+            :elapsed-ms="view.motionElapsedMs.value"
+            :motion-live="view.motionLive.value"
+            :total-ms="view.motionTotalMs.value"
+            :motion-sweep="view.motionSweep.value"
           />
           <button
             v-if="view.state.value === 'idle'"

@@ -29,6 +29,15 @@ export interface PomodoroView {
   rawProgress: ComputedRef<number>
   isStopwatch: ComputedRef<boolean>
   isFrozen: ComputedRef<boolean>
+  elapsedSeconds: ComputedRef<number>
+  /** 表盘走时基线：毫秒精度已过时长 */
+  motionElapsedMs: ComputedRef<number>
+  /** 表盘是否按墙钟推进；暂停与冻结时停在快照处 */
+  motionLive: ComputedRef<boolean>
+  /** 表盘一整圈对应的毫秒数 */
+  motionTotalMs: ComputedRef<number>
+  /** 正计时走秒环（一圈一分钟），倒计时与休息走整段进度 */
+  motionSweep: ComputedRef<boolean>
   afkIdleSeconds: ComputedRef<number>
   afkReturn: ComputedRef<{ idleSec: number, at: number } | null>
   capsuleText: ComputedRef<string>
@@ -64,8 +73,19 @@ export function usePomodoroPresenter(
   const uiPhase = computed(() => pomodoro.uiPhase.value)
   const isStopwatch = computed(() => pomodoro.isStopwatch.value)
   const isFrozen = computed(() => pomodoro.afkFrozen.value)
+  const elapsedSeconds = computed(() => pomodoro.elapsedSeconds.value)
   const afkIdleSeconds = computed(() => pomodoro.afkIdleSeconds.value)
   const afkReturn = computed(() => pomodoro.afkReturn.value)
+
+  /**
+   * 走时基线集中在一个 computed 里取：每次 tick 只算一次墙钟采样，
+   * 三个表盘复用同一锚点，避免彼此错位。
+   */
+  const timeBase = computed(() => pomodoro.getTimeBase())
+  const motionElapsedMs = computed(() => timeBase.value.elapsedMs)
+  const motionLive = computed(() => timeBase.value.live)
+  const motionTotalMs = computed(() => timeBase.value.totalMs)
+  const motionSweep = computed(() => timeBase.value.sweep)
 
   const rawProgress = computed(() => pomodoro.computeRawProgress())
 
@@ -171,6 +191,11 @@ export function usePomodoroPresenter(
     rawProgress,
     isStopwatch,
     isFrozen,
+    elapsedSeconds,
+    motionElapsedMs,
+    motionLive,
+    motionTotalMs,
+    motionSweep,
     afkIdleSeconds,
     afkReturn,
     capsuleText,

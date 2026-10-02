@@ -9,25 +9,63 @@
       viewBox="0 0 216 216"
       focusable="false"
     >
-      <!-- 中段留给时间与副标：轮廓和沙量都不穿过文字。 -->
+      <defs>
+        <filter
+          id="sf-shadow"
+          x="-20%"
+          y="-10%"
+          width="140%"
+          height="120%"
+        >
+          <feDropShadow
+            dx="0"
+            dy="2"
+            stdDeviation="3"
+            flood-opacity=".08"
+          />
+        </filter>
+      </defs>
+
+      <!-- 沙漏框架：贝塞尔曲线玻璃腔体 -->
       <path
         class="sand-frame"
-        d="M62 18 H154 L118 64 H98 Z M98 158 H118 L154 204 H62 Z"
+        d="
+          M 74 14
+          C 50 14, 36 50, 92 78
+          L 124 78
+          C 180 50, 166 14, 142 14
+          Z
+          M 74 202
+          C 50 202, 36 166, 92 138
+          L 124 138
+          C 180 166, 166 202, 142 202
+          Z
+        "
+        filter="url(#sf-shadow)"
       />
-      <template v-if="!stopwatch">
+
+      <!-- 沙量填充 -->
+      <template v-if="fraction < 1">
         <path
-          v-if="fraction < 1"
-          class="sand-fill sand-fill--top st-pomo-anim-soft"
+          class="sand-fill sand-fill--top"
           :d="topSand.path"
         />
         <path
           v-if="fraction > 0"
-          class="sand-fill sand-fill--bottom st-pomo-anim-soft"
+          class="sand-fill sand-fill--bottom"
           :d="bottomSandPath"
         />
+
+        <!-- 中间沙流 -->
+        <path
+          v-if="fraction > 0.1 && fraction < 0.9"
+          class="sand-stream"
+          :d="streamPath"
+        />
+
+        <!-- 沙面游标 -->
         <g
-          v-if="fraction < 1"
-          class="sand-cursor st-pomo-anim-soft"
+          class="sand-cursor"
           :style="{
             transform: `translate(${topSand.left}px, ${topSand.surface}px)`,
           }"
@@ -38,34 +76,54 @@
           />
         </g>
       </template>
+
+      <!-- 玻璃高光 -->
+      <path
+        class="sand-glare"
+        d="
+          M 74 14 C 50 14, 36 50, 92 78 L 96 78 C 40 50, 54 14, 78 14 Z
+          M 74 202 C 50 202, 36 166, 92 138 L 96 138 C 40 166, 54 202, 78 202 Z
+        "
+      />
+      <path
+        class="sand-highlight"
+        d="
+          M 76 18 C 52 18, 38 52, 94 76 L 96 76 C 42 52, 56 18, 79 18 Z
+          M 76 198 C 52 198, 38 154, 94 140 L 96 140 C 42 154, 56 198, 79 198 Z
+        "
+      />
     </svg>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { UiPhase } from '../../../utils/pomodoro'
 import { computed } from 'vue'
+import { useDialMotion } from '../composables/useDialMotion'
 
 const props = withDefaults(
   defineProps<{
-    progress: number
-    uiPhase: UiPhase
-    isStopwatch?: boolean
+    elapsedMs?: number
+    motionLive?: boolean
+    totalMs?: number
+    motionSweep?: boolean
+    smoothMotion?: boolean
   }>(),
-  { isStopwatch: false },
+  {
+    elapsedMs: 0,
+    motionLive: false,
+    totalMs: 0,
+    motionSweep: false,
+    smoothMotion: false,
+  },
 )
 
-const stopwatch = computed(
-  () =>
-    props.isStopwatch
-    && props.uiPhase !== 'short-break'
-    && props.uiPhase !== 'long-break',
-)
-const fraction = computed(() =>
-  props.uiPhase === 'idle' || !Number.isFinite(props.progress)
-    ? 0
-    : Math.max(0, Math.min(1, props.progress)),
-)
+const { fraction } = useDialMotion({
+  anchorMs: () => props.elapsedMs,
+  live: () => props.motionLive,
+  smooth: () => props.smoothMotion,
+  totalMs: () => props.totalMs,
+  sweep: () => props.motionSweep,
+})
 
 // 两个等容积梯形腔。反解面积求沙面高度，保证上下沙量守恒，而非线性缩放装饰图。
 const height = 42
@@ -97,6 +155,16 @@ const bottomSandPath = computed(() => {
   const half = wideHalf - slope * depth
   const surface = 202 - depth
   return `M${108 - half} ${surface} H${108 + half} L152 202 H64 Z`
+})
+
+// 沙流路径：在两个腔体之间出现，模拟沙粒下落
+const streamPath = computed(() => {
+  if (fraction.value <= 0.1 || fraction.value >= 0.9) return ''
+  const t = (fraction.value - 0.1) / 0.8
+  const bottom = 78 + 60 * t
+  const tw = 2.5
+  const bw = 0.7
+  return `M${108 - tw} 78 L${108 - bw} ${bottom} L${108 + bw} ${bottom} L${108 + tw} 78 Z`
 })
 </script>
 
@@ -140,15 +208,15 @@ const bottomSandPath = computed(() => {
   stroke-linejoin: round;
 }
 
+/* 几何形状每帧由 useDialMotion 写入，过渡补间只会让沙面滞后于秒针 */
 .sand-fill {
   stroke: none;
-  transition: d 240ms linear;
 }
 
 .sand-fill--top {
   fill: color-mix(
     in srgb,
-    var(--st-pomo-accent, var(--b3-theme-primary)) 24%,
+    var(--st-pomo-accent, var(--b3-theme-primary)) 28%,
     transparent
   );
 }
@@ -156,18 +224,41 @@ const bottomSandPath = computed(() => {
 .sand-fill--bottom {
   fill: color-mix(
     in srgb,
-    var(--st-pomo-accent, var(--b3-theme-primary)) 52%,
+    var(--st-pomo-accent, var(--b3-theme-primary)) 58%,
     transparent
   );
 }
 
+.sand-stream {
+  fill: color-mix(
+    in srgb,
+    var(--st-pomo-accent, var(--b3-theme-primary)) 42%,
+    transparent
+  );
+  stroke: none;
+}
+
 .sand-cursor {
-  transition: transform 240ms linear;
+  will-change: transform;
 }
 
 .sand-tab {
   fill: var(--st-pomo-accent, var(--b3-theme-primary));
   stroke: none;
+}
+
+/* 玻璃高光：左侧弧形反光带 */
+.sand-glare {
+  fill: rgba(255, 255, 255, .07);
+  stroke: none;
+  pointer-events: none;
+}
+
+/* 玻璃高亮：更窄更亮的次级反光 */
+.sand-highlight {
+  fill: rgba(255, 255, 255, .12);
+  stroke: none;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
