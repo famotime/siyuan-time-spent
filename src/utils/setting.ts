@@ -542,6 +542,124 @@ export class SettingManager {
       },
     });
 
+    // ================= 1.6 - 1.13 番茄钟心流体验扩展项 =================
+    // 1.6 一轮番茄数
+    this.setting.addItem({
+      title: t("settingPomodoroCycleSizeTitle"),
+      description: t("settingPomodoroCycleSizeDesc"),
+      createActionElement: () => this.buildNumberSetting(
+        "pomodoroCycleSize",
+        settings.pomodoroCycleSize ?? 4,
+        2,
+        8,
+        settings,
+        async (val) => {
+          settings.pomodoroCycleSize = val;
+          this.plugin.pomodoroManager?.setCycleSize(val);
+        },
+      ),
+    });
+
+    // 1.7 长休息时长
+    this.setting.addItem({
+      title: t("settingPomodoroLongBreakTitle"),
+      description: t("settingPomodoroLongBreakDesc"),
+      createActionElement: () => this.buildNumberSetting(
+        "pomodoroLongBreakMinutes",
+        settings.pomodoroLongBreakMinutes ?? 15,
+        5,
+        60,
+        settings,
+        async (val) => {
+          settings.pomodoroLongBreakMinutes = val;
+        },
+      ),
+    });
+
+    // 1.8 离桌守卫
+    this.setting.addItem({
+      title: t("settingPomodoroAfkGuardianTitle"),
+      description: t("settingPomodoroAfkGuardianDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroAfkGuardian",
+        settings.pomodoroAfkGuardian ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroAfkGuardian = val;
+        },
+      ),
+    });
+
+    // 1.9 打断记录
+    this.setting.addItem({
+      title: t("settingPomodoroInterruptionTitle"),
+      description: t("settingPomodoroInterruptionDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroInterruptionLog",
+        settings.pomodoroInterruptionLog ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroInterruptionLog = val;
+        },
+      ),
+    });
+
+    // 1.10 智能时长推荐
+    this.setting.addItem({
+      title: t("settingPomodoroSmartDurationTitle"),
+      description: t("settingPomodoroSmartDurationDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroSmartDuration",
+        settings.pomodoroSmartDuration ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroSmartDuration = val;
+        },
+      ),
+    });
+
+    // 1.11 达成微时刻
+    this.setting.addItem({
+      title: t("settingPomodoroAchievementTitle"),
+      description: t("settingPomodoroAchievementDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroAchievementMoment",
+        settings.pomodoroAchievementMoment ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroAchievementMoment = val;
+        },
+      ),
+    });
+
+    // 1.12 键盘快捷键
+    this.setting.addItem({
+      title: t("settingPomodoroShortcutTitle"),
+      description: t("settingPomodoroShortcutDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroShortcut",
+        settings.pomodoroShortcut ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroShortcut = val;
+        },
+      ),
+    });
+
+    // 1.13 表盘滚轮微调
+    this.setting.addItem({
+      title: t("settingPomodoroWheelTitle"),
+      description: t("settingPomodoroWheelDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroWheelAdjust",
+        settings.pomodoroWheelAdjust ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroWheelAdjust = val;
+        },
+      ),
+    });
+
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({
@@ -753,6 +871,61 @@ export class SettingManager {
   }
 
   /**
+   * 构建数值型设置项（带上下限夹紧）
+   * 与既有手写数值项的 DOM 结构、事件流、热更新广播完全一致，仅将重复部分参数化
+   */
+  private buildNumberSetting(
+    key: string,
+    value: number,
+    min: number,
+    max: number,
+    settings: PluginSettings,
+    onChange: (val: number) => void | Promise<void>,
+  ): HTMLInputElement {
+    const input = document.createElement("input");
+    input.dataset.settingKey = key;
+    input.type = "number";
+    input.min = min.toString();
+    input.max = max.toString();
+    input.className = "b3-text-field fn__flex-center";
+    input.style.width = "90px";
+    input.value = value.toString();
+    input.addEventListener("change", async () => {
+      let val = parseInt(input.value, 10);
+      if (isNaN(val) || val < min) val = min;
+      if (val > max) val = max;
+      input.value = val.toString();
+      await onChange(val);
+      await this.plugin.saveSettings();
+      window.dispatchEvent(new CustomEvent("siyuan-time-spent:pomodoro-config-changed", { detail: settings }));
+    });
+    return input;
+  }
+
+  /**
+   * 构建开关型设置项
+   * 与既有 pomodoroNotification 开关的 DOM 结构、事件流一致，仅补上热更新广播
+   */
+  private buildSwitchSetting(
+    key: string,
+    checked: boolean,
+    settings: PluginSettings,
+    onChange: (val: boolean) => void | Promise<void>,
+  ): HTMLInputElement {
+    const checkbox = document.createElement("input");
+    checkbox.dataset.settingKey = key;
+    checkbox.type = "checkbox";
+    checkbox.className = "b3-switch fn__flex-center";
+    checkbox.checked = checked;
+    checkbox.addEventListener("change", async () => {
+      await onChange(checkbox.checked);
+      await this.plugin.saveSettings();
+      window.dispatchEvent(new CustomEvent("siyuan-time-spent:pomodoro-config-changed", { detail: settings }));
+    });
+    return checkbox;
+  }
+
+  /**
    * 将设置项分类组织为统一的折叠卡片（基础设置、AI 服务）
    * 彻底避免混排和分栏挤压，保证所有卡片及条目完全左对齐
    */
@@ -797,6 +970,14 @@ export class SettingManager {
           "pomodoroBreakMinutes",
           "pomodoroSound",
           "pomodoroNotification",
+          "pomodoroCycleSize",
+          "pomodoroLongBreakMinutes",
+          "pomodoroAfkGuardian",
+          "pomodoroInterruptionLog",
+          "pomodoroSmartDuration",
+          "pomodoroAchievementMoment",
+          "pomodoroShortcut",
+          "pomodoroWheelAdjust",
         ],
         open: true,
       },

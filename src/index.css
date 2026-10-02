@@ -153,6 +153,206 @@ body[data-theme-mode="dark"],
   --st-pomo-break-track-fill: #14b8a6;
 }
 
+/* ==================== 番茄钟「心流舱」设计令牌与动效体系 ==================== */
+
+/*
+ * 色彩温度迁移通道（Color Temperature Migration）
+ * JS 每 500ms 只写入一个 0..1 的 --pomo-heat，所有颜色由 color-mix 一次成型。
+ * 起点始终是宿主主题色 --b3-theme-primary，因此切换任何第三方思源主题时主色自动跟随。
+ * 铁律：色温只用于环 / 光晕 / 粒尘，绝不用于文字；文字始终单独取 --st-pomo-*-text，
+ *      以保证第三方主题下的对比度不塌。
+ */
+@property --pomo-heat {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+:root {
+  /* 温度迁移三要素 */
+  --pomo-heat-from: var(--b3-theme-primary, #6366f1);
+  --pomo-heat-to: var(--st-pomo-active-text);
+  /* 旧内核不支持 calc 百分比时，回退为纯主题色 */
+  --pomo-tint: var(--b3-theme-primary, #6366f1);
+  --pomo-tint: color-mix(in srgb, var(--pomo-heat-from), var(--pomo-heat-to) calc(var(--pomo-heat) * 100%));
+
+  /* 长休息（更冷的青蓝）*/
+  --st-pomo-longbreak-text: #67e8f9;
+  --st-pomo-longbreak-bg: rgba(6, 182, 212, 0.12);
+  --st-pomo-longbreak-border: rgba(6, 182, 212, 0.35);
+  --st-pomo-longbreak-track-fill: #06b6d4;
+
+  /* 凝滞态（离桌冻结，去饱和）*/
+  --st-pomo-frozen-text: #94a3b8;
+  --st-pomo-frozen-bg: rgba(148, 163, 184, 0.14);
+  --st-pomo-frozen-border: rgba(148, 163, 184, 0.32);
+
+  /* 氛围层：粒尘与光场 */
+  --st-pomo-ambient-opacity: 0.7;
+  --st-pomo-dust-size: 2px;
+  --st-pomo-dust-duration: 26s;
+  --st-pomo-dust-count: 14;
+  --st-pomo-glow-strength: 0.22;
+
+  /* 完成仪式 */
+  --st-pomo-bloom-duration: 900ms;
+  --st-pomo-bloom-scale: 1.6;
+
+  /* 呼吸引导：4s 吸气 + 4s 屏息 + 6s 呼气 */
+  --st-pomo-breath-period: 14s;
+
+  /* 胶囊脉冲 */
+  --st-pomo-capsule-pulse-period: 1.6s;
+}
+
+/* 亮色主题校准：长休息与凝滞态文字对比度 >= 4.5:1 */
+:root[data-theme-mode="light"],
+html[data-theme-mode="light"],
+body[data-theme-mode="light"],
+[data-theme-mode="light"],
+.theme--light {
+  --st-pomo-longbreak-text: #0e7490;
+  --st-pomo-longbreak-bg: rgba(14, 116, 144, 0.08);
+  --st-pomo-longbreak-border: rgba(14, 116, 144, 0.28);
+  --st-pomo-longbreak-track-fill: #0891b2;
+
+  --st-pomo-frozen-text: #475569;
+  --st-pomo-frozen-bg: rgba(71, 85, 105, 0.08);
+  --st-pomo-frozen-border: rgba(71, 85, 105, 0.26);
+
+  --st-pomo-ambient-opacity: 0.55;
+  --st-pomo-dust-size: 2px;
+  --st-pomo-glow-strength: 0.16;
+}
+
+:root[data-theme-mode="dark"],
+html[data-theme-mode="dark"],
+body[data-theme-mode="dark"],
+[data-theme-mode="dark"],
+.theme--dark {
+  --st-pomo-longbreak-text: #22d3ee;
+  --st-pomo-longbreak-bg: rgba(34, 211, 238, 0.14);
+  --st-pomo-longbreak-border: rgba(34, 211, 238, 0.35);
+  --st-pomo-longbreak-track-fill: #06b6d4;
+
+  --st-pomo-frozen-text: #94a3b8;
+  --st-pomo-frozen-bg: rgba(148, 163, 184, 0.14);
+  --st-pomo-frozen-border: rgba(148, 163, 184, 0.32);
+
+  --st-pomo-ambient-opacity: 0.85;
+  --st-pomo-dust-size: 2.5px;
+  --st-pomo-glow-strength: 0.3;
+}
+
+/* phase → 温度迁移终点色。由 PomodoroStage 根节点的 data-pomo-phase 驱动，零 JS 算色 */
+[data-pomo-phase="focus"] { --pomo-heat-to: var(--st-pomo-active-text); }
+[data-pomo-phase="paused"] { --pomo-heat-to: var(--st-pomo-active-text); }
+[data-pomo-phase="short-break"] { --pomo-heat-to: var(--st-pomo-break-text); }
+[data-pomo-phase="long-break"] { --pomo-heat-to: var(--st-pomo-longbreak-text); }
+[data-pomo-phase="idle"] { --pomo-heat: 0; --pomo-heat-to: var(--b3-theme-primary, #6366f1); }
+[data-pomo-phase="frozen"] { --pomo-heat: 0.08; --pomo-heat-to: var(--st-pomo-frozen-text); }
+
+/* 温度平滑爬升（依赖 @property 注册；不支持时退化为阶跃，功能不受影响）*/
+.st-pomo-heat-channel {
+  transition: --pomo-heat 1.2s linear;
+}
+
+/* ---- 番茄钟专属关键帧（全局定义，便于 reduced-motion 统一关闭）---- */
+
+/* 极光弧带流体漂移 */
+@keyframes st-pomo-aurora-drift {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -240; }
+}
+
+/* 环境粒尘缓慢上浮 */
+@keyframes st-pomo-dust-rise {
+  0% { transform: translate3d(0, 14px, 0) scale(0.5); opacity: 0; }
+  15% { opacity: var(--st-pomo-ambient-opacity); }
+  80% { opacity: calc(var(--st-pomo-ambient-opacity) * 0.45); }
+  100% { transform: translate3d(var(--pomo-dx, 8px), -84px, 0) scale(1.1); opacity: 0; }
+}
+
+/* 4-4-6 呼吸引导光环 */
+@keyframes st-pomo-breath {
+  0% { transform: scale(0.94); opacity: 0.45; }
+  28.57% { transform: scale(1.02); opacity: 0.78; }
+  57.14% { transform: scale(1.02); opacity: 0.78; }
+  100% { transform: scale(0.94); opacity: 0.45; }
+}
+
+/* 沙漏颗粒流 */
+@keyframes st-pomo-sandfall {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -12; }
+}
+
+/* 完成迸发涟漪 */
+@keyframes st-pomo-bloom {
+  0% { transform: scale(0.72); opacity: 0.85; }
+  100% { transform: scale(var(--st-pomo-bloom-scale)); opacity: 0; }
+}
+
+/* 达成时状态栏胶囊脉冲 */
+@keyframes st-pomo-capsule-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--st-pomo-active-text) 55%, transparent); }
+  70% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--st-pomo-active-text) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--st-pomo-active-text) 0%, transparent); }
+}
+
+/* 凝滞态霜感微呼吸 */
+@keyframes st-pomo-frozen-frost {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+/* 通用进出场 */
+@keyframes st-pomo-fade-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes st-pomo-moment-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes st-pomo-moment-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.04); }
+}
+
+/* ---- 动效降级：双通道 ----
+ * 命名铁律：任何进入番茄钟的新动画类必须带 st-pomo-anim；
+ * 需要过渡但非核心的元素带 st-pomo-anim-soft。未标注的类不受降级管控。
+ */
+
+/* 通道 A：配置级 — 动效强度切到「沉浸克制」*/
+[data-pomo-motion="calm"] .st-pomo-anim,
+[data-pomo-motion="calm"] .st-pomo-anim * {
+  animation: none !important;
+}
+[data-pomo-motion="calm"] .st-pomo-anim-soft {
+  transition-duration: 120ms !important;
+}
+[data-pomo-motion="calm"] {
+  --st-pomo-dust-count: 0;
+  --st-pomo-glow-strength: 0.1;
+}
+
+/* 通道 B：系统级 — 用户 OS 开启「减少动态效果」*/
+@media (prefers-reduced-motion: reduce) {
+  .st-pomo-anim,
+  .st-pomo-anim * {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+  .st-pomo-heat-channel {
+    --pomo-heat: 0 !important;
+  }
+  .st-pomo-dust {
+    display: none !important;
+  }
+}
+
 @layer base {
   /* Reset default button styles inside dashboard to prevent host SiYuan theme interference */
   .time-spent-dashboard button {

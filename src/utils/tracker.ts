@@ -179,6 +179,14 @@ export class TimeTracker {
         return this.currentDocId;
     }
 
+    /**
+     * 暴露闲置探测器，供番茄钟离桌守卫复用同一实例与阈值，
+     * 避免为番茄钟单设阈值而与被动追踪相互覆盖
+     */
+    public getIdleWatcher(): IdleWatcher {
+        return this.idleWatcher;
+    }
+
     public getCurrentSessionDurationSec(): number {
         if (!this.currentDocId || this.currentSessionStart === 0) return 0;
         const now = Date.now();

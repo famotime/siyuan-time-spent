@@ -12,8 +12,16 @@ export interface PluginSettings {
   pomodoroBreakMinutes?: number;     // 短休息时长（默认 5）
   pomodoroSound?: boolean;           // 是否播放和弦完成提示音
   pomodoroNotification?: boolean;    // 是否弹出系统通知
-  pomodoroThemeStyle?: 'zen' | 'chrono' | 'hourglass'; // 交互设计形态：禅意流体 / 精密机械 / 时空沙漏
+  pomodoroThemeStyle?: 'zen' | 'chrono' | 'hourglass'; // 交互设计形态：极光流体 / 精密机械 / 时空沙漏
   pomodoroAnimationIntensity?: 'calm' | 'expressive'; // 动效仪式感强度：沉浸克制 / 灵动充沛
+  pomodoroCycleSize?: number;             // 一轮番茄数（默认 4，范围 2-8），完成一轮后进入长休息
+  pomodoroLongBreakMinutes?: number;      // 长休息时长（默认 15，范围 5-60）
+  pomodoroAfkGuardian?: boolean;          // 离桌守卫：闲置时凝滞表盘并在归来时提示（仅提示，不扣除时长）
+  pomodoroInterruptionLog?: boolean;      // 暂停时记录打断原因
+  pomodoroSmartDuration?: boolean;        // 待机时推荐专注时长
+  pomodoroAchievementMoment?: boolean;    // 番茄达成时播放全屏微时刻
+  pomodoroShortcut?: boolean;             // 键盘快捷键 Alt+P / Space / Esc
+  pomodoroWheelAdjust?: boolean;          // 待机时表盘滚轮以 5 分钟步进微调时长
 
   // 离桌归因设置
   enableAfkPrompt?: boolean;         // 离桌唤醒后是否弹窗询问归因
@@ -47,6 +55,14 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   pomodoroNotification: true,
   pomodoroThemeStyle: 'zen',
   pomodoroAnimationIntensity: 'expressive',
+  pomodoroCycleSize: 4,
+  pomodoroLongBreakMinutes: 15,
+  pomodoroAfkGuardian: true,
+  pomodoroInterruptionLog: true,
+  pomodoroSmartDuration: true,
+  pomodoroAchievementMoment: true,
+  pomodoroShortcut: true,
+  pomodoroWheelAdjust: true,
   enableAfkPrompt: false,
   afkPromptThresholdMinutes: 10,
   enableDailyNoteArchiving: false,
