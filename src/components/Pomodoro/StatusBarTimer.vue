@@ -1,11 +1,18 @@
 <template>
   <div class="sy-status-timer-root">
+    <!-- 常驻读屏播报区：面板关闭时的「已结束 / 保存失败」只进这里，不依赖胶囊 aria-label 的后台变化。 -->
+    <span
+      class="st-pomo-sr-only"
+      role="status"
+      aria-live="polite"
+    >{{ announcement }}</span>
     <FocusCapsule
       :ref="setAnchor"
       :view="view"
       :is-open="isOpen"
       :intensity="intensity"
       :notice="isOpen ? '' : capsuleNotice"
+      :pulse="pulseActive"
       @toggle="togglePopover"
     />
     <FocusPanel
@@ -16,7 +23,6 @@
       :is-open="isOpen"
       :active-form="currentForm"
       :intensity="intensity"
-      :allow-ambient="allowAmbient"
       :reduced="reduced"
       :wheel-enabled="wheelEnabled"
       :interruption-enabled="interruptionEnabled"
@@ -103,7 +109,6 @@ const settings = () => {
 }
 const {
   intensity,
-  allowAmbient,
   reduced,
 } = useReducedMotion(settings)
 const smartEnabled = computed(() => settings()?.pomodoroSmartDuration !== false)
@@ -145,7 +150,10 @@ const completionMinutes = computed(
 )
 const completionVisible = ref(false)
 const capsuleNotice = ref('')
+const announcement = ref('')
+const pulseActive = ref(false)
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
+let pulseTimer: ReturnType<typeof setTimeout> | undefined
 let midnightTimer: ReturnType<typeof setTimeout> | undefined
 let formSave: Promise<void> = Promise.resolve()
 
@@ -227,6 +235,13 @@ function dismissCompletion() {
   completionVisible.value = false
   capsuleNotice.value = ''
 }
+function pulseOnce() {
+  pulseActive.value = true
+  if (pulseTimer) clearTimeout(pulseTimer)
+  pulseTimer = setTimeout(() => {
+    pulseActive.value = false
+  }, 1700)
+}
 function openDashboard() {
   closePopover(false)
   props.plugin.openDashboard()
@@ -260,23 +275,31 @@ watch(
   () => {
     const record = props.pomodoro.lastRecord.value
     if (noticeTimer) clearTimeout(noticeTimer)
+    if (pulseTimer) clearTimeout(pulseTimer)
+    pulseActive.value = false
     if (!record) {
       dismissCompletion()
+      announcement.value = ''
       return
     }
     completionVisible.value =
       record.status === 'error'
       || settings()?.pomodoroAchievementMoment !== false
     if (!completionVisible.value) return
-    capsuleNotice.value = t(
+    const message = t(
       record.status === 'error'
         ? 'pomodoroRecordFailed'
         : 'pomodoroSessionComplete',
     )
+    capsuleNotice.value = message
+    // 面板关闭时胶囊 aria-label 的后台变化不进读屏，必须由常驻 live region 播报。
+    announcement.value = message
     if (record.status !== 'error') {
       noticeTimer = setTimeout(() => {
         capsuleNotice.value = ''
+        announcement.value = ''
       }, 8000)
+      pulseOnce()
     }
   },
 )
@@ -306,6 +329,7 @@ onUnmounted(() => {
   )
   document.removeEventListener('visibilitychange', onVisibilityChange)
   if (noticeTimer) clearTimeout(noticeTimer)
+  if (pulseTimer) clearTimeout(pulseTimer)
   if (midnightTimer) clearTimeout(midnightTimer)
 })
 usePomodoroShortcuts(shortcutEnabled, isOpen, {

@@ -49,11 +49,7 @@ import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
     progress: number
-    displayText?: string
-    subtitle?: string
     uiPhase: UiPhase
-    frozen: boolean
-    heat: number
     isStopwatch?: boolean
   }>(),
   { isStopwatch: false },
@@ -112,6 +108,24 @@ const bottomSandPath = computed(() => {
   height: 100%;
 }
 
+/* 与光环、刻度一致的氛围层：三个表盘共用同一束相位光。 */
+.sandfall-dial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 12%,
+    color-mix(
+      in srgb,
+      var(--st-pomo-accent, var(--b3-theme-primary)) 9%,
+      transparent
+    ),
+    transparent 52%
+  );
+  pointer-events: none;
+}
+
 .sandfall-svg,
 .sand-frame {
   fill: none !important;
@@ -142,7 +156,7 @@ const bottomSandPath = computed(() => {
 .sand-fill--bottom {
   fill: color-mix(
     in srgb,
-    var(--st-pomo-accent, var(--b3-theme-primary)) 48%,
+    var(--st-pomo-accent, var(--b3-theme-primary)) 52%,
     transparent
   );
 }

@@ -49,12 +49,7 @@ import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
     progress: number
-    displayText?: string
-    subtitle?: string
     uiPhase: UiPhase
-    frozen: boolean
-    heat: number
-    expressive?: boolean
     isStopwatch?: boolean
   }>(),
   { isStopwatch: false },
@@ -88,7 +83,7 @@ const fraction = computed(() =>
     ellipse at 32% 14%,
     color-mix(
       in srgb,
-      var(--st-pomo-accent, var(--b3-theme-primary)) 9%,
+      var(--st-pomo-accent, var(--b3-theme-primary)) 10%,
       transparent
     ),
     transparent 48%
@@ -119,7 +114,7 @@ const fraction = computed(() =>
 
 .aurora-arc {
   stroke: var(--st-pomo-accent, var(--b3-theme-primary));
-  stroke-width: 2;
+  stroke-width: 2.25;
   stroke-linecap: round;
   transition: stroke-dashoffset 240ms linear;
 }

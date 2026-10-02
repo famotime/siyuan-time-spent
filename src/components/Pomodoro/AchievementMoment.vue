@@ -18,14 +18,16 @@
           cy="12"
           r="9"
         />
-        <path d="M12 7v6m0 3v1" />
+        <path d="M12 7v6" />
+        <path d="M12 16.5v.5" />
       </template>
       <template v-else>
-        <path d="M6 3h12v18l-6-4-6 4z" />
-        <path
-          v-if="status === 'saved'"
-          d="m9 10 2 2 4-4"
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
         />
+        <path d="m8 12.5 2.5 2.5 5-5.5" />
       </template>
     </svg>
     <div>
@@ -85,8 +87,8 @@ const message = computed(() => {
   margin-bottom: 14px;
 }
 .pomo-completion > svg {
-  width: 23px;
-  height: 23px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--st-pomo-accent);
 }

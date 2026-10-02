@@ -4,7 +4,12 @@
     type="button"
     class="sy-pomo-capsule st-pomo-ui st-pomo-anim-soft"
     :data-pomo-motion="intensity"
-    :class="{ 'is-active': view.state.value !== 'idle' }"
+    :data-pomo-phase="view.uiPhase.value"
+    :data-pomo-frozen="view.isFrozen.value ? 'true' : 'false'"
+    :class="{
+      'is-active': view.state.value !== 'idle',
+      'is-celebrating': pulse,
+    }"
     :title="view.capsuleTooltip.value"
     :aria-expanded="isOpen"
     aria-controls="st-focus-panel"
@@ -64,11 +69,13 @@ withDefaults(
     isOpen?: boolean
     intensity?: 'calm' | 'expressive'
     notice?: string
+    pulse?: boolean
   }>(),
   {
     isOpen: false,
     intensity: 'calm',
     notice: '',
+    pulse: false,
   },
 )
 defineEmits<{ (e: 'toggle'): void }>()
@@ -92,7 +99,8 @@ defineExpose({ capsuleEl })
   line-height: 1.4;
   transition:
     background-color 120ms,
-    border-color 120ms;
+    border-color 120ms,
+    color 120ms;
 }
 .sy-pomo-capsule:hover,
 .sy-pomo-capsule[aria-expanded='true'] {
@@ -102,11 +110,39 @@ defineExpose({ capsuleEl })
 .sy-pomo-capsule.is-active {
   color: var(--st-pomo-ink);
 }
+/* 相位配色：运行/暂停用琥珀，短休息青，长休息青蓝，凝滞去饱和。
+   底色与文字都取同一语义令牌族，避开 --st-bg-* 旧令牌。
+   frozen 排在最后：它与 paused 同位相，必须压过相位规则。 */
+.sy-pomo-capsule[data-pomo-phase='focus'],
+.sy-pomo-capsule[data-pomo-phase='paused'] {
+  background: var(--st-pomo-active-bg);
+  border-color: var(--st-pomo-active-border);
+  color: var(--st-pomo-active-text);
+}
+.sy-pomo-capsule[data-pomo-phase='short-break'] {
+  background: var(--st-pomo-break-bg);
+  border-color: var(--st-pomo-break-border);
+  color: var(--st-pomo-break-text);
+}
+.sy-pomo-capsule[data-pomo-phase='long-break'] {
+  background: var(--st-pomo-longbreak-bg);
+  border-color: var(--st-pomo-longbreak-border);
+  color: var(--st-pomo-longbreak-text);
+}
+.sy-pomo-capsule[data-pomo-frozen='true'] {
+  background: var(--st-pomo-frozen-bg);
+  border-color: var(--st-pomo-frozen-border);
+  color: var(--st-pomo-frozen-text);
+}
 .sy-pomo-capsule > svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
   color: var(--st-pomo-accent);
+}
+.sy-pomo-capsule[data-pomo-frozen='true'] > svg,
+.sy-pomo-capsule:not([data-pomo-phase='idle']) > svg {
+  color: inherit;
 }
 .sy-pomo-capsule > span {
   font-variant-numeric: tabular-nums;
@@ -117,9 +153,18 @@ defineExpose({ capsuleEl })
   outline: 2px solid var(--st-pomo-accent);
   outline-offset: 2px;
 }
+/* 完成时刻唯一一次脉冲：不循环、不抢视线，1.6s 后自动停。 */
+.sy-pomo-capsule.is-celebrating {
+  animation: st-pomo-capsule-pulse 1.6s ease-out 1;
+}
 @media (pointer: coarse) {
   .sy-pomo-capsule {
     min-height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sy-pomo-capsule.is-celebrating {
+    animation: none;
   }
 }
 </style>

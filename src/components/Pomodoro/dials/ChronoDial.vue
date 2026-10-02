@@ -50,11 +50,7 @@ import { computed } from 'vue'
 const props = withDefaults(
   defineProps<{
     progress: number
-    displayText?: string
-    subtitle?: string
     uiPhase: UiPhase
-    frozen: boolean
-    heat: number
     isStopwatch?: boolean
   }>(),
   { isStopwatch: false },
@@ -96,6 +92,24 @@ const ticks = Array.from({ length: 60 }, (_, index) => {
   height: 100%;
 }
 
+/* 与光环一致的氛围层：只跟相位取色，三个表盘 therefore 是一家。 */
+.chrono-dial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 16%,
+    color-mix(
+      in srgb,
+      var(--st-pomo-accent, var(--b3-theme-primary)) 8%,
+      transparent
+    ),
+    transparent 52%
+  );
+  pointer-events: none;
+}
+
 .chrono-svg,
 .chrono-track,
 .chrono-tick {
@@ -122,7 +136,7 @@ const ticks = Array.from({ length: 60 }, (_, index) => {
 
 .chrono-tick--major {
   stroke: var(--st-pomo-muted, var(--b3-theme-on-surface));
-  stroke-width: 1.2;
+  stroke-width: 1.5;
 }
 
 .chrono-tick--lit {

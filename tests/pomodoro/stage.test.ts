@@ -16,11 +16,8 @@ const props = {
   progress: 0.5,
   displayText: '12:30',
   subtitle: '专注',
-  heat: 0.5,
   frozen: false,
   intensity: 'calm',
-  allowAmbient: false,
-  wheelEnabled: true,
   isStopwatch: false,
 }
 

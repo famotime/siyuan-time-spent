@@ -15,142 +15,98 @@
         @keydown="onKeydown"
       >
         <FocusPanelHeader
-          :appearance-open="appearanceOpen"
-          :can-customize="view.state.value === 'idle'"
-          @appearance="toggleAppearance"
+          @open-dashboard="$emit('openDashboard')"
           @close="$emit('close', true)"
         />
-        <div
-          v-if="appearanceOpen"
-          class="pomo-appearance"
+        <button
+          class="pomo-document"
+          type="button"
+          :disabled="!view.docId.value"
+          :aria-label="`${t('pomodoroOpenDoc')}: ${view.docName.value}`"
+          @click="openDoc"
         >
-          <h2>{{ t('pomodoroAppearance') }}</h2>
-          <p class="st-pomo-help">
-            {{ t('pomodoroAppearanceHint') }}
-          </p>
-          <div
-            class="pomo-appearance__forms"
-            role="group"
-            :aria-label="t('pomodoroSwitchTheme')"
+          <svg
+            viewBox="0 0 24 24"
+            style="fill: none !important"
+            stroke="currentColor"
+            stroke-width="1.6"
+            aria-hidden="true"
           >
-            <button
-              v-for="form in forms"
-              :key="form.key"
-              type="button"
-              class="pomo-appearance__form st-pomo-button st-pomo-anim-soft"
-              :aria-pressed="activeForm === form.key"
-              @click="$emit('switchForm', form.key)"
-            >
-              <svg
-                viewBox="0 0 64 64"
-                style="fill: none !important"
-                stroke="currentColor"
-                stroke-width="1.5"
-                aria-hidden="true"
-              >
-                <template v-if="form.key !== 'hourglass'">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="23"
-                    opacity=".25"
-                  />
-                  <path
-                    d="M32 9a23 23 0 0 1 23 23"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    v-if="form.key === 'chrono'"
-                    d="M32 14v4m18 14h-4M32 50v-4M14 32h4"
-                  />
-                  <path
-                    v-else
-                    d="M29 7h6v9l-3-2-3 2z"
-                  />
-                </template>
-                <template v-else>
-                  <path
-                    d="M20 10h24M20 54h24M22 10c0 17 20 27 20 44M42 10c0 17-20 27-20 44"
-                  />
-                  <path d="m26 49 6-10 6 10z" />
-                </template>
-              </svg>
-              <span>{{ t(form.label) }}</span>
-            </button>
-          </div>
-          <p
-            v-if="appearanceError"
-            class="st-pomo-error"
-            role="status"
+            <path
+              d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"
+            />
+          </svg>
+          <span>{{ view.docName.value }}</span>
+          <svg
+            v-if="view.docId.value"
+            class="pomo-document__open"
+            viewBox="0 0 24 24"
+            style="fill: none !important"
+            stroke="currentColor"
+            stroke-width="1.75"
+            aria-hidden="true"
           >
-            {{ appearanceError }}
-          </p>
+            <path d="M7 17 17 7M7 7h10v10" />
+          </svg>
+        </button>
+        <div class="pomo-stage-wrap">
           <button
+            v-if="view.state.value === 'idle'"
             type="button"
-            class="st-pomo-button st-pomo-button--secondary"
-            @click="toggleAppearance"
+            class="pomo-stage-arrow pomo-stage-arrow--left st-pomo-anim-soft"
+            :title="t('pomodoroPrevForm')"
+            :aria-label="t('pomodoroPrevForm')"
+            @click="switchDialForm(-1)"
           >
-            {{ t('pomodoroBackToTimer') }}
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <PomodoroStage
+            :form="activeForm"
+            :ui-phase="view.uiPhase.value"
+            :progress="view.progress.value"
+            :display-text="view.displayText.value"
+            :subtitle="view.subtitle.value"
+            :frozen="view.isFrozen.value"
+            :intensity="intensity"
+            :breathing="isBreathing"
+            :is-stopwatch="
+              view.state.value === 'idle'
+                ? pomodoro.preferStopwatch.value
+                : view.isStopwatch.value
+            "
+          />
+          <button
+            v-if="view.state.value === 'idle'"
+            type="button"
+            class="pomo-stage-arrow pomo-stage-arrow--right st-pomo-anim-soft"
+            :title="t('pomodoroNextForm')"
+            :aria-label="t('pomodoroNextForm')"
+            @click="switchDialForm(1)"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
-        <template v-else>
-          <button
-            class="pomo-document"
-            type="button"
-            :disabled="!view.docId.value"
-            :aria-label="`${t('pomodoroOpenDoc')}: ${view.docName.value}`"
-            @click="openDoc"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              style="fill: none !important"
-              stroke="currentColor"
-              stroke-width="1.6"
-              aria-hidden="true"
-            >
-              <path
-                d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5"
-              />
-            </svg>
-            <span>{{ view.docName.value }}</span>
-            <svg
-              v-if="view.docId.value"
-              class="pomo-document__open"
-              viewBox="0 0 24 24"
-              style="fill: none !important"
-              stroke="currentColor"
-              stroke-width="1.75"
-              aria-hidden="true"
-            >
-              <path d="M7 17 17 7M7 7h10v10" />
-            </svg>
-          </button>
-          <div class="pomo-stage-wrap">
-            <PomodoroStage
-              :form="activeForm"
-              :ui-phase="view.uiPhase.value"
-              :progress="view.progress.value"
-              :display-text="view.displayText.value"
-              :subtitle="view.subtitle.value"
-              :heat="view.heat.value"
-              :frozen="view.isFrozen.value"
-              :intensity="intensity"
-              :allow-ambient="allowAmbient"
-              :wheel-enabled="false"
-              :is-stopwatch="
-                view.state.value === 'idle'
-                  ? pomodoro.preferStopwatch.value
-                  : view.isStopwatch.value
-              "
-            />
-          </div>
-          <AchievementMoment
-            :visible="completionVisible"
-            :status="recordStatus"
-            :minutes="completionMinutes"
-            @done="$emit('dismissCompletion')"
-          />
+        <div class="pomo-region">
           <ReadyPanel
             v-if="view.uiPhase.value === 'idle'"
             ref="readyPanel"
@@ -173,9 +129,6 @@
             :frozen="view.isFrozen.value"
             :afk-idle-seconds="view.afkIdleSeconds.value"
             :afk-return="view.afkReturn.value"
-            :interruption-enabled="interruptionEnabled"
-            :note-draft="noteDraft"
-            :previous-notes="pomodoro.sessionNotes.value"
             :confirming-discard="confirmingDiscard"
             @pause="$emit('pause')"
             @resume="$emit('resume')"
@@ -184,9 +137,6 @@
             @update:confirmingDiscard="
               $emit('update:confirmingDiscard', $event)
             "
-            @update:noteDraft="$emit('update:noteDraft', $event)"
-            @saveNote="$emit('saveNote')"
-            @skipNote="$emit('skipNote')"
             @dismissAfk="$emit('dismissAfk')"
           />
           <BreakPanel
@@ -196,11 +146,15 @@
             :remaining-text="view.displayText.value"
             :cycle-size="view.cycleSize.value"
             :reduced="reduced"
+            :session-summary="breakSummary"
             @skip="$emit('skipBreak')"
             @extend="$emit('extendBreak', $event)"
+            @update:breathing="isBreathing = $event"
           />
-          <footer class="pomo-footer">
-            <div class="pomo-footer__cycle">
+        </div>
+        <footer class="pomo-footer">
+          <div class="pomo-footer__row">
+            <div class="pomo-footer__left">
               <CycleRail
                 :completed="view.cycleCompleted.value"
                 :size="view.cycleSize.value"
@@ -209,16 +163,9 @@
                 "
                 :active="view.state.value === 'running' && !view.isFrozen.value"
               />
-              <button
-                type="button"
-                class="st-pomo-button st-pomo-button--quiet"
-                @click="$emit('openDashboard')"
-              >
-                {{ t('pomodoroViewRecords') }}
-              </button>
             </div>
             <div
-              class="pomo-today"
+              class="pomo-footer__right pomo-today"
               role="status"
               aria-live="polite"
             >
@@ -246,19 +193,15 @@
                 "
               >{{ t('pomodoroTodayLoading') }}</span>
               <span v-else-if="today.count">{{
-                t('pomodoroTodaySummary', {
+                t('pomodoroTodaySummaryShort', {
                   time: formatDurationI18n(today.durationSeconds),
                   n: today.count,
                 })
               }}</span>
-              <span v-else>{{ t('pomodoroTodayEmpty') }}</span>
+              <span v-else>{{ t('pomodoroTodayEmptyShort') }}</span>
             </div>
-            <details class="pomo-today__method">
-              <summary>{{ t('pomodoroTodayMethodLabel') }}</summary>
-              <p>{{ t('pomodoroTodayMethod') }}</p>
-            </details>
-          </footer>
-        </template>
+          </div>
+        </footer>
       </section>
     </Transition>
   </Teleport>
@@ -270,6 +213,7 @@ import type { PomodoroFormKey } from './composables/forms'
 import type { PomodoroView } from './composables/usePomodoroPresenter'
 import type { DurationRecommendation } from './composables/useSmartDuration'
 import {
+  computed,
   nextTick,
   onMounted,
   onUnmounted,
@@ -280,8 +224,6 @@ import {
   formatDurationI18n,
   t,
 } from '../../i18n'
-import AchievementMoment from './AchievementMoment.vue'
-import { POMODORO_FORM_LABEL_KEYS } from './composables/forms'
 import CycleRail from './CycleRail.vue'
 import FocusPanelHeader from './FocusPanelHeader.vue'
 import BreakPanel from './panels/BreakPanel.vue'
@@ -341,11 +283,31 @@ const cardEl = ref<HTMLElement | null>(null)
 const readyPanel = ref<{ closeExpanded: () => boolean } | null>(null)
 const runningPanel = ref<{ closeExpanded: () => boolean } | null>(null)
 const breakPanel = ref<{ closeExpanded: () => boolean } | null>(null)
-const appearanceOpen = ref(false)
-const forms = Object.entries(POMODORO_FORM_LABEL_KEYS).map(([key, label]) => ({
-  key: key as PomodoroFormKey,
-  label,
-}))
+const isBreathing = ref(false)
+const FORM_KEYS: PomodoroFormKey[] = ['zen', 'chrono', 'hourglass']
+
+const breakSummary = computed(() => {
+  const last = props.pomodoro.lastRecord.value
+  if (last && last.durationSeconds > 0) {
+    return t('pomodoroRecordSaved', {
+      time: formatDurationI18n(last.durationSeconds),
+    })
+  }
+  if (props.completionMinutes > 0) {
+    return t('pomodoroRecordSaved', {
+      time: formatDurationI18n(props.completionMinutes * 60),
+    })
+  }
+  return ''
+})
+
+function switchDialForm(delta: number) {
+  const currentIndex = FORM_KEYS.indexOf(props.activeForm)
+  const safeIndex = currentIndex === -1 ? 0 : currentIndex
+  const nextIndex = (safeIndex + delta + FORM_KEYS.length) % FORM_KEYS.length
+  emit('switchForm', FORM_KEYS[nextIndex])
+}
+
 const positionStyle = ref<Record<string, string>>({
   right: '16px',
   bottom: '40px',
@@ -378,7 +340,7 @@ function reposition() {
   positionStyle.value = useAbove
     ? {
         ...base,
-        bottom: `${window.innerHeight - anchor.top + 8}px`,
+        bottom: `${offsetY + height - anchor.top + 8}px`,
       }
     : {
         ...base,
@@ -388,15 +350,7 @@ function reposition() {
 function focusPanel() {
   cardEl.value?.focus({ preventScroll: true })
 }
-function toggleAppearance() {
-  appearanceOpen.value = !appearanceOpen.value
-  void nextTick(focusPanel)
-}
 function closeExpanded(): boolean {
-  if (appearanceOpen.value) {
-    toggleAppearance()
-    return true
-  }
   return !!(
     readyPanel.value?.closeExpanded()
     || runningPanel.value?.closeExpanded()
@@ -430,7 +384,6 @@ watch(
   async (open) => {
     observer?.disconnect()
     if (!open) {
-      appearanceOpen.value = false
       return
     }
     reposition()
@@ -446,9 +399,11 @@ watch(
 )
 watch(
   () => props.view.uiPhase.value,
-  async () => {
+  async (phase) => {
+    if (phase !== 'short-break' && phase !== 'long-break') {
+      isBreathing.value = false
+    }
     const hadFocus = cardEl.value?.contains(document.activeElement)
-    appearanceOpen.value = false
     await nextTick()
     reposition()
     if (
@@ -484,31 +439,49 @@ defineExpose({
 .sy-pomo-card {
   position: fixed;
   z-index: 9991;
+  display: flex;
+  flex-direction: column;
   padding: 16px 20px 12px;
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--st-pomo-line);
   border-radius: 24px;
   background: var(--st-pomo-surface);
-  box-shadow:
-    0 18px 70px -18px #00000030,
-    0 4px 16px -8px #0000001a;
+  box-shadow: var(--st-pomo-shadow-card);
   outline: none;
   scrollbar-width: thin;
+}
+/* 相位色温在面板根部一次性定好：表盘、游标、主操作、完成提示全部同温，
+   比只在表盘内覆盖更连贯（此前只有舞台吃到相位色）。 */
+.sy-pomo-card[data-pomo-phase='short-break'] {
+  --st-pomo-accent: var(--st-pomo-break-text, var(--b3-theme-primary));
+}
+.sy-pomo-card[data-pomo-phase='long-break'] {
+  --st-pomo-accent: var(--st-pomo-longbreak-text, var(--b3-theme-primary));
+}
+.sy-pomo-card[data-pomo-phase='frozen'] {
+  --st-pomo-accent: var(
+    --st-pomo-frozen-text,
+    var(--st-pomo-muted, var(--b3-theme-on-surface))
+  );
 }
 .pomo-document {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin-top: 14px;
-  padding: 8px 0;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  margin-top: 10px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--st-pomo-muted);
   text-align: left;
   font: inherit;
   cursor: pointer;
+  box-sizing: border-box;
 }
 .pomo-document:disabled {
   cursor: default;
@@ -521,7 +494,9 @@ defineExpose({
 .pomo-document > span {
   flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pomo-document:hover:not(:disabled) {
   color: var(--st-pomo-ink);
@@ -530,81 +505,110 @@ defineExpose({
   opacity: 0.65;
 }
 .pomo-stage-wrap {
+  position: relative;
   display: flex;
   justify-content: center;
-  padding: 12px 0 20px;
+  align-items: center;
+  height: 228px;
+  min-height: 228px;
+  max-height: 228px;
+  padding: 0;
+  box-sizing: border-box;
+}
+.pomo-stage-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--st-pomo-line, rgba(125, 125, 125, 0.2));
+  background: var(--st-pomo-surface, #fff);
+  color: var(--st-pomo-muted, var(--b3-theme-on-surface));
+  box-shadow: var(--st-pomo-shadow-chip, 0 2px 6px rgba(0, 0, 0, 0.08));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.pomo-stage-arrow svg {
+  width: 16px;
+  height: 16px;
+}
+.pomo-stage-arrow--left {
+  left: 6px;
+}
+.pomo-stage-arrow--right {
+  right: 6px;
+}
+.pomo-stage-wrap:hover .pomo-stage-arrow,
+.pomo-stage-arrow:focus-visible {
+  opacity: 0.85;
+  pointer-events: auto;
+}
+.pomo-stage-arrow:hover {
+  opacity: 1;
+  color: var(--st-pomo-ink, var(--b3-theme-on-background));
+  background: var(--st-pomo-soft, rgba(125, 125, 125, 0.1));
+  transform: translateY(-50%) scale(1.08);
+}
+.pomo-stage-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+/* 操作区定高 148px，各子面板在此槽位内弹性分布，彻底消除各状态间高度差引起的钟表跳位。 */
+.pomo-region {
+  height: 148px;
+  min-height: 148px;
+  max-height: 148px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 .pomo-footer {
   margin-top: 18px;
   padding-top: 10px;
   border-top: 1px solid var(--st-pomo-line);
 }
-.pomo-footer__cycle {
+.pomo-footer__row {
   display: flex;
   align-items: center;
-  gap: 8px;
   justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
 }
-.pomo-footer__cycle > :first-child {
-  flex: 1;
+.pomo-footer__left {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
   min-width: 0;
 }
-.pomo-footer__cycle > button {
-  flex-shrink: 0;
-  padding-inline: 4px;
+.pomo-footer__left :deep(.cycle-rail) {
+  width: auto;
+}
+.pomo-footer__left :deep(.cycle-row) {
+  justify-content: flex-start;
+}
+.pomo-footer__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .pomo-today {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-top: 6px;
   font-size: 12px;
   color: var(--st-pomo-muted);
+  white-space: nowrap;
 }
-.pomo-today__method {
-  font-size: 12px;
-  color: var(--st-pomo-muted);
-  margin-top: 8px;
-}
-.pomo-today__method summary {
-  cursor: pointer;
-  width: fit-content;
-  min-height: 24px;
-}
-.pomo-today__method p {
-  margin: 4px 0 0;
-}
-.pomo-appearance {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 18px 0 8px;
-}
-.pomo-appearance h2 {
-  font: inherit;
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-}
-.pomo-appearance__forms {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.pomo-appearance__form {
-  flex-direction: column;
-  padding: 10px 4px !important;
-  border: 1px solid var(--st-pomo-line) !important;
-  font-size: 12px !important;
-}
-.pomo-appearance__form[aria-pressed='true'] {
-  border-color: var(--st-pomo-accent) !important;
-  background: var(--st-pomo-soft);
-}
-.pomo-appearance__form svg {
-  width: 62px;
-  max-width: 100%;
-  height: 62px;
+.pomo-today :deep(.pomo-completion) {
+  margin-bottom: 0;
 }
 .pomo-panel-enter-active {
   transition:
@@ -634,8 +638,18 @@ defineExpose({
   .sy-pomo-card {
     padding-inline: 16px;
   }
-  .pomo-footer__cycle {
+  .pomo-footer__row {
     flex-wrap: wrap;
+  }
+}
+/* 触屏：可点击的笔记跳转与左右箭头支持 */
+@media (pointer: coarse) {
+  .pomo-document {
+    min-height: 44px;
+  }
+  .pomo-stage-arrow {
+    opacity: 0.7;
+    pointer-events: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {

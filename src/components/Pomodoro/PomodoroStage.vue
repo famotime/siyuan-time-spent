@@ -1,6 +1,7 @@
 <template>
   <div
     class="sy-pomo-stage"
+    :class="{ 'is-breathing': breathing }"
     :data-pomo-phase="stagePhase"
     :data-pomo-motion="intensity"
     :style="digitStyle"
@@ -20,9 +21,6 @@
       class="stage-dial"
       :progress="progress"
       :ui-phase="uiPhase"
-      :frozen="frozen"
-      :heat="heat"
-      :expressive="intensity === 'expressive'"
       :is-stopwatch="stopwatch"
     />
     <ChronoDial
@@ -30,8 +28,6 @@
       class="stage-dial"
       :progress="progress"
       :ui-phase="uiPhase"
-      :frozen="frozen"
-      :heat="heat"
       :is-stopwatch="stopwatch"
     />
     <SandfallDial
@@ -39,8 +35,6 @@
       class="stage-dial"
       :progress="progress"
       :ui-phase="uiPhase"
-      :frozen="frozen"
-      :heat="heat"
       :is-stopwatch="stopwatch"
     />
 
@@ -83,18 +77,13 @@ const props = withDefaults(
     progress: number
     displayText: string
     subtitle: string
-    heat: number
     frozen: boolean
     intensity: 'calm' | 'expressive'
-    allowAmbient: boolean
-    wheelEnabled: boolean
     isStopwatch?: boolean
+    breathing?: boolean
   }>(),
-  { isStopwatch: false },
+  { isStopwatch: false, breathing: false },
 )
-
-// 保留调用契约，但表盘不再拦截滚轮或负责调时。
-defineEmits<{ (e: 'wheelAdjust', delta: number): void }>()
 
 const stagePhase = computed(() => (props.frozen ? 'frozen' : props.uiPhase))
 const stopwatch = computed(
@@ -158,20 +147,7 @@ const digitStyle = computed(() => {
   user-select: none;
 }
 
-.sy-pomo-stage[data-pomo-phase='short-break'] {
-  --st-pomo-accent: var(--st-pomo-break-text, var(--b3-theme-primary));
-}
-
-.sy-pomo-stage[data-pomo-phase='long-break'] {
-  --st-pomo-accent: var(--st-pomo-longbreak-text, var(--b3-theme-primary));
-}
-
-.sy-pomo-stage[data-pomo-phase='frozen'] {
-  --st-pomo-accent: var(
-    --st-pomo-frozen-text,
-    var(--st-pomo-muted, var(--b3-theme-on-surface))
-  );
-}
+/* 相位色温由 FocusPanel 根节点统一提供，这里只声明消费。 */
 
 .stage-dial {
   position: absolute;
@@ -198,7 +174,7 @@ const digitStyle = computed(() => {
   font-size: var(--stage-digit-size);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.04em;
   line-height: 1;
   white-space: nowrap;
 }
@@ -237,9 +213,35 @@ const digitStyle = computed(() => {
   transition: none !important;
 }
 
+@keyframes pomo-stage-breathe {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0));
+  }
+  28.57% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 16px var(--st-pomo-accent, rgba(16, 185, 129, 0.4)));
+  }
+  57.14% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 16px var(--st-pomo-accent, rgba(16, 185, 129, 0.4)));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(var(--b3-theme-primary-rgb, 59, 130, 246), 0));
+  }
+}
+
+.sy-pomo-stage.is-breathing {
+  animation: pomo-stage-breathe 14s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sy-pomo-stage :deep(.st-pomo-anim-soft) {
     transition: none !important;
+  }
+  .sy-pomo-stage.is-breathing {
+    animation: none;
   }
 }
 </style>

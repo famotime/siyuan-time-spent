@@ -42,62 +42,52 @@ const readyProps = {
 }
 
 describe('duration controls', () => {
-  it.each([1, 27, 180])(
-    'accepts %i minutes without requiring five-minute steps',
+  it.each([1, 27, 90])(
+    'accepts %i minutes via slider range input',
     async (minutes) => {
       const wrapper = render(ReadyPanel, readyProps)
-      await wrapper.get('.pomo-presets button:last-child').trigger('click')
-      await wrapper.get('input').setValue(String(minutes))
-      await wrapper.get('form').trigger('submit')
+      const input = wrapper.get('input[type="range"]')
+      await input.setValue(String(minutes))
       expect(wrapper.emitted('update:minutes')?.at(-1)).toEqual([minutes])
     },
   )
-  it.each(['', '0', '181', '2.5'])(
-    'does not start with invalid custom duration %s',
-    async (value) => {
+  it.each([15, 25, 45, 60])(
+    'selects %i minutes when clicking the mark button',
+    async (mark) => {
       const wrapper = render(ReadyPanel, readyProps)
-      await wrapper.get('.pomo-presets button:last-child').trigger('click')
-      await wrapper.get('input').setValue(value)
-      expect(wrapper.get('input').attributes('aria-invalid')).toBe('true')
-      await wrapper.get('form').trigger('submit')
-      expect(wrapper.emitted('update:minutes')).toBeUndefined()
-      expect(
-        wrapper.get('.st-pomo-button--primary').attributes('disabled'),
-      ).toBeDefined()
+      const markBtn = wrapper.findAll('.pomo-slider-mark-btn').find(
+        (b) => b.text().includes(String(mark)),
+      )
+      expect(markBtn).toBeDefined()
+      await markBtn!.trigger('click')
+      expect(wrapper.emitted('update:minutes')?.at(-1)).toEqual([mark])
     },
   )
-  it('cancels draft with Escape and returns focus', async () => {
-    const wrapper = render(ReadyPanel, readyProps)
-    await wrapper.get('.pomo-presets button:last-child').trigger('click')
-    await wrapper.get('input').setValue('27')
-    await wrapper.get('input').trigger('keydown', { key: 'Escape' })
-    expect(wrapper.find('input').exists()).toBe(false)
-    expect(wrapper.emitted('update:minutes')).toBeUndefined()
-    expect(document.activeElement).toBe(
-      wrapper.get('.pomo-presets button:last-child').element,
-    )
+  it('adjusts duration with wheel when wheel adjustment is enabled', async () => {
+    const wrapper = render(ReadyPanel, {
+      ...readyProps,
+      minutes: 25,
+      wheelEnabled: true,
+    })
+    const container = wrapper.get('.pomo-slider-container')
+    await container.trigger('wheel', { deltaY: -50 })
+    expect(wrapper.emitted('update:minutes')?.at(-1)).toEqual([26])
   })
-  it('does not intercept scrolling when wheel adjustment is disabled', async () => {
+  it('does not adjust duration when wheel adjustment is disabled', async () => {
     const wrapper = render(ReadyPanel, {
       ...readyProps,
       wheelEnabled: false,
     })
-    await wrapper.get('.pomo-presets button:last-child').trigger('click')
-    const event = new WheelEvent('wheel', {
-      bubbles: true,
-      cancelable: true,
-      deltaY: -100,
-    })
-    wrapper.get('input').element.dispatchEvent(event)
-    expect(event.defaultPrevented).toBe(false)
-    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('25')
+    const container = wrapper.get('.pomo-slider-container')
+    await container.trigger('wheel', { deltaY: -50 })
+    expect(wrapper.emitted('update:minutes')).toBeUndefined()
   })
-  it('provides an explicitly selected count-up mode', async () => {
+  it('provides an explicitly selected count-up mode while keeping duration slider visible', async () => {
     const wrapper = render(ReadyPanel, {
       ...readyProps,
       isStopwatchMode: true,
     })
-    expect(wrapper.find('.pomo-presets').exists()).toBe(false)
+    expect(wrapper.find('.pomo-slider-container').exists()).toBe(true)
     expect(
       wrapper.get('.pomo-mode button:last-child').attributes('aria-pressed'),
     ).toBe('true')
@@ -125,36 +115,36 @@ describe('quiet state controls', () => {
     expect(wrapper.emitted('pause')).toHaveLength(1)
     expect(wrapper.emitted('resume')).toBeUndefined()
   })
-  it('keeps interruption entry optional and exposes a visible label', async () => {
+  it('exposes discard button directly and supports confirmation', async () => {
     const wrapper = render(RunningPanel, {
       ...props,
-      state: 'paused',
+      state: 'running',
     })
-    expect(wrapper.find('textarea').exists()).toBe(false)
-    await wrapper
-      .get('button[aria-expanded="false"]:last-of-type')
-      .trigger('click')
-    // The note control is the second disclosure, after More.
-    if (!wrapper.find('textarea').exists()) {
-      await wrapper
-        .findAll('button[aria-expanded="false"]')
-        .at(-1)!
-        .trigger('click')
-    }
-    expect(wrapper.find('label').exists()).toBe(true)
-    expect(wrapper.get('textarea').attributes('id')).toBe(
-      wrapper.get('label').attributes('for'),
-    )
+    const discardBtn = wrapper.get('.st-pomo-button--danger-text')
+    expect(discardBtn.text()).toContain('放弃')
+    await discardBtn.trigger('click')
+    expect(wrapper.emitted('update:confirmingDiscard')?.at(-1)).toEqual([true])
+
+    const confirmingWrapper = render(RunningPanel, {
+      ...props,
+      confirmingDiscard: true,
+    })
+    expect(confirmingWrapper.text()).toContain('确认放弃')
+    expect(confirmingWrapper.text()).toContain('继续专注')
   })
-  it('does not run a breathing timer until requested', () => {
+  it('does not run a breathing timer until requested', async () => {
     vi.useFakeTimers()
-    render(BreakPanel, {
+    const wrapper = render(BreakPanel, {
       kind: 'short',
       remainingText: '05:00',
       cycleSize: 4,
       reduced: false,
     })
     expect(vi.getTimerCount()).toBe(0)
+    const coachBtn = wrapper.get('button[aria-pressed="false"]')
+    await coachBtn.trigger('click')
+    expect(wrapper.emitted('update:breathing')?.at(-1)).toEqual([true])
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
   })
   it('completion is an inline status, never a full-screen overlay', () => {
     const wrapper = render(AchievementMoment, {

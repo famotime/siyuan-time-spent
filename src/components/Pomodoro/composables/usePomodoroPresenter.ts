@@ -27,16 +27,12 @@ export interface PomodoroView {
   progress: ComputedRef<number>
   /** 未冻结的原始进度 */
   rawProgress: ComputedRef<number>
-  /** 色彩温度迁移 0..1，只产数字不产色值 */
-  heat: ComputedRef<number>
   isStopwatch: ComputedRef<boolean>
   isFrozen: ComputedRef<boolean>
   afkIdleSeconds: ComputedRef<number>
   afkReturn: ComputedRef<{ idleSec: number, at: number } | null>
   capsuleText: ComputedRef<string>
   capsuleTooltip: ComputedRef<string>
-  capsuleStyle: ComputedRef<Record<string, string>>
-  statusBadge: ComputedRef<string>
   docName: ComputedRef<string>
   docId: ComputedRef<string | null>
   cycleCompleted: ComputedRef<number>
@@ -117,38 +113,6 @@ export function usePomodoroPresenter(
    * 色彩温度：专注中升温、休息中降温、暂停收敛、冻结去饱和
    * 只输出 0..1，颜色合成全部交给 CSS color-mix
    */
-  const heat = computed(() => {
-    const phase = uiPhase.value
-    if (phase === 'idle') return 0
-    if (phase === 'focus') return progress.value
-    if (phase === 'short-break' || phase === 'long-break') {
-      const total = pomodoro.breakTotalSeconds.value || 300
-      return Math.max(
-        0,
-        Math.min(1, 1 - pomodoro.breakRemainingSeconds.value / total),
-      )
-    }
-    // paused / 冻结
-    return Math.min(progress.value, 0.25)
-  })
-
-  const statusBadge = computed(() => {
-    const s = state.value
-    if (isFrozen.value) return t('pomodoroStatusFrozen')
-    if (s === 'running') {
-      return isStopwatch.value
-        ? t('pomodoroStopwatch')
-        : t('pomodoroWorkSession')
-    }
-    if (s === 'paused') return t('pomodoroStatusPaused')
-    if (s === 'break') {
-      return pomodoro.breakKind.value === 'long'
-        ? t('pomodoroStatusLongBreak')
-        : t('pomodoroStatusBreak')
-    }
-    return ''
-  })
-
   const capsuleText = computed(() => {
     const s = state.value
     if (isFrozen.value)
@@ -183,43 +147,6 @@ export function usePomodoroPresenter(
     return `${t('pomodoroTimerTitle')} · 点击开启专注`
   })
 
-  const capsuleStyle = computed(() => {
-    const s = state.value
-    if (isFrozen.value) {
-      return {
-        background: 'var(--st-pomo-frozen-bg)',
-        border: '1px solid var(--st-pomo-frozen-border)',
-        color: 'var(--st-pomo-frozen-text)',
-      }
-    }
-    if (s === 'running') {
-      return {
-        background:
-          'color-mix(in srgb, var(--b3-theme-primary) 12%, var(--b3-theme-surface))',
-        border:
-          '1px solid color-mix(in srgb, var(--b3-theme-primary) 35%, transparent)',
-        color: 'var(--b3-theme-on-background)',
-      }
-    }
-    if (s === 'break') {
-      const isLong = pomodoro.breakKind.value === 'long'
-      return {
-        background: isLong
-          ? 'var(--st-pomo-longbreak-bg)'
-          : 'var(--st-pomo-break-bg)',
-        border: `1px solid ${isLong ? 'var(--st-pomo-longbreak-border)' : 'var(--st-pomo-break-border)'}`,
-        color: 'var(--b3-theme-on-background)',
-      }
-    }
-    return {
-      background:
-        'color-mix(in srgb, var(--b3-theme-surface) 90%, transparent)',
-      border:
-        '1px solid color-mix(in srgb, var(--b3-theme-on-background) 12%, transparent)',
-      color: 'var(--b3-theme-on-background)',
-    }
-  })
-
   const docId = computed(() => {
     if (state.value === 'idle') {
       return upcomingDocId
@@ -242,15 +169,12 @@ export function usePomodoroPresenter(
     subtitle,
     progress,
     rawProgress,
-    heat,
     isStopwatch,
     isFrozen,
     afkIdleSeconds,
     afkReturn,
     capsuleText,
     capsuleTooltip,
-    capsuleStyle,
-    statusBadge,
     docName,
     docId,
     cycleCompleted: computed(() => pomodoro.cycleCompleted.value),
