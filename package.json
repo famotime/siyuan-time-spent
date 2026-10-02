@@ -19,7 +19,10 @@
     "release:major": "node ./release.js --mode=major",
     "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json --noUnusedLocals false --noUnusedParameters false",
-    "check:sfc": "node scripts/check-vue-scripts.mjs"
+    "check:sfc": "node scripts/check-vue-scripts.mjs",
+    "test:pomodoro": "vitest run --config vitest.config.ts",
+    "preview:pomodoro": "vite --config vite.pomodoro-preview.config.ts",
+    "test:pomodoro:browser": "playwright test --config playwright.pomodoro.config.ts"
   },
   "dependencies": {
     "echarts": "^6.1.0",
@@ -28,9 +31,11 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.8.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20.2.0",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.5.4",
     "eslint": "^9.22.0",
@@ -38,6 +43,7 @@
     "eslint-plugin-perfectionist": "^4.2.0",
     "fast-glob": "^3.2.12",
     "glob": "^11.0.1",
+    "jsdom": "^26.1.0",
     "minimist": "^1.2.8",
     "postcss": "^8.5.26",
     "rollup-plugin-livereload": "^2.0.5",
@@ -48,6 +54,7 @@
     "typescript": "^5.0.4",
     "vite": "^6.2.1",
     "vite-plugin-static-copy": "^2.3.2",
-    "vite-plugin-zip-pack": "^1.0.5"
+    "vite-plugin-zip-pack": "^1.0.5",
+    "vitest": "^3.2.7"
   }
 }

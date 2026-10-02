@@ -10,3 +10,9 @@ tmp
 .env
 *.zip
 package.zip
+# Local browser verification artifacts
+test-results/
+playwright-report/
+
+# Claude Code local settings
+.claude/
