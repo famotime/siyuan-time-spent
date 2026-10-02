@@ -1,7 +1,10 @@
 <template>
   <div class="relative w-36 h-36 flex items-center justify-center select-none">
     <!-- SVG 双漏斗现代抽象沙漏 -->
-    <svg class="w-full h-full relative z-10" viewBox="0 0 120 120">
+    <svg
+      class="w-full h-full relative z-10"
+      viewBox="0 0 120 120"
+    >
       <!-- 极简沙漏外框线条 -->
       <path
         d="M38 24 H82 C82 46, 68 56, 62 60 C68 64, 82 74, 82 96 H38 C38 74, 52 64, 58 60 C52 56, 38 46, 38 24 Z"
@@ -50,13 +53,13 @@
 
     <!-- 中心数字与状态 (以悬浮半透明微层呈现) -->
     <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
-      <span 
+      <span
         class="text-2xl font-black font-mono font-tabular tracking-wide transition-colors drop-shadow-sm"
         :style="{ color: 'var(--b3-theme-on-background)' }"
       >
         {{ timerDisplayText }}
       </span>
-      <span 
+      <span
         class="text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded-full mt-0.5 bg-black/5 dark:bg-white/5"
         :style="{ color: 'var(--b3-theme-on-surface-light, var(--b3-theme-on-surface))' }"
       >
@@ -70,36 +73,36 @@
 import { computed } from 'vue';
 
 const props = defineProps<{
-  progress: number; // 0 到 1 (0 为刚开始，1 为完成)
-  timerDisplayText: string;
-  subDisplayText: string;
-  state: 'idle' | 'running' | 'paused' | 'break';
-}>();
+  progress: number // 0 到 1 (0 为刚开始，1 为完成)
+  timerDisplayText: string
+  subDisplayText: string
+  state: 'idle' | 'running' | 'paused' | 'break'
+}>()
 
 const isRunning = computed(() => props.state === 'running');
 
 // 上层沙堆高度：随 progress 增加而降低 (Y: 26 -> 54)
 const topSandPath = computed(() => {
   if (props.state === 'idle') {
-    return 'M42 27 H78 C78 44, 66 52, 60 56 C54 52, 42 44, 42 27 Z';
+    return 'M42 27 H78 C78 44, 66 52, 60 56 C54 52, 42 44, 42 27 Z'
   }
-  const factor = 1 - props.progress;
-  if (factor <= 0.05) return 'M58 56 H62 Z';
-  const yTop = 27 + (1 - factor) * 26;
-  const leftX = 42 + (1 - factor) * 12;
-  const rightX = 78 - (1 - factor) * 12;
-  return `M${leftX} ${yTop} H${rightX} C${rightX} 48, 64 54, 60 56 C56 54, ${leftX} 48, ${leftX} ${yTop} Z`;
-});
+  const factor = 1 - props.progress
+  if (factor <= 0.05) return 'M58 56 H62 Z'
+  const yTop = 27 + (1 - factor) * 26
+  const leftX = 42 + (1 - factor) * 12
+  const rightX = 78 - (1 - factor) * 12
+  return `M${leftX} ${yTop} H${rightX} C${rightX} 48, 64 54, 60 56 C56 54, ${leftX} 48, ${leftX} ${yTop} Z`
+})
 
 // 下层沙堆/晶体高度：随 progress 增加而堆积 (Y: 93 -> 66)
 const bottomSandPath = computed(() => {
-  if (props.state === 'idle') return 'M42 93 H78 Z';
-  const factor = Math.max(0.05, props.progress);
-  const yTop = 93 - factor * 25;
-  const leftX = 42 + (1 - factor) * 8;
-  const rightX = 78 - (1 - factor) * 8;
-  return `M${leftX} ${yTop} Q60 ${yTop - 3} ${rightX} ${yTop} L80 93 H40 Z`;
-});
+  if (props.state === 'idle') return 'M42 93 H78 Z'
+  const factor = Math.max(0.05, props.progress)
+  const yTop = 93 - factor * 25
+  const leftX = 42 + (1 - factor) * 8
+  const rightX = 78 - (1 - factor) * 8
+  return `M${leftX} ${yTop} Q60 ${yTop - 3} ${rightX} ${yTop} L80 93 H40 Z`
+})
 </script>
 
 <style scoped>

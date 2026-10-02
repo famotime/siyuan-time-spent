@@ -8,7 +8,7 @@ import "@/index.css";
 import PluginInfoString from '@/../plugin.json';
 import { destroy, init, openOverlay } from '@/main';
 import Dashboard from './components/Dashboard.vue';
-import StatusBarTimer from './components/StatusBarTimer.vue';
+import StatusBarTimer from './components/Pomodoro/StatusBarTimer.vue';
 import { TimeTracker } from './utils/tracker';
 import { StorageManager } from './utils/storage';
 import { SettingManager } from './utils/setting';
