@@ -362,6 +362,26 @@ body[data-theme-mode="dark"],
   contain: layout;
 }
 
+/* 强制全应用卡片、看板、日历与弹窗采用 border-box 盒模型，杜绝未加载 preflight 时表单控件 width: 100% 溢出和列重叠 */
+.time-spent-dashboard,
+.time-spent-dashboard *,
+.time-spent-dashboard *::before,
+.time-spent-dashboard *::after,
+.calendar-component,
+.calendar-component *,
+.calendar-component *::before,
+.calendar-component *::after,
+.sy-modal-card,
+.sy-modal-card *,
+.sy-modal-card *::before,
+.sy-modal-card *::after,
+.sy-summary-modal-mask,
+.sy-summary-modal-mask *,
+.sy-summary-modal-mask *::before,
+.sy-summary-modal-mask *::after {
+  box-sizing: border-box;
+}
+
 /* ==================== 显式线框防御铁律 ==================== */
 /* 彻底清除思源笔记全局样式强制对 svg 注入的 fill 颜色，确保所有线框图标呈现纯粹的镂空轮廓 */
 .time-spent-dashboard svg,

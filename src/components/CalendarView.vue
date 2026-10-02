@@ -79,10 +79,10 @@
             <span>{{ t('calendarTodayList') }}</span>
             <button 
               @click="$emit('open-manual-log')"
-              class="px-2 py-0.5 rounded-lg border sy-divider hover:border-indigo-500 hover:text-indigo-400 text-xs transition-colors flex items-center gap-1 cursor-pointer font-normal"
+              class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs shadow-indigo-600/30 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               :title="t('manualLogModalTitle')"
             >
-              <svg class="w-3 h-3 sy-wire-icon text-indigo-400" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="w-3.5 h-3.5 sy-wire-icon text-white" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -92,8 +92,26 @@
           <span class="text-xs text-indigo-500 font-mono font-semibold font-tabular">{{ t('calendarDayTotal', { duration: formatDuration(currentDayTotalSec) }) }}</span>
         </div>
         <div class="flex-grow overflow-y-auto p-3.5 space-y-2.5">
-          <div v-if="currentDayLogs.length === 0" class="text-center py-16 sy-text-tertiary text-xs">
-            {{ t('calendarNoRecords') }}
+          <div v-if="currentDayLogs.length === 0" class="flex flex-col items-center justify-center py-16 sy-text-tertiary text-xs gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500/60 mb-0.5">
+              <svg class="w-5 h-5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
+            <span>{{ t('calendarNoRecords') }}</span>
+            <button 
+              @click="$emit('open-manual-log')"
+              class="px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <svg class="w-3.5 h-3.5 sy-wire-icon text-indigo-500" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>{{ t('manualLogModalTitle') }}</span>
+            </button>
           </div>
           <div v-for="log in sortedCurrentDayLogs" :key="log.id"
                class="p-3 rounded-xl sy-list-item-card transition-all cursor-pointer group"
@@ -300,9 +318,21 @@
             #{{ t }}
           </span>
         </div>
-        <div class="border-t border-white/10 pt-1.5 mt-0.5 flex justify-between items-center text-xs text-gray-300 font-mono font-tabular">
-          <span>{{ hoverTooltip.timeRange }}</span>
-          <span class="font-bold text-indigo-300">{{ hoverTooltip.durationStr }}</span>
+        <div class="border-t border-white/10 pt-1.5 mt-0.5 flex flex-col gap-1 text-xs font-mono font-tabular">
+          <div class="flex justify-between items-center text-gray-300">
+            <span class="text-gray-400">{{ hoverTooltip.timeRange }}</span>
+            <span class="font-bold text-indigo-300">{{ hoverTooltip.durationStr }}</span>
+          </div>
+          <div class="flex justify-between items-center text-gray-300 pt-1 border-t border-white/5">
+            <span class="text-emerald-400/90 flex items-center gap-1.5 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+              {{ hoverTooltip.docDayTotalLabel }}
+            </span>
+            <span class="font-bold text-emerald-400 flex items-center gap-1">
+              <span>{{ hoverTooltip.docDayTotalStr }}</span>
+              <span class="text-xs text-gray-400 font-normal">{{ hoverTooltip.docDayCountStr }}</span>
+            </span>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -368,7 +398,10 @@ const hoverTooltip = ref({
   path: '',
   tags: [] as string[],
   timeRange: '',
-  durationStr: ''
+  durationStr: '',
+  docDayTotalLabel: '',
+  docDayTotalStr: '',
+  docDayCountStr: ''
 });
 
 // Formatters
@@ -432,10 +465,28 @@ const handleListMouseLeave = () => {
 
 const showBlockTooltip = async (event: MouseEvent, log: TimeLog) => {
   hoverTooltip.value.visible = true;
+  hoverTooltip.value.notebook = '';
+  hoverTooltip.value.path = '';
+  hoverTooltip.value.tags = [];
   hoverTooltip.value.title = docTitles.value[log.docId] || log.docId || t('unknownDoc');
   hoverTooltip.value.timeRange = `${formatTime(log.startTime)} - ${formatTime(log.endTime)}`;
   const idleStr = log.idleTime > 0 ? ` (${t('calendarIdleDeducted', { seconds: log.idleTime })})` : '';
   hoverTooltip.value.durationStr = `${t('calendarFocus')}: ${formatDuration(log.duration)}${idleStr}`;
+
+  // 统计该卡片对应所属日期下，同一文档的全天总计投入时间与频次
+  const logDateKey = formatDateKey(new Date(log.startTime));
+  const todayKey = formatDateKey(new Date());
+  const isLogToday = logDateKey === todayKey;
+
+  const dayLogs = props.dayMap[logDateKey] || props.logs.filter(l => formatDateKey(new Date(l.startTime)) === logDateKey);
+  const sameDocLogs = dayLogs.filter(l => l.docId === log.docId);
+  const docDayTotalDuration = sameDocLogs.reduce((acc, l) => acc + l.duration, 0);
+  const docDayCount = sameDocLogs.length;
+
+  hoverTooltip.value.docDayTotalLabel = isLogToday ? t('calendarDocTodayTotal') : t('calendarDocDayTotal');
+  hoverTooltip.value.docDayTotalStr = formatDuration(docDayTotalDuration > 0 ? docDayTotalDuration : log.duration);
+  hoverTooltip.value.docDayCountStr = t('calendarDocSessionTimes', { count: docDayCount > 0 ? docDayCount : 1 });
+
   updateBlockTooltip(event);
 
   // 异步获取文档路径与属性
@@ -457,8 +508,8 @@ const updateBlockTooltip = (event: MouseEvent) => {
   if (x + 280 > window.innerWidth) {
     x = event.clientX - 280 - padding;
   }
-  if (y + 140 > window.innerHeight) {
-    y = event.clientY - 140 - padding;
+  if (y + 160 > window.innerHeight) {
+    y = event.clientY - 160 - padding;
   }
 
   hoverTooltip.value.x = x;
