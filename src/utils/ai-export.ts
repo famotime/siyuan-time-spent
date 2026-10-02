@@ -36,7 +36,7 @@ export class AIExportManager {
         const sortedDocs = Object.entries(aggregated).sort((a, b) => b[1].duration - a[1].duration);
         const topDoc = sortedDocs.length > 0 ? sortedDocs[0] : null;
 
-        let md = `# 📊 源时记 · 深度工作与时间复盘报告 (${scopeTitle})\n\n`;
+        let md = `#  源时记 · 深度工作与时间复盘报告 (${scopeTitle})\n\n`;
         md += `**统计维度**: ${scopeLabel}\n\n`;
         
         md += `## 1. 核心概览 (Overview)\n`;

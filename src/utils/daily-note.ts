@@ -78,7 +78,7 @@ export class DailyNoteArchiver {
     md += `- **${totalSessionsLabel}**: ${safeLogs.length} ${isEn ? 'times' : '次'} | **${pomodoroLabel}**: ${pomodoroLogs.length} ${isEn ? '' : '个'} | **${idleFilteredLabel}**: ${formatDurationI18n(totalIdle, isEn ? 'en_US' : 'zh_CN')}\n\n`;
 
     if (topDocs.length > 0) {
-      md += `#### 🎯 ${coreDocsLabel}\n`;
+      md += `#### ${coreDocsLabel}\n`;
       topDocs.forEach(([title, stat], idx) => {
         const pct = totalSeconds > 0 ? Math.round((stat.duration / totalSeconds) * 100) : 0;
         md += `${idx + 1}. **${title}**：${formatDurationI18n(stat.duration, isEn ? 'en_US' : 'zh_CN')} (${pct}%)\n`;
@@ -86,7 +86,7 @@ export class DailyNoteArchiver {
       md += `\n`;
     }
 
-    md += `> 💡 *${footerNote}*\n`;
+    md += `> *${footerNote}*\n`;
     md += `}}}`;
 
     return md;

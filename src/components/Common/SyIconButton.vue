@@ -101,6 +101,12 @@
         <!-- Check (成功/保存) -->
         <polyline v-else-if="icon === 'check'" points="20 6 9 17 4 12" />
 
+        <!-- FocusRing (番茄钟 / 主动专注) -->
+        <g v-else-if="icon === 'focus-ring'">
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5v4.8l3.2 2" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+
         <!-- BookPlus (插入思源日记) -->
         <g v-else-if="icon === 'book-plus'">
           <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />

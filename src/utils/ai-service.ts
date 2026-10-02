@@ -90,23 +90,23 @@ Principles:
       if (focusGoal && focusGoal.trim()) {
         userPrompt += `[User Focus Goal]: ${focusGoal.trim()}\n\n`;
         userPrompt += `Please provide a compact review directly using the following 3 sections (cut straight to the point):
-### 🎯 Goal Assessment
+### Goal Assessment
 (1-2 sentences directly evaluating pace and completion)
 
-### 🔍 Key Focus Insights
+### Key Focus Insights
 (2 concise bullet points highlighting core time allocation, flow state or fragmentation)
 
-### 💡 Actionable Recommendations
+### Actionable Recommendations
 (2-3 concrete next steps to take, max 2 sentences each)`;
       } else {
         userPrompt += `Please provide a compact review directly using the following 3 sections (cut straight to the point):
-### ⚡ Efficiency Overview
+### Efficiency Overview
 (1-2 sentences highlighting key achievements in this period)
 
-### 🔍 Key Focus Insights
+### Key Focus Insights
 (2 concise bullet points highlighting focus distribution, flow state or fragmentation)
 
-### 💡 Actionable Recommendations
+### Actionable Recommendations
 (2-3 concrete, high-leverage steps, max 2 sentences each)`;
       }
 
@@ -140,23 +140,23 @@ Principles:
       if (focusGoal && focusGoal.trim()) {
         userPrompt += `【用户设定的专注目标】: ${focusGoal.trim()}\n\n`;
         userPrompt += `请直接按以下 3 个模块给出极其精简的复盘（拒绝套话，直奔主题）：
-### 🎯 目标达成度评估
+### 目标达成度评估
 （用 1~2 句话直接评估推进节奏与完成情况）
 
-### 🔍 关键专注洞察
+### 关键专注洞察
 （给出 2 条精练要点，指出最核心的时间去向及碎片化/心流状况）
 
-### 💡 改进建议
+### 改进建议
 （给出 2~3 条可立即执行的具体动作，每条不超过两句话）`;
       } else {
         userPrompt += `请直接按以下 3 个模块给出极其精简的复盘（拒绝套话，直奔主题）：
-### ⚡ 效率概览
+### 效率概览
 （用 1~2 句话指出当前周期投入核心亮点）
 
-### 🔍 关键专注洞察
+### 关键专注洞察
 （给出 2 条精练要点，指出精力聚焦度及是否存在注意力碎片化）
 
-### 💡 行动建议
+### 行动建议
 （给出 2~3 条精简可落地的动作建议，每条不超过两句话）`;
       }
 

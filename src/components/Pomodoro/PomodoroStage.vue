@@ -6,10 +6,12 @@
     :style="stageStyle"
     role="timer"
     :aria-label="t('pomodoroAriaTimer', { time: displayText })"
-    aria-live="polite"
-    aria-atomic="true"
     @wheel.prevent="onWheel"
   >
+    <!-- 无障碍播报：只在分钟粒度变化时宣告，避免逐秒刷屏 -->
+    <span class="sr-only" aria-live="polite" aria-atomic="true">
+      {{ t('pomodoroAriaTimer', { time: minuteAnnouncement }) }}
+    </span>
     <!-- 环境粒尘（仅运行态，且尊重动效强度与系统偏好） -->
     <div
       v-if="dustCount > 0 && active"
@@ -32,6 +34,7 @@
       :ui-phase="uiPhase"
       :frozen="frozen"
       :heat="heat"
+      :expressive="intensity === 'expressive'"
     />
     <ChronoDial
       v-else-if="form === 'chrono'"
@@ -118,6 +121,18 @@ const textColor = computed(() => {
   if (props.frozen) return 'var(--st-pomo-frozen-text)'
   return 'var(--b3-theme-on-background)'
 })
+
+/**
+ * 无障碍播报粒度：只在分钟数变化时更新文本，避免逐秒向读屏软件刷屏
+ */
+const minuteAnnouncement = computed(() => {
+  if (props.uiPhase === 'idle' || props.uiPhase === 'focus') {
+    const tail = props.displayText.slice(-2);
+    // 只有整分（秒位为 00）时才给出新的播报值
+    return tail === '00' ? props.displayText : `${props.displayText.slice(0, -2)}00`;
+  }
+  return props.displayText;
+});
 
 const subColor = computed(() => {
   if (props.frozen) return 'var(--st-pomo-frozen-text)'

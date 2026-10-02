@@ -108,7 +108,12 @@
             <div class="flex justify-between items-start mb-1">
               <div class="font-semibold text-xs sy-text-primary group-hover:text-indigo-400 transition-colors line-clamp-1 flex items-center gap-1.5 min-w-0">
                 <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
-                <span v-if="log.isPomodoro || log.type === 'pomodoro'" class="text-xs shrink-0 select-none">🍅</span>
+                <span v-if="log.isPomodoro || log.type === 'pomodoro'" class="shrink-0 select-none flex items-center" :title="t('pomodoro')">
+                  <svg class="w-3 h-3" style="fill: none !important; color: var(--st-pomo-active-text);" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M12 7.5v4.8l3.2 2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
                 <span v-else-if="log.type === 'offline'" class="text-xs px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 font-mono shrink-0 select-none">线下</span>
                 <span v-else-if="log.type === 'manual'" class="text-xs px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-mono shrink-0 select-none">补录</span>
                 <span class="truncate">{{ docTitles[log.docId] || log.docId || t('timelineUnknownDoc') }}</span>
