@@ -1,232 +1,200 @@
 <template>
-  <div class="flex flex-col gap-2.5">
-    <!-- 离桌归来提示卡 -->
+  <section class="pomo-running">
     <div
       v-if="afkReturn"
-      class="p-3 rounded-xl border flex flex-col gap-1.5 animate-fadeIn"
-      style="border-color: var(--st-pomo-frozen-border); background: var(--st-pomo-frozen-bg);"
+      class="st-pomo-inset pomo-return"
+      role="status"
     >
-      <div
-        class="text-xs font-bold"
-        style="color: var(--st-pomo-frozen-text);"
+      <p class="st-pomo-help">
+        {{
+          t('pomodoroAfkWelcomeDesc', { time: formatIdle(afkReturn.idleSec) })
+        }}
+      </p>
+      <button
+        type="button"
+        class="st-pomo-button st-pomo-button--quiet"
+        @click="$emit('dismissAfk')"
       >
-        {{ t('pomodoroAfkWelcomeTitle') }}
-      </div>
-      <div class="text-[12px] text-secondary">
-        {{ t('pomodoroAfkWelcomeDesc', { time: formatIdle(afkReturn.idleSec) }) }}
-      </div>
-      <div class="flex justify-end mt-0.5">
-        <button
-          type="button"
-          class="text-[12px] px-2 py-1 rounded-md font-medium transition-colors cursor-pointer"
-          style="color: var(--st-pomo-frozen-text);"
-          @click="$emit('dismissAfk')"
-        >
-          {{ t('saved') }}
-        </button>
-      </div>
+        {{ t('pomodoroDismiss') }}
+      </button>
     </div>
-
-    <!-- 防误触确认放弃卡片 -->
+    <p
+      v-if="frozen"
+      class="st-pomo-help pomo-away"
+    >
+      {{ t('pomodoroAwayCounting', { time: formatIdle(afkIdleSeconds) }) }}
+    </p>
     <div
       v-if="confirmingDiscard"
-      class="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 flex flex-col gap-2 animate-fadeIn"
+      class="st-pomo-inset pomo-confirm"
+      role="group"
+      :aria-label="t('pomodoroDiscardConfirmTitle')"
     >
-      <div class="text-xs font-bold text-rose-600 dark:text-rose-400">
-        {{ t('pomodoroDiscardConfirmTitle') }}
-      </div>
-      <div class="text-[12px] text-secondary">
+      <strong>{{ t('pomodoroDiscardConfirmTitle') }}</strong>
+      <p class="st-pomo-help">
         {{ t('pomodoroDiscardConfirmDesc') }}
-      </div>
-      <div class="flex items-center gap-2 mt-1">
+      </p>
+      <div class="pomo-running__actions">
+        <button
+          ref="cancelButton"
+          type="button"
+          class="st-pomo-button st-pomo-button--secondary"
+          @click="cancelDiscard"
+        >
+          {{ t('pomodoroCancelDiscard') }}
+        </button>
         <button
           type="button"
-          class="flex-1 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors cursor-pointer"
+          class="st-pomo-button st-pomo-button--danger"
           @click="$emit('confirmDiscard')"
         >
           {{ t('pomodoroConfirmDiscard') }}
         </button>
-        <button
-          type="button"
-          class="flex-1 py-1.5 rounded-lg border border-subtle hover:bg-surface text-secondary text-xs transition-colors cursor-pointer"
-          @click="$emit('update:confirmingDiscard', false)"
-        >
-          {{ t('pomodoroCancelDiscard') }}
-        </button>
       </div>
     </div>
-
-    <!-- 常规操作行 -->
-    <div
-      v-else
-      class="flex flex-col gap-2"
-    >
-      <!-- 离桌凝滞徽 -->
-      <div
-        v-if="frozen"
-        class="flex items-center gap-1.5 text-[12px] font-medium px-2 py-1 rounded-lg self-start"
-        style="background: var(--st-pomo-frozen-bg); color: var(--st-pomo-frozen-text); border: 1px solid var(--st-pomo-frozen-border);"
+    <template v-else>
+      <button
+        type="button"
+        class="st-pomo-button st-pomo-button--primary st-pomo-anim-soft"
+        @click="state === 'paused' ? $emit('resume') : $emit('pause')"
       >
-        <span
-          class="st-pomo-anim w-1.5 h-1.5 rounded-full"
-          style="background: currentColor; animation: st-pomo-frozen-frost 2s ease-in-out infinite;"
-        ></span>
-        <span>{{ t('pomodoroAfkAway', { time: formatIdle(afkIdleSeconds) }) }}</span>
-      </div>
-
-      <div class="flex items-center gap-2 w-full">
-        <!-- 暂停 / 继续按钮 -->
-        <button
-          v-if="state === 'running' && !frozen"
-          type="button"
-          class="flex-1 py-2 rounded-xl border border-subtle bg-subtle hover:opacity-85 text-primary font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
-          @click="$emit('pause')"
+        <svg
+          viewBox="0 0 24 24"
+          style="fill: none !important"
+          stroke="currentColor"
+          stroke-width="1.75"
+          aria-hidden="true"
         >
-          <svg
-            class="w-3.5 h-3.5"
-            style="fill: none !important;"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect
-              x="6"
-              y="5"
-              width="4"
-              height="14"
-              rx="1"
-            />
-            <rect
-              x="14"
-              y="5"
-              width="4"
-              height="14"
-              rx="1"
-            />
-          </svg>
-          <span>{{ t('pomodoroPause') }}</span>
-        </button>
-        <button
-          v-else
-          type="button"
-          class="flex-1 py-2 rounded-xl text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
-          :style="primaryBtnStyle"
-          @click="$emit('resume')"
-        >
-          <svg
-            class="w-3.5 h-3.5 text-white"
-            style="fill: none !important;"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
-          <span>{{ t('pomodoroResume') }}</span>
-        </button>
-
-        <!-- 提前达成按钮 -->
+          <path
+            v-if="state === 'paused'"
+            d="m8 5 11 7-11 7z"
+          />
+          <path
+            v-else
+            d="M8 5v14M16 5v14"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+        </svg>
+        {{ state === 'paused' ? t('pomodoroResumeFocus') : t('pomodoroPause') }}
+      </button>
+      <div class="pomo-running__actions">
         <button
           type="button"
-          class="py-2 px-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-xs transition-all cursor-pointer flex items-center gap-1"
-          :title="t('pomodoroFinish')"
+          class="st-pomo-button st-pomo-button--quiet"
           @click="$emit('finish')"
         >
-          <svg
-            class="w-3.5 h-3.5"
-            style="fill: none !important;"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span>{{ t('pomodoroFinish') }}</span>
+          {{ t('pomodoroFinishSession') }}
+        </button>
+        <button
+          ref="moreButton"
+          type="button"
+          class="st-pomo-button st-pomo-button--quiet"
+          :aria-expanded="moreOpen"
+          @click="moreOpen = !moreOpen"
+        >
+          {{ t('pomodoroMore') }}
         </button>
       </div>
-
-      <!-- 打断记录卡（仅暂停态） -->
       <div
-        v-if="state === 'paused' && interruptionEnabled"
-        class="p-2.5 rounded-xl border border-subtle bg-subtle flex flex-col gap-1.5 animate-fadeIn"
+        v-if="moreOpen"
+        class="pomo-running__actions"
       >
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-primary">{{ t('pomodoroInterruptionTitle') }}</span>
-          <span
-            v-if="previousNotes.length"
-            class="text-[12px] text-tertiary"
-          >
-            {{ t('pomodoroInterruptionRecorded', { n: previousNotes.length }) }}
-          </span>
-        </div>
-        <textarea
-          :value="noteDraft"
-          rows="2"
-          class="w-full text-xs px-2 py-1.5 rounded-lg bg-surface border border-subtle focus:outline-none resize-none"
-          :placeholder="t('pomodoroInterruptionPlaceholder')"
-          @input="$emit('update:noteDraft', ($event.target as HTMLTextAreaElement).value)"
-          @keydown.enter.prevent="$emit('saveNote')"
-          @keydown.esc.prevent="$emit('skipNote')"
-        ></textarea>
-        <div class="flex items-center justify-end gap-1.5">
-          <button
-            v-for="note in previousNotes"
-            :key="note"
-            type="button"
-            class="text-[12px] px-1.5 py-0.5 rounded-md bg-surface border border-subtle text-tertiary max-w-[110px] truncate"
-            :title="note"
-          >
-            {{ note }}
-          </button>
-          <button
-            type="button"
-            class="text-[12px] px-2 py-1 rounded-md font-medium transition-colors cursor-pointer text-tertiary hover:text-primary"
-            @click="$emit('skipNote')"
-          >
-            {{ t('pomodoroInterruptionSkip') }}
-          </button>
-          <button
-            type="button"
-            class="text-[12px] px-2 py-1 rounded-md font-bold transition-colors cursor-pointer text-white"
-            style="background: var(--b3-theme-primary);"
-            @click="$emit('saveNote')"
-          >
-            {{ t('pomodoroInterruptionSave') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 放弃按钮 (次级操作，轻量化) -->
-      <div class="flex justify-end">
         <button
           type="button"
-          class="text-[12px] text-tertiary hover:text-rose-500 transition-colors cursor-pointer flex items-center gap-1 py-1 px-1.5 rounded"
-          :title="t('pomodoroCancel')"
+          class="st-pomo-button st-pomo-button--danger"
           @click="$emit('update:confirmingDiscard', true)"
         >
-          <svg
-            class="w-3 h-3"
-            style="fill: none !important;"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.75"
-          >
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          </svg>
-          <span>{{ t('pomodoroCancel') }}</span>
+          {{ t('pomodoroCancel') }}
         </button>
       </div>
-    </div>
-  </div>
+      <template v-if="state === 'paused' && interruptionEnabled">
+        <button
+          ref="noteButton"
+          type="button"
+          class="st-pomo-button st-pomo-button--quiet"
+          :aria-expanded="noteOpen"
+          @click="toggleNote"
+        >
+          {{ t('pomodoroRecordInterruption')
+          }}<span v-if="previousNotes.length">{{ previousNotes.length }}/5</span>
+        </button>
+        <div
+          v-if="noteOpen"
+          class="st-pomo-inset pomo-note"
+          @keydown.esc.stop.prevent="closeNote"
+        >
+          <label :for="noteId">{{ t('pomodoroInterruptionTitle') }}</label>
+          <textarea
+            :id="noteId"
+            ref="noteInput"
+            class="st-pomo-input"
+            :value="noteDraft"
+            rows="2"
+            maxlength="500"
+            :disabled="previousNotes.length >= 5"
+            :placeholder="t('pomodoroInterruptionPlaceholder')"
+            @input="
+              $emit(
+                'update:noteDraft',
+                ($event.target as HTMLTextAreaElement).value,
+              )
+            "
+            @keydown="onNoteKeydown"
+          ></textarea>
+          <p class="st-pomo-help">
+            {{
+              t(
+                previousNotes.length >= 5
+                  ? 'pomodoroNoteLimit'
+                  : 'pomodoroNoteHelp',
+              )
+            }}
+          </p>
+          <ul
+            v-if="previousNotes.length"
+            class="pomo-note__list"
+          >
+            <li
+              v-for="(note, index) in previousNotes"
+              :key="index"
+            >
+              {{ note }}
+            </li>
+          </ul>
+          <div class="pomo-running__actions">
+            <button
+              type="button"
+              class="st-pomo-button st-pomo-button--quiet"
+              @click="closeNote"
+            >
+              {{ t('pomodoroCollapse') }}
+            </button>
+            <button
+              type="button"
+              class="st-pomo-button st-pomo-button--secondary"
+              :disabled="!noteDraft.trim() || previousNotes.length >= 5"
+              @click="saveNote"
+            >
+              {{ t('pomodoroInterruptionSave') }}
+            </button>
+          </div>
+        </div>
+      </template>
+    </template>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '../../../i18n';
-import { formatIdle } from '../composables/usePomodoroPresenter';
+import {
+  nextTick,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '../../../i18n'
+import { formatIdle } from '../composables/usePomodoroPresenter'
 
-defineProps<{
+const props = defineProps<{
   state: 'running' | 'paused'
   frozen: boolean
   afkIdleSeconds: number
@@ -236,22 +204,123 @@ defineProps<{
   previousNotes: ReadonlyArray<string>
   confirmingDiscard: boolean
 }>()
-
-defineEmits<{
+const emit = defineEmits<{
   (e: 'pause'): void
   (e: 'resume'): void
   (e: 'finish'): void
   (e: 'confirmDiscard'): void
-  (e: 'update:confirmingDiscard', v: boolean): void
-  (e: 'update:noteDraft', v: string): void
+  (e: 'update:confirmingDiscard', value: boolean): void
+  (e: 'update:noteDraft', value: string): void
   (e: 'saveNote'): void
   (e: 'skipNote'): void
   (e: 'dismissAfk'): void
 }>()
-
-const primaryBtnStyle = computed(() => ({
-  background: 'var(--b3-theme-primary)',
-  boxShadow: '0 4px 12px color-mix(in srgb, var(--b3-theme-primary) 35%, transparent)',
-}))
-
+const moreOpen = ref(false)
+const noteOpen = ref(false)
+const moreButton = ref<HTMLButtonElement | null>(null)
+const cancelButton = ref<HTMLButtonElement | null>(null)
+const noteButton = ref<HTMLButtonElement | null>(null)
+const noteInput = ref<HTMLTextAreaElement | null>(null)
+const noteId = `pomo-note-${Math.random().toString(36).slice(2, 9)}`
+watch(
+  () => props.confirmingDiscard,
+  (value) => {
+    if (value) void nextTick(() => cancelButton.value?.focus())
+  },
+)
+watch(
+  () => props.state,
+  () => {
+    noteOpen.value = false
+    moreOpen.value = false
+  },
+)
+function cancelDiscard() {
+  emit('update:confirmingDiscard', false)
+  void nextTick(() => moreButton.value?.focus())
+}
+function toggleNote() {
+  if (noteOpen.value) return closeNote()
+  noteOpen.value = true
+  void nextTick(() => noteInput.value?.focus())
+}
+function closeNote() {
+  noteOpen.value = false
+  void nextTick(() => noteButton.value?.focus())
+}
+function saveNote() {
+  if (!props.noteDraft.trim() || props.previousNotes.length >= 5) return
+  emit('saveNote')
+  void nextTick(() => noteInput.value?.focus())
+}
+function onNoteKeydown(event: KeyboardEvent) {
+  if (event.isComposing || event.repeat) return
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    event.stopPropagation()
+    saveNote()
+  }
+}
+function closeExpanded(): boolean {
+  if (props.confirmingDiscard) {
+    cancelDiscard()
+    return true
+  }
+  if (noteOpen.value) {
+    closeNote()
+    return true
+  }
+  if (moreOpen.value) {
+    moreOpen.value = false
+    void nextTick(() => moreButton.value?.focus())
+    return true
+  }
+  return false
+}
+defineExpose({ closeExpanded })
 </script>
+
+<style scoped>
+.pomo-running,
+.pomo-confirm,
+.pomo-note {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pomo-running__actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pomo-running > .st-pomo-button svg {
+  width: 18px;
+  height: 18px;
+}
+.pomo-return {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pomo-return p {
+  flex: 1;
+}
+.pomo-away {
+  text-align: center;
+}
+.pomo-note label {
+  font-weight: 500;
+}
+.pomo-note textarea {
+  resize: vertical;
+  min-height: 66px;
+}
+.pomo-note__list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--st-pomo-muted);
+  overflow-wrap: anywhere;
+}
+</style>

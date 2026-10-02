@@ -1,83 +1,98 @@
-import { computed, ref } from 'vue';
-import type TimeSpentPlugin from '../index';
-import { playBreakCompleteChord, playCycleCompleteChord, playPomodoroCompleteChord } from './audio';
-import { showMessage } from 'siyuan';
-import { t } from '../i18n';
-import type { TimeLog } from '../models/TimeLog';
-import Logger from './logger';
+import type TimeSpentPlugin from '../index'
+import type { TimeLog } from '../models/TimeLog'
+import { showMessage } from 'siyuan'
+import {
+  computed,
+  ref,
+} from 'vue'
+import { t } from '../i18n'
+import {
+  playBreakCompleteChord,
+  playCycleCompleteChord,
+  playPomodoroCompleteChord,
+} from './audio'
+import Logger from './logger'
 
-export type PomodoroState = 'idle' | 'running' | 'paused' | 'break';
+export type PomodoroState = 'idle' | 'running' | 'paused' | 'break'
 
 /** 休息的正交分类轴：短休息 / 长休息。不并入 PomodoroState，避免改动所有既有 state 分支 */
-export type BreakKind = 'short' | 'long';
+export type BreakKind = 'short' | 'long'
 
 /** 派生视图相位。UI 只认这一个轴，冻结态对外表现为 paused，既有视觉分支自动走灰化 */
-export type UiPhase = 'idle' | 'focus' | 'paused' | 'short-break' | 'long-break';
+export type UiPhase = 'idle' | 'focus' | 'paused' | 'short-break' | 'long-break'
 
 export class PomodoroManager {
-  private plugin: TimeSpentPlugin;
+  private plugin: TimeSpentPlugin
 
-  public state = ref<PomodoroState>('idle');
-  public isStopwatch = ref<boolean>(false);
-  public remainingSeconds = ref<number>(25 * 60);
-  public totalSeconds = ref<number>(25 * 60);
-  public elapsedSeconds = ref<number>(0);
-  public targetMinutes = ref<number>(25);
-  public currentDocId = ref<string | null>(null);
+  public state = ref<PomodoroState>('idle')
+  public isStopwatch = ref<boolean>(false)
+  public remainingSeconds = ref<number>(25 * 60)
+  public totalSeconds = ref<number>(25 * 60)
+  public elapsedSeconds = ref<number>(0)
+  public targetMinutes = ref<number>(25)
+  public currentDocId = ref<string | null>(null)
 
   // 休息阶段专属状态
-  public breakRemainingSeconds = ref<number>(5 * 60);
-  public breakTotalSeconds = ref<number>(5 * 60);
-  public breakMinutes = ref<number>(5);
+  public breakRemainingSeconds = ref<number>(5 * 60)
+  public breakTotalSeconds = ref<number>(5 * 60)
+  public breakMinutes = ref<number>(5)
 
   // —— 番茄周期叙事 ——
-  public cycleSize = ref<number>(4);
-  public cycleCompleted = ref<number>(0);
-  public breakKind = ref<BreakKind>('short');
+  public cycleSize = ref<number>(4)
+  public cycleCompleted = ref<number>(0)
+  public breakKind = ref<BreakKind>('short')
 
   // —— 离桌守卫 ——
   // afkIdleSeconds 为「当前这一段」离桌时长，驱动"离开中"徽；
   // sessionIdleAccumSec 为本会话累计，仅记录进 TimeLog.idleTime，不从有效时长中扣除
-  public afkFrozen = ref<boolean>(false);
-  public afkIdleSeconds = ref<number>(0);
-  public afkReturn = ref<{ idleSec: number; at: number } | null>(null);
+  public afkFrozen = ref<boolean>(false)
+  public afkIdleSeconds = ref<number>(0)
+  public afkReturn = ref<{ idleSec: number, at: number } | null>(null)
 
   // —— 打断记录 ——
-  public pendingNote = ref<string>('');
-  public sessionNotes = ref<string[]>([]);
+  public pendingNote = ref<string>('')
+  public sessionNotes = ref<string[]>([])
 
   // —— 完成仪式 ——
-  public lastCompletion = ref<{ at: number; minutes: number; cycleDone: boolean } | null>(null);
+  public lastCompletion = ref<{ at: number, minutes: number, cycleDone: boolean } | null>(null)
+  public lastRecord = ref<{
+    id: string
+    startedAt: number
+    durationSeconds: number
+    status: 'saving' | 'saved' | 'error' | 'ignored'
+  } | null>(null)
+
+  public savedLogVersion = ref(0)
 
   // —— 待机意向（从组件下沉，供胶囊文本/表盘预览/快捷键/设置热更新共用）——
-  public preferredMinutes = ref<number>(25);
-  public preferStopwatch = ref<boolean>(false);
+  public preferredMinutes = ref<number>(25)
+  public preferStopwatch = ref<boolean>(false)
 
-  private timerId: any = null;
-  private sessionStartTime: number = 0;
-  private targetEndTime: number = 0;
-  private pausedRemaining: number = 0;
+  private timerId: any = null
+  private sessionStartTime: number = 0
+  private targetEndTime: number = 0
+  private pausedRemaining: number = 0
 
-  private sessionIdleAccumSec: number = 0;
-  private afkFreezeProgress: number = 0;
-  private afkArmedAt: number = 0;
+  private sessionIdleAccumSec: number = 0
+  private afkFreezeProgress: number = 0
+  private afkArmedAt: number = 0
   /** 番茄启动后的宽容窗口：用户可能正在点按钮，且开始前若已闲置，IdleWatcher 的 lastActivity 已陈旧会误判 */
-  private static readonly AFK_GRACE_MS = 10_000;
+  private static readonly AFK_GRACE_MS = 10_000
 
   constructor(plugin: TimeSpentPlugin) {
-    this.plugin = plugin;
-    const defaultWork = this.plugin.settings?.pomodoroWorkMinutes || 25;
-    this.targetMinutes.value = defaultWork;
-    this.remainingSeconds.value = defaultWork * 60;
-    this.totalSeconds.value = defaultWork * 60;
-    this.preferredMinutes.value = defaultWork;
+    this.plugin = plugin
+    const defaultWork = this.plugin.settings?.pomodoroWorkMinutes || 25
+    this.targetMinutes.value = defaultWork
+    this.remainingSeconds.value = defaultWork * 60
+    this.totalSeconds.value = defaultWork * 60
+    this.preferredMinutes.value = defaultWork
 
-    const defaultBreak = this.plugin.settings?.pomodoroBreakMinutes || 5;
-    this.breakMinutes.value = defaultBreak;
-    this.breakRemainingSeconds.value = defaultBreak * 60;
-    this.breakTotalSeconds.value = defaultBreak * 60;
+    const defaultBreak = this.plugin.settings?.pomodoroBreakMinutes || 5
+    this.breakMinutes.value = defaultBreak
+    this.breakRemainingSeconds.value = defaultBreak * 60
+    this.breakTotalSeconds.value = defaultBreak * 60
 
-    this.cycleSize.value = Math.max(2, Math.min(8, this.plugin.settings?.pomodoroCycleSize ?? 4));
+    this.cycleSize.value = Math.max(2, Math.min(8, this.plugin.settings?.pomodoroCycleSize ?? 4))
   }
 
   /**
@@ -85,12 +100,12 @@ export class PomodoroManager {
    * 冻结时 state 仍为 'running'，但相位归为 'paused'，所有既有 state==='running' 的视觉分支自动灰化
    */
   public uiPhase = computed<UiPhase>(() => {
-    const s = this.state.value;
-    if (s === 'idle') return 'idle';
-    if (s === 'paused') return 'paused';
-    if (s === 'break') return this.breakKind.value === 'long' ? 'long-break' : 'short-break';
-    return this.afkFrozen.value ? 'paused' : 'focus';
-  });
+    const s = this.state.value
+    if (s === 'idle') return 'idle'
+    if (s === 'paused') return 'paused'
+    if (s === 'break') return this.breakKind.value === 'long' ? 'long-break' : 'short-break'
+    return this.afkFrozen.value ? 'paused' : 'focus'
+  })
 
   /**
    * 启动自定义时长倒计时
@@ -98,35 +113,35 @@ export class PomodoroManager {
    * @param docId 关联笔记 ID
    */
   public start(minutes: number, docId?: string) {
-    this.stopTimer();
-    this.isStopwatch.value = false;
-    this.targetMinutes.value = minutes;
-    this.totalSeconds.value = minutes * 60;
-    this.remainingSeconds.value = minutes * 60;
-    this.currentDocId.value = docId || this.plugin.timeTracker?.getCurrentDocId() || null;
-    this.sessionStartTime = Date.now();
-    this.targetEndTime = this.sessionStartTime + minutes * 60 * 1000;
-    this.state.value = 'running';
-    this.armAfk();
+    this.stopTimer()
+    this.isStopwatch.value = false
+    this.targetMinutes.value = minutes
+    this.totalSeconds.value = minutes * 60
+    this.remainingSeconds.value = minutes * 60
+    this.currentDocId.value = docId || this.plugin.timeTracker?.getCurrentDocId() || null
+    this.sessionStartTime = Date.now()
+    this.targetEndTime = this.sessionStartTime + minutes * 60 * 1000
+    this.state.value = 'running'
+    this.armAfk()
 
-    this.timerId = setInterval(() => this.tick(), 500);
-    Logger.log(`Pomodoro started: ${minutes}m on doc: ${this.currentDocId.value}`);
+    this.timerId = setInterval(() => this.tick(), 500)
+    Logger.log(`Pomodoro started: ${minutes}m on doc: ${this.currentDocId.value}`)
   }
 
   /**
    * 启动正向秒表
    */
   public startStopwatch(docId?: string) {
-    this.stopTimer();
-    this.isStopwatch.value = true;
-    this.elapsedSeconds.value = 0;
-    this.currentDocId.value = docId || this.plugin.timeTracker?.getCurrentDocId() || null;
-    this.sessionStartTime = Date.now();
-    this.state.value = 'running';
-    this.armAfk();
+    this.stopTimer()
+    this.isStopwatch.value = true
+    this.elapsedSeconds.value = 0
+    this.currentDocId.value = docId || this.plugin.timeTracker?.getCurrentDocId() || null
+    this.sessionStartTime = Date.now()
+    this.state.value = 'running'
+    this.armAfk()
 
-    this.timerId = setInterval(() => this.tickStopwatch(), 500);
-    Logger.log(`Stopwatch started on doc: ${this.currentDocId.value}`);
+    this.timerId = setInterval(() => this.tickStopwatch(), 500)
+    Logger.log(`Stopwatch started on doc: ${this.currentDocId.value}`)
   }
 
   /**
@@ -135,10 +150,10 @@ export class PomodoroManager {
   public pause() {
     if (this.state.value === 'running') {
       // 先收尾离桌累计，避免暂停期间继续累加
-      this.commitAfk();
-      this.state.value = 'paused';
-      this.pausedRemaining = this.remainingSeconds.value;
-      this.stopTimer();
+      this.commitAfk()
+      this.state.value = 'paused'
+      this.pausedRemaining = this.remainingSeconds.value
+      this.stopTimer()
     }
   }
 
@@ -147,16 +162,16 @@ export class PomodoroManager {
    */
   public resume() {
     if (this.state.value === 'paused') {
-      this.state.value = 'running';
+      this.state.value = 'running'
       if (this.isStopwatch.value) {
-        this.sessionStartTime = Date.now() - this.elapsedSeconds.value * 1000;
-        this.timerId = setInterval(() => this.tickStopwatch(), 500);
+        this.sessionStartTime = Date.now() - this.elapsedSeconds.value * 1000
+        this.timerId = setInterval(() => this.tickStopwatch(), 500)
       } else {
-        this.targetEndTime = Date.now() + this.pausedRemaining * 1000;
-        this.timerId = setInterval(() => this.tick(), 500);
+        this.targetEndTime = Date.now() + this.pausedRemaining * 1000
+        this.timerId = setInterval(() => this.tick(), 500)
       }
-      this.afkArmedAt = Date.now();
-      this.afkFrozen.value = false;
+      this.afkArmedAt = Date.now()
+      this.afkFrozen.value = false
     }
   }
 
@@ -165,17 +180,17 @@ export class PomodoroManager {
    */
   public finishEarly() {
     if (this.state.value === 'running' || this.state.value === 'paused') {
-      this.commitAfk();
-      const now = Date.now();
-      const actualDuration = Math.max(1, Math.floor((now - this.sessionStartTime) / 1000));
-      this.advanceCycle();
-      this.recordPomodoroSession(actualDuration, true);
+      this.commitAfk()
+      const now = Date.now()
+      const actualDuration = Math.max(1, Math.floor((now - this.sessionStartTime) / 1000))
+      this.advanceCycle()
+      this.recordPomodoroSession(actualDuration, true)
       this.lastCompletion.value = {
         at: now,
         minutes: Math.round(actualDuration / 60),
         cycleDone: this.cycleCompleted.value >= this.cycleSize.value,
-      };
-      this.enterBreak();
+      }
+      this.enterBreak()
     }
   }
 
@@ -183,46 +198,46 @@ export class PomodoroManager {
    * 放弃当前专注会话（不计入有效专注数据）
    */
   public discard() {
-    this.stopTimer();
-    this.reset();
+    this.stopTimer()
+    this.reset()
   }
 
   /**
    * 开启短休息阶段
    */
   public startBreak(minutes?: number) {
-    this.stopTimer();
-    const breakMin = minutes || this.plugin.settings?.pomodoroBreakMinutes || 5;
-    this.breakKind.value = 'short';
-    this.applyBreakWindow(breakMin);
-    Logger.log(`Pomodoro break started: ${breakMin}m`);
+    this.stopTimer()
+    const breakMin = minutes || this.plugin.settings?.pomodoroBreakMinutes || 5
+    this.breakKind.value = 'short'
+    this.applyBreakWindow(breakMin)
+    Logger.log(`Pomodoro break started: ${breakMin}m`)
   }
 
   /**
    * 开启长休息阶段（整轮番茄达成后）
    */
   public startLongBreak(minutes?: number) {
-    this.stopTimer();
-    const breakMin = minutes || this.plugin.settings?.pomodoroLongBreakMinutes || 15;
-    this.breakKind.value = 'long';
-    this.applyBreakWindow(breakMin);
+    this.stopTimer()
+    const breakMin = minutes || this.plugin.settings?.pomodoroLongBreakMinutes || 15
+    this.breakKind.value = 'long'
+    this.applyBreakWindow(breakMin)
 
     if (this.plugin.settings.pomodoroSound !== false) {
-      playCycleCompleteChord();
+      playCycleCompleteChord()
     }
-    Logger.log(`Pomodoro long break started: ${breakMin}m`);
+    Logger.log(`Pomodoro long break started: ${breakMin}m`)
   }
 
   /**
    * 跳过休息直接回到就绪状态（长休息跳过时重置轮次）
    */
   public skipBreak() {
-    const wasLong = this.breakKind.value === 'long';
-    this.stopTimer();
+    const wasLong = this.breakKind.value === 'long'
+    this.stopTimer()
     if (wasLong) {
-      this.cycleCompleted.value = 0;
+      this.cycleCompleted.value = 0
     }
-    this.reset();
+    this.reset()
   }
 
   /**
@@ -230,9 +245,9 @@ export class PomodoroManager {
    */
   public extendBreak(extraMinutes: number = 5) {
     if (this.state.value === 'break') {
-      this.breakTotalSeconds.value += extraMinutes * 60;
-      this.breakRemainingSeconds.value += extraMinutes * 60;
-      this.targetEndTime += extraMinutes * 60 * 1000;
+      this.breakTotalSeconds.value += extraMinutes * 60
+      this.breakRemainingSeconds.value += extraMinutes * 60
+      this.targetEndTime += extraMinutes * 60 * 1000
     }
   }
 
@@ -240,10 +255,10 @@ export class PomodoroManager {
    * 设置整轮番茄数（设置面板热更新入口）
    */
   public setCycleSize(n: number) {
-    this.cycleSize.value = Math.max(2, Math.min(8, n));
+    this.cycleSize.value = Math.max(2, Math.min(8, n))
     // 夹紧已完成数，防止轮次轨道渲染越界
     if (this.cycleCompleted.value > this.cycleSize.value) {
-      this.cycleCompleted.value = this.cycleSize.value;
+      this.cycleCompleted.value = this.cycleSize.value
     }
   }
 
@@ -251,18 +266,18 @@ export class PomodoroManager {
    * 记录一次打断原因（trim 去空，单次会话最多 5 条）
    */
   public recordInterruption(text: string) {
-    const trimmed = (text || '').trim();
-    if (!trimmed) return;
-    if (this.sessionNotes.value.length >= 5) return;
-    this.sessionNotes.value.push(trimmed);
-    this.pendingNote.value = '';
+    const trimmed = (text || '').trim()
+    if (!trimmed) return
+    if (this.sessionNotes.value.length >= 5) return
+    this.sessionNotes.value.push(trimmed)
+    this.pendingNote.value = ''
   }
 
   /**
    * 关闭「欢迎回来」提示卡
    */
   public dismissAfkReturn() {
-    this.afkReturn.value = null;
+    this.afkReturn.value = null
   }
 
   /**
@@ -270,82 +285,82 @@ export class PomodoroManager {
    */
   public computeRawProgress(): number {
     if (this.state.value === 'break') {
-      const total = this.breakTotalSeconds.value || 300;
-      return Math.max(0, Math.min(1, 1 - this.breakRemainingSeconds.value / total));
+      const total = this.breakTotalSeconds.value || 300
+      return Math.max(0, Math.min(1, 1 - this.breakRemainingSeconds.value / total))
     }
     if (this.isStopwatch.value) {
-      return (this.elapsedSeconds.value % 60) / 60;
+      return (this.elapsedSeconds.value % 60) / 60
     }
-    const total = this.totalSeconds.value || (this.targetMinutes.value * 60) || 1500;
-    return Math.max(0, Math.min(1, 1 - this.remainingSeconds.value / total));
+    const total = this.totalSeconds.value || (this.targetMinutes.value * 60) || 1500
+    return Math.max(0, Math.min(1, 1 - this.remainingSeconds.value / total))
   }
 
   private tick() {
-    this.probeAfk();
-    const now = Date.now();
-    const diff = Math.max(0, Math.ceil((this.targetEndTime - now) / 1000));
-    this.remainingSeconds.value = diff;
+    this.probeAfk()
+    const now = Date.now()
+    const diff = Math.max(0, Math.ceil((this.targetEndTime - now) / 1000))
+    this.remainingSeconds.value = diff
 
     if (diff <= 0) {
-      this.handleComplete();
+      this.handleComplete()
     }
   }
 
   private tickStopwatch() {
-    this.probeAfk();
-    const now = Date.now();
-    this.elapsedSeconds.value = Math.max(0, Math.floor((now - this.sessionStartTime) / 1000));
+    this.probeAfk()
+    const now = Date.now()
+    this.elapsedSeconds.value = Math.max(0, Math.floor((now - this.sessionStartTime) / 1000))
   }
 
   private tickBreak() {
-    const now = Date.now();
-    const diff = Math.max(0, Math.ceil((this.targetEndTime - now) / 1000));
-    this.breakRemainingSeconds.value = diff;
+    const now = Date.now()
+    const diff = Math.max(0, Math.ceil((this.targetEndTime - now) / 1000))
+    this.breakRemainingSeconds.value = diff
 
     if (diff <= 0) {
-      this.handleBreakComplete();
+      this.handleBreakComplete()
     }
   }
 
   private handleComplete() {
-    this.stopTimer();
-    this.commitAfk();
-    const duration = this.targetMinutes.value * 60;
-    this.advanceCycle();
-    this.recordPomodoroSession(duration, false);
+    this.stopTimer()
+    this.commitAfk()
+    const duration = this.targetMinutes.value * 60
+    this.advanceCycle()
+    this.recordPomodoroSession(duration, false)
 
     // 播放提示音
     if (this.plugin.settings.pomodoroSound !== false) {
-      playPomodoroCompleteChord();
+      playPomodoroCompleteChord()
     }
 
     // 提示完成
     if (this.plugin.settings.pomodoroNotification !== false) {
-      showMessage(t('pomodoroCompletedMsg'), 8000, 'info');
+      showMessage(t('pomodoroCompletedMsg'), 8000, 'info')
     }
 
     this.lastCompletion.value = {
       at: Date.now(),
       minutes: Math.round(duration / 60),
       cycleDone: this.cycleCompleted.value >= this.cycleSize.value,
-    };
+    }
 
-    this.enterBreak();
+    this.enterBreak()
   }
 
   private handleBreakComplete() {
-    this.stopTimer();
+    this.stopTimer()
     if (this.plugin.settings.pomodoroSound !== false) {
-      playBreakCompleteChord();
+      playBreakCompleteChord()
     }
 
     if (this.breakKind.value === 'long') {
-      this.cycleCompleted.value = 0;
-      showMessage(t('pomodoroLongBreakEnded'), 6000, 'info');
+      this.cycleCompleted.value = 0
+      showMessage(t('pomodoroLongBreakEnded'), 6000, 'info')
     } else {
-      showMessage(t('pomodoroBreakEnded'), 6000, 'info');
+      showMessage(t('pomodoroBreakEnded'), 6000, 'info')
     }
-    this.reset();
+    this.reset()
   }
 
   /**
@@ -353,41 +368,42 @@ export class PomodoroManager {
    */
   private enterBreak() {
     if (this.cycleCompleted.value >= this.cycleSize.value) {
-      this.startLongBreak();
+      this.startLongBreak()
     } else {
-      this.startBreak();
+      this.startBreak()
     }
   }
 
   private advanceCycle() {
-    this.cycleCompleted.value += 1;
+    this.cycleCompleted.value += 1
   }
 
   private applyBreakWindow(breakMin: number) {
-    this.breakMinutes.value = breakMin;
-    this.breakTotalSeconds.value = breakMin * 60;
-    this.breakRemainingSeconds.value = breakMin * 60;
-    this.sessionStartTime = Date.now();
-    this.targetEndTime = this.sessionStartTime + breakMin * 60 * 1000;
-    this.state.value = 'break';
-    this.afkFrozen.value = false;
-    this.afkIdleSeconds.value = 0;
+    this.breakMinutes.value = breakMin
+    this.breakTotalSeconds.value = breakMin * 60
+    this.breakRemainingSeconds.value = breakMin * 60
+    this.sessionStartTime = Date.now()
+    this.targetEndTime = this.sessionStartTime + breakMin * 60 * 1000
+    this.state.value = 'break'
+    this.afkFrozen.value = false
+    this.afkIdleSeconds.value = 0
 
-    this.timerId = setInterval(() => this.tickBreak(), 500);
+    this.timerId = setInterval(() => this.tickBreak(), 500)
   }
 
   /**
    * 布防离桌守卫：重置本会话的所有离桌与打断上下文
    */
   private armAfk() {
-    this.afkFrozen.value = false;
-    this.afkIdleSeconds.value = 0;
-    this.afkReturn.value = null;
-    this.sessionIdleAccumSec = 0;
-    this.sessionNotes.value = [];
-    this.pendingNote.value = '';
-    this.lastCompletion.value = null;
-    this.afkArmedAt = Date.now();
+    this.afkFrozen.value = false
+    this.afkIdleSeconds.value = 0
+    this.afkReturn.value = null
+    this.sessionIdleAccumSec = 0
+    this.sessionNotes.value = []
+    this.pendingNote.value = ''
+    this.lastCompletion.value = null
+    this.lastRecord.value = null
+    this.afkArmedAt = Date.now()
   }
 
   /**
@@ -395,28 +411,33 @@ export class PomodoroManager {
    * 冻结仅影响表现层：墙钟计时继续跑，保证休眠恢复对齐与 targetEndTime 稳定。
    */
   private probeAfk() {
-    if (this.plugin.settings?.pomodoroAfkGuardian === false) return;
-    if (this.state.value !== 'running') return;
-    if (Date.now() - this.afkArmedAt < PomodoroManager.AFK_GRACE_MS) return;
+    if (this.plugin.settings?.pomodoroAfkGuardian === false) return
+    if (this.state.value !== 'running') return
+    if (Date.now() - this.afkArmedAt < PomodoroManager.AFK_GRACE_MS) return
 
-    const watcher = this.plugin.timeTracker?.getIdleWatcher?.();
-    if (!watcher) return;
-    const idle = watcher.getIsIdle();
+    const watcher = this.plugin.timeTracker?.getIdleWatcher?.()
+    if (!watcher) return
+    const idle = watcher.getIsIdle()
 
     if (idle && !this.afkFrozen.value) {
       // 刚跨过闲置阈值：冻结表现层，快照进度
-      this.afkFrozen.value = true;
-      this.afkFreezeProgress = this.computeRawProgress();
-      this.afkIdleSeconds.value = 0;
-      this.afkReturn.value = null;
+      this.afkFrozen.value = true
+      this.afkFreezeProgress = this.computeRawProgress()
+      this.afkIdleSeconds.value = 0
+      this.afkReturn.value = null
     } else if (idle && this.afkFrozen.value) {
-      this.afkIdleSeconds.value = watcher.getOngoingIdleDurationSec();
+      this.afkIdleSeconds.value = watcher.getOngoingIdleDurationSec()
     } else if (!idle && this.afkFrozen.value) {
       // 归来：结算本段离桌
-      this.afkFrozen.value = false;
-      const sec = this.afkIdleSeconds.value;
-      this.sessionIdleAccumSec += sec;
-      this.afkReturn.value = sec > 0 ? { idleSec: sec, at: Date.now() } : null;
+      this.afkFrozen.value = false
+      const sec = this.afkIdleSeconds.value
+      this.sessionIdleAccumSec += sec
+      this.afkReturn.value = sec > 0
+        ? {
+            idleSec: sec,
+            at: Date.now(),
+          }
+        : null
     }
   }
 
@@ -425,11 +446,14 @@ export class PomodoroManager {
    */
   private commitAfk() {
     if (this.afkFrozen.value) {
-      this.sessionIdleAccumSec += this.afkIdleSeconds.value;
-      const sec = this.afkIdleSeconds.value;
-      this.afkFrozen.value = false;
+      this.sessionIdleAccumSec += this.afkIdleSeconds.value
+      const sec = this.afkIdleSeconds.value
+      this.afkFrozen.value = false
       if (sec > 0 && this.state.value === 'running') {
-        this.afkReturn.value = { idleSec: sec, at: Date.now() };
+        this.afkReturn.value = {
+          idleSec: sec,
+          at: Date.now(),
+        }
       }
     }
   }
@@ -438,28 +462,35 @@ export class PomodoroManager {
    * 冻结瞬间的进度快照，供表现层原地凝滞
    */
   public getFrozenProgress(): number {
-    return this.afkFreezeProgress;
+    return this.afkFreezeProgress
   }
 
   /**
    * 拼接本次专注的备注：基础结论 + 打断记录（CalendarView 展示位有截断，只取前 2 条）
    */
   private buildSessionNote(base: string): string {
-    const notes = this.sessionNotes.value;
-    if (notes.length === 0) return base;
-    const head = notes.slice(0, 2).join('；');
-    const detail = notes.length > 2 ? `等${notes.length}条` : head;
-    return `${base}｜打断×${notes.length}：${detail}`;
+    const notes = this.sessionNotes.value
+    if (notes.length === 0) return base
+    const head = notes.slice(0, 2).join('；')
+    const detail = notes.length > 2 ? `等${notes.length}条` : head
+    return `${base}｜打断×${notes.length}：${detail}`
   }
 
   private recordPomodoroSession(durationSec: number, isEarlyFinish: boolean) {
-    if (durationSec < 10) return; // 忽略极其短暂的操作
+    const id = `pomo_${Math.random().toString(36).substring(2, 12)}`
+    this.lastRecord.value = {
+      id,
+      startedAt: this.sessionStartTime,
+      durationSeconds: durationSec,
+      status: durationSec < 10 ? 'ignored' : 'saving',
+    }
+    if (durationSec < 10) return // 忽略极其短暂的操作，不发起保存
 
-    const docId = this.currentDocId.value || this.plugin.timeTracker?.getCurrentDocId() || 'pomodoro-focus';
-    const baseNote = isEarlyFinish ? t('pomodoroNoteEarlyFinish') : t('pomodoroNoteAchieved');
+    const docId = this.currentDocId.value || this.plugin.timeTracker?.getCurrentDocId() || 'pomodoro-focus'
+    const baseNote = isEarlyFinish ? t('pomodoroNoteEarlyFinish') : t('pomodoroNoteAchieved')
     const log: TimeLog = {
-      id: 'pomo_' + Math.random().toString(36).substring(2, 12),
-      docId: docId,
+      id,
+      docId,
       startTime: this.sessionStartTime,
       endTime: Date.now(),
       duration: durationSec,
@@ -471,40 +502,59 @@ export class PomodoroManager {
         ? Math.round(durationSec / 60)
         : this.targetMinutes.value,
       note: this.buildSessionNote(baseNote),
-    };
+    }
 
-    this.plugin.timeTracker?.addManualLog(log).catch(e => {
-      Logger.error('Failed to save pomodoro log:', e);
-    });
+    const onSaveError = (error: unknown) => {
+      if (this.lastRecord.value?.id === log.id) {
+        this.lastRecord.value.status = 'error'
+      }
+      Logger.error('Failed to save pomodoro log:', error)
+    }
+
+    try {
+      if (!this.plugin.timeTracker) {
+        throw new Error('Time tracker is unavailable')
+      }
+      // 保存不阻塞进入休息；旧会话晚到只通知统计刷新，不覆盖当前会话状态。
+      this.plugin.timeTracker.addManualLog(log).then(() => {
+        if (this.lastRecord.value?.id === log.id) {
+          this.lastRecord.value.status = 'saved'
+        }
+        this.savedLogVersion.value += 1
+      }, onSaveError)
+    } catch (error) {
+      onSaveError(error)
+    }
   }
 
   private stopTimer() {
     if (this.timerId) {
-      clearInterval(this.timerId);
-      this.timerId = null;
+      clearInterval(this.timerId)
+      this.timerId = null
     }
   }
 
   private reset() {
-    this.stopTimer();
-    this.state.value = 'idle';
-    this.isStopwatch.value = false;
-    this.breakKind.value = 'short';
-    const defaultWork = this.plugin.settings?.pomodoroWorkMinutes || 25;
-    this.remainingSeconds.value = defaultWork * 60;
-    this.totalSeconds.value = defaultWork * 60;
-    this.elapsedSeconds.value = 0;
+    this.stopTimer()
+    this.state.value = 'idle'
+    this.isStopwatch.value = false
+    this.breakKind.value = 'short'
+    const defaultWork = this.plugin.settings?.pomodoroWorkMinutes || 25
+    this.remainingSeconds.value = defaultWork * 60
+    this.totalSeconds.value = defaultWork * 60
+    this.elapsedSeconds.value = 0
 
-    const defaultBreak = (this.plugin.settings?.pomodoroBreakMinutes || 5) * 60;
-    this.breakRemainingSeconds.value = defaultBreak;
-    this.breakTotalSeconds.value = defaultBreak;
+    const defaultBreak = (this.plugin.settings?.pomodoroBreakMinutes || 5) * 60
+    this.breakRemainingSeconds.value = defaultBreak
+    this.breakTotalSeconds.value = defaultBreak
 
-    this.afkFrozen.value = false;
-    this.afkIdleSeconds.value = 0;
-    this.afkReturn.value = null;
-    this.sessionIdleAccumSec = 0;
-    this.sessionNotes.value = [];
-    this.pendingNote.value = '';
-    this.lastCompletion.value = null;
+    this.afkFrozen.value = false
+    this.afkIdleSeconds.value = 0
+    this.afkReturn.value = null
+    this.sessionIdleAccumSec = 0
+    this.sessionNotes.value = []
+    this.pendingNote.value = ''
+    this.lastCompletion.value = null
+    this.lastRecord.value = null
   }
 }

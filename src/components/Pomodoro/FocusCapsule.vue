@@ -1,94 +1,125 @@
 <template>
-  <div
+  <button
     ref="capsuleEl"
-    class="sy-pomo-capsule px-2.5 py-1 rounded-full flex items-center gap-1.5 cursor-pointer select-none transition-all active:scale-95 min-h-6"
-    :class="{
-      'is-running': view.state.value === 'running' && !view.isFrozen.value,
-      'is-paused': view.state.value === 'paused',
-      'is-break': view.state.value === 'break',
-      'is-frozen': view.isFrozen.value,
-    }"
-    :style="view.capsuleStyle.value"
+    type="button"
+    class="sy-pomo-capsule st-pomo-ui st-pomo-anim-soft"
+    :data-pomo-motion="intensity"
+    :class="{ 'is-active': view.state.value !== 'idle' }"
     :title="view.capsuleTooltip.value"
-    role="button"
-    tabindex="0"
-    aria-keyshortcuts="Alt+P"
-    :aria-label="`${t('pomodoroTimerTitle')} · ${view.capsuleText.value}`"
+    :aria-expanded="isOpen"
+    aria-controls="st-focus-panel"
+    :aria-label="`${t('pomodoroTimerTitle')}: ${notice || view.capsuleText.value}`"
     @click="$emit('toggle')"
-    @keydown.enter.prevent="$emit('toggle')"
-    @keydown.space.prevent="$emit('toggle')"
   >
-    <!-- 16px 矢量微进度环 (Peripheral Micro-Dial) -->
-    <span class="w-4 h-4 flex items-center justify-center shrink-0 relative">
-      <svg
-        class="w-4 h-4 transform -rotate-90 st-pomo-heat-channel"
-        viewBox="0 0 24 24"
-        style="fill: none !important;"
-      >
-        <!-- 微底轨 -->
-        <circle
-          cx="12"
-          cy="12"
-          r="9"
-          stroke-width="2.2"
-          stroke="currentColor"
-          class="opacity-20"
-          style="fill: none !important;"
-        />
-        <!-- 动态微进度弧：随色温迁移，由 --pomo-heat 驱动 -->
-        <circle
-          cx="12"
-          cy="12"
-          r="9"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          :stroke="ringTint"
-          :stroke-dasharray="56.54"
-          :stroke-dashoffset="56.54 * (1 - view.progress.value)"
-          class="transition-all duration-300"
-          style="fill: none !important;"
-        />
-      </svg>
-
-      <!-- 运行中心流呼吸光点 -->
-      <span
-        v-if="view.state.value === 'running' && !view.isFrozen.value"
-        class="absolute w-1.5 h-1.5 rounded-full animate-ping opacity-75"
-        :style="{ background: ringTint }"
-      ></span>
-      <!-- 凝滞态霜点 -->
-      <span
-        v-else-if="view.isFrozen.value"
-        class="st-pomo-anim absolute w-1.5 h-1.5 rounded-full"
-        :style="{
-          background: 'var(--st-pomo-frozen-text)',
-          animation: 'st-pomo-frozen-frost 2s ease-in-out infinite',
-        }"
-      ></span>
-    </span>
-
-    <!-- 等宽数字与状态文本 -->
-    <span class="font-mono font-bold tracking-tight font-tabular text-xs">
-      {{ view.capsuleText.value }}
-    </span>
-  </div>
+    <svg
+      viewBox="0 0 24 24"
+      style="fill: none !important"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        stroke-width="1.7"
+        opacity=".25"
+      />
+      <circle
+        v-if="view.state.value !== 'idle' && !view.isStopwatch.value"
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        :stroke-dasharray="56.55"
+        :stroke-dashoffset="56.55 * (1 - view.progress.value)"
+        transform="rotate(-90 12 12)"
+      />
+      <path
+        v-if="view.state.value === 'paused'"
+        d="M10 9v6m4-6v6"
+        stroke="currentColor"
+        stroke-width="1.5"
+      />
+      <path
+        v-else
+        d="M10 6h4v9l-2-2-2 2z"
+        stroke="currentColor"
+        stroke-width="1.3"
+      />
+    </svg>
+    <span>{{ notice || view.capsuleText.value }}</span>
+  </button>
 </template>
 
 <script setup lang="ts">
-import type { PomodoroView } from './composables/usePomodoroPresenter';
-import { ref } from 'vue';
-import { t } from '../../i18n';
+import type { PomodoroView } from './composables/usePomodoroPresenter'
+import { ref } from 'vue'
+import { t } from '../../i18n'
 
-defineProps<{
-  view: PomodoroView
-}>()
-
-defineEmits<{ (e: 'toggle'): void }>();
-
-/** 胶囊元素引用，交由根组件传给浮层做智能锚定定位 */
-const capsuleEl = ref<HTMLElement | null>(null);
-defineExpose({ capsuleEl });
-
-/** 进度弧取色，跟随色温通道 */
-const ringTint = 'var(--pomo-tint, var(--b3-theme-primary))';
+withDefaults(
+  defineProps<{
+    view: PomodoroView
+    isOpen?: boolean
+    intensity?: 'calm' | 'expressive'
+    notice?: string
+  }>(),
+  {
+    isOpen: false,
+    intensity: 'calm',
+    notice: '',
+  },
+)
+defineEmits<{ (e: 'toggle'): void }>()
+const capsuleEl = ref<HTMLButtonElement | null>(null)
+defineExpose({ capsuleEl })
 </script>
+
+<style scoped>
+.sy-pomo-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 9px 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--st-pomo-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.4;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+.sy-pomo-capsule:hover,
+.sy-pomo-capsule[aria-expanded='true'] {
+  background: var(--st-pomo-soft);
+  border-color: var(--st-pomo-line);
+}
+.sy-pomo-capsule.is-active {
+  color: var(--st-pomo-ink);
+}
+.sy-pomo-capsule > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--st-pomo-accent);
+}
+.sy-pomo-capsule > span {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.sy-pomo-capsule:focus-visible {
+  outline: 2px solid var(--st-pomo-accent);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .sy-pomo-capsule {
+    min-height: 36px;
+  }
+}
+</style>

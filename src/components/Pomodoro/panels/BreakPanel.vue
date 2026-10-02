@@ -1,77 +1,65 @@
 <template>
-  <div class="flex flex-col gap-2.5">
-    <!-- 呼吸引导卡：CSS 负责光环缩放，JS 负责文字，双轨同步 -->
-    <div
-      class="p-2.5 rounded-xl border flex flex-col gap-1"
-      :style="accentStyle"
-    >
-      <div class="flex items-center justify-between">
-        <span
-          class="text-xs font-bold"
-          :style="{ color: accentText }"
-        >
-          {{ kind === 'long' ? t('pomodoroLongBreakTitle') : t('pomodoroBreakTitle') }}
-        </span>
-        <span
-          class="text-[12px] font-mono font-bold font-tabular"
-          :style="{ color: accentText }"
-        >
-          {{ remainingText }}
-        </span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span
-          class="st-pomo-anim relative w-7 h-7 rounded-full shrink-0 flex items-center justify-center"
-          :style="breathOrbStyle"
-          aria-hidden="true"
-        ></span>
-        <span class="flex flex-col min-w-0">
-          <span class="text-[12px] font-medium text-secondary">{{ t('pomodoroBreathCoachTitle') }}</span>
-          <span
-            class="text-xs font-bold"
-            :style="{ color: accentText }"
-          >{{ breathLabel }}</span>
-        </span>
-      </div>
-      <span
-        v-if="kind === 'long'"
-        class="text-[12px] text-secondary"
-      >
-        {{ t('pomodoroLongBreakDesc', { n: cycleSize }) }}
-      </span>
-      <span
-        v-else
-        class="text-[12px] text-secondary"
-      >
-        {{ t('pomodoroBreathIn') }} · {{ t('pomodoroBreathOut') }}
-      </span>
-    </div>
-
-    <div class="flex items-center gap-2">
+  <section class="pomo-break">
+    <p class="st-pomo-help pomo-break__hint">
+      {{ t(kind === 'long' ? 'pomodoroRestLongHint' : 'pomodoroRestHint') }}
+    </p>
+    <div class="pomo-break__actions">
       <button
         type="button"
-        class="flex-1 py-2 rounded-xl text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
-        :style="{ background: accentSolid }"
+        class="st-pomo-button st-pomo-button--secondary"
         @click="$emit('skip')"
       >
-        <span>{{ t('pomodoroSkipBreak') }}</span>
+        {{ t('pomodoroEndBreak') }}
       </button>
       <button
         type="button"
-        class="py-2 px-3 rounded-xl border border-subtle hover:bg-surface text-secondary font-medium text-xs transition-all cursor-pointer"
-        :title="t('pomodoroIncrease')"
+        class="st-pomo-button st-pomo-button--quiet"
         @click="$emit('extend', 5)"
       >
-        <span>+5m</span>
+        {{ t('pomodoroExtendBreak') }}
       </button>
     </div>
-  </div>
+    <button
+      ref="coachButton"
+      type="button"
+      class="st-pomo-button st-pomo-button--quiet"
+      :aria-expanded="coachOpen"
+      @click="coachOpen = !coachOpen"
+    >
+      {{ t('pomodoroBreathCoachTitle') }}
+    </button>
+    <div
+      v-if="coachOpen"
+      class="st-pomo-inset pomo-breath"
+      @keydown.esc.stop.prevent="closeExpanded"
+    >
+      <span
+        class="pomo-breath__orb st-pomo-anim"
+        :class="{ 'is-breathing': !reduced }"
+        aria-hidden="true"
+      ></span>
+      <span>{{ reduced ? t('pomodoroBreathStatic') : breathLabel }}</span>
+      <button
+        type="button"
+        class="st-pomo-button st-pomo-button--quiet"
+        @click="closeExpanded"
+      >
+        {{ t('pomodoroCollapse') }}
+      </button>
+    </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import type { BreakKind } from '../../../utils/pomodoro';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { t } from '../../../i18n';
+import type { BreakKind } from '../../../utils/pomodoro'
+import {
+  computed,
+  nextTick,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue'
+import { t } from '../../../i18n'
 
 const props = defineProps<{
   kind: BreakKind
@@ -79,57 +67,74 @@ const props = defineProps<{
   cycleSize: number
   reduced: boolean
 }>()
-
-defineEmits<{
-  (e: 'skip'): void
-  (e: 'extend', minutes: number): void
-}>()
-
-const isLong = computed(() => props.kind === 'long');
-
-const accentStyle = computed(() => ({
-  borderColor: isLong.value ? 'var(--st-pomo-longbreak-border)' : 'var(--st-pomo-break-border)',
-  background: isLong.value ? 'var(--st-pomo-longbreak-bg)' : 'var(--st-pomo-break-bg)',
-}))
-
-const accentText = computed(() => (
-  isLong.value ? 'var(--st-pomo-longbreak-text)' : 'var(--st-pomo-break-text)'
-))
-
-const accentSolid = computed(() => (
-  isLong.value ? 'var(--st-pomo-longbreak-track-fill)' : 'var(--st-pomo-break-track-fill)'
-))
-
-const breathOrbStyle = computed(() => ({
-  background: `radial-gradient(circle, ${isLong.value ? 'var(--st-pomo-longbreak-border)' : 'var(--st-pomo-break-border)'} 0%, transparent 72%)`,
-  animation: props.reduced ? 'none' : 'st-pomo-breath var(--st-pomo-breath-period) ease-in-out infinite',
-}))
-
-/** 呼吸节拍文字：4s 吸气 + 4s 屏息 + 6s 呼气 */
-type BreathStep = 'inhale' | 'hold' | 'exhale';
-const BREATH_CYCLE_MS = 14_000;
-const breathStep = ref<BreathStep>('inhale');
-let breathTimer: any = null;
-
-const breathLabel = computed(() => {
-  if (breathStep.value === 'inhale') return t('pomodoroBreathInhale')
-  if (breathStep.value === 'hold') return t('pomodoroBreathHold')
-  return t('pomodoroBreathExhale')
-})
-
-onMounted(() => {
-  if (props.reduced) return
-  const t0 = Date.now()
-  breathTimer = setInterval(() => {
-    const phase = (Date.now() - t0) % BREATH_CYCLE_MS
-    breathStep.value = phase < 4000 ? 'inhale' : phase < 8000 ? 'hold' : 'exhale'
+defineEmits<{ (e: 'skip'): void, (e: 'extend', minutes: number): void }>()
+const coachOpen = ref(false)
+const coachButton = ref<HTMLButtonElement | null>(null)
+const step = ref(0)
+let timer: ReturnType<typeof setInterval> | undefined
+const breathLabel = computed(() =>
+  t(
+    ['pomodoroBreathInhale', 'pomodoroBreathHold', 'pomodoroBreathExhale'][
+      step.value
+    ],
+  ),
+)
+function stopCoach() {
+  if (timer) clearInterval(timer)
+  timer = undefined
+}
+watch([coachOpen, () => props.reduced], ([open, reduced]) => {
+  stopCoach()
+  step.value = 0
+  if (!open || reduced) return
+  const started = Date.now()
+  timer = setInterval(() => {
+    const elapsed = (Date.now() - started) % 14000
+    step.value = elapsed < 4000 ? 0 : elapsed < 8000 ? 1 : 2
   }, 250)
 })
-
-onUnmounted(() => {
-  if (breathTimer) {
-    clearInterval(breathTimer)
-    breathTimer = null
-  }
-})
+onUnmounted(stopCoach)
+function closeExpanded(): boolean {
+  if (!coachOpen.value) return false
+  coachOpen.value = false
+  void nextTick(() => coachButton.value?.focus())
+  return true
+}
+defineExpose({ closeExpanded })
 </script>
+
+<style scoped>
+.pomo-break {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pomo-break__hint {
+  text-align: center;
+}
+.pomo-break__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pomo-breath {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.pomo-breath > span:nth-child(2) {
+  flex: 1;
+}
+.pomo-breath__orb {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--st-pomo-break-text);
+  background: var(--st-pomo-break-bg);
+  border-radius: 50%;
+}
+.pomo-breath__orb.is-breathing {
+  animation: st-pomo-breath 14s ease-in-out infinite;
+}
+</style>

@@ -1,144 +1,164 @@
 <template>
-  <div class="relative w-full h-full flex items-center justify-center">
-    <!-- 达成时的能量晶体微光光晕 -->
-    <div
-      v-if="isComplete"
-      class="absolute inset-4 rounded-full pointer-events-none st-pomo-anim"
-      :style="bloomStyle"
-      aria-hidden="true"
-    ></div>
-
+  <div
+    class="sandfall-dial"
+    aria-hidden="true"
+  >
     <svg
-      class="relative z-10 w-full h-full"
-      viewBox="0 0 120 120"
+      class="sandfall-svg"
       style="fill: none !important;"
-      aria-hidden="true"
+      viewBox="0 0 216 216"
+      focusable="false"
     >
-      <!-- 极简沙漏外框 -->
+      <!-- 中段留给时间与副标：轮廓和沙量都不穿过文字。 -->
       <path
-        d="M38 22 H82 C82 45, 68 55, 62 60 C68 65, 82 75, 82 98 H38 C38 75, 52 65, 58 60 C52 55, 38 45, 38 22 Z"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
         class="sand-frame"
+        d="M62 18 H154 L118 64 H98 Z M98 158 H118 L154 204 H62 Z"
       />
-
-      <!-- 上腔：倒计时收缩的沙丘 -->
-      <path :d="topSandPath" class="sand-top" />
-
-      <!-- 下腔：积蓄堆叠的知识晶体 -->
-      <path :d="bottomSandPath" class="sand-bottom" />
-
-      <!-- 颈部流淌的光子微流 -->
-      <line
-        v-if="isRunning"
-        x1="60"
-        y1="58"
-        x2="60"
-        y2="86"
-        :stroke="tint"
-        stroke-width="1.5"
-        stroke-dasharray="2 3"
-        class="sand-stream st-pomo-anim"
-      />
-
-      <!-- 凝滞态：沙流悬止的视觉提示 -->
-      <line
-        v-else-if="frozen"
-        x1="56"
-        y1="60"
-        x2="64"
-        y2="60"
-        stroke="var(--st-pomo-frozen-text)"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        class="st-pomo-anim"
-        style="animation: st-pomo-frozen-frost 2.4s ease-in-out infinite;"
-      />
-
-      <!-- 达成涟漪环 -->
-      <circle
-        v-if="isComplete"
-        cx="60"
-        cy="80"
-        r="12"
-        :stroke="tint"
-        stroke-width="1.5"
-        class="sand-bloom-ring st-pomo-anim"
-      />
+      <template v-if="!stopwatch">
+        <path
+          v-if="fraction < 1"
+          class="sand-fill sand-fill--top st-pomo-anim-soft"
+          :d="topSand.path"
+        />
+        <path
+          v-if="fraction > 0"
+          class="sand-fill sand-fill--bottom st-pomo-anim-soft"
+          :d="bottomSandPath"
+        />
+        <g
+          v-if="fraction < 1"
+          class="sand-cursor st-pomo-anim-soft"
+          :style="{
+            transform: `translate(${topSand.left}px, ${topSand.surface}px)`,
+          }"
+        >
+          <path
+            class="sand-tab"
+            d="M-2 -5 H2 Q3 -5 3 -4 V2 L0 4 L-3 2 V-4 Q-3 -5 -2 -5 Z"
+          />
+        </g>
+      </template>
     </svg>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { UiPhase } from '../../../utils/pomodoro';
+import type { UiPhase } from '../../../utils/pomodoro'
+import { computed } from 'vue'
 
-const props = defineProps<{
-  progress: number;
-  displayText?: string;
-  subtitle?: string;
-  uiPhase: UiPhase;
-  frozen: boolean;
-  heat: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    progress: number
+    displayText?: string
+    subtitle?: string
+    uiPhase: UiPhase
+    frozen: boolean
+    heat: number
+    isStopwatch?: boolean
+  }>(),
+  { isStopwatch: false },
+)
 
-const tint = 'var(--pomo-tint, var(--b3-theme-primary))';
-const isRunning = computed(() => props.uiPhase === 'focus' && !props.frozen);
-const isComplete = computed(() => (
-  props.progress >= 0.985 && props.uiPhase !== 'idle'
-));
+const stopwatch = computed(
+  () =>
+    props.isStopwatch
+    && props.uiPhase !== 'short-break'
+    && props.uiPhase !== 'long-break',
+)
+const fraction = computed(() =>
+  props.uiPhase === 'idle' || !Number.isFinite(props.progress)
+    ? 0
+    : Math.max(0, Math.min(1, props.progress)),
+)
 
-/** 上腔沙丘：随进度下降并收拢成漏斗颈 */
-const topSandPath = computed(() => {
-  const f = 1 - props.progress;
-  if (props.uiPhase === 'idle') {
-    return 'M42 25 H78 C78 43, 66 51, 60 56 C54 51, 42 43, 42 25 Z';
+// 两个等容积梯形腔。反解面积求沙面高度，保证上下沙量守恒，而非线性缩放装饰图。
+const height = 42
+const narrowHalf = 9
+const wideHalf = 44
+const slope = (wideHalf - narrowHalf) / height
+const capacity = (narrowHalf + wideHalf) * height
+
+const topSand = computed(() => {
+  const area = capacity * (1 - fraction.value)
+  const depth =
+    (Math.sqrt((2 * narrowHalf) ** 2 + 4 * slope * area) - 2 * narrowHalf)
+    / (2 * slope)
+  const half = narrowHalf + slope * depth
+  const surface = 62 - depth
+  const left = 108 - half
+  return {
+    left,
+    surface,
+    path: `M${left} ${surface} H${108 + half} L117 62 H99 Z`,
   }
-  if (f <= 0.05) return 'M58 56 H62 Z';
-  const yTop = 25 + (1 - f) * 27;
-  const half = 18 - (1 - f) * 10;
-  return `M${60 - half} ${yTop} H${60 + half} C${60 + half} 48, 64 54, 60 56 C56 54, ${60 - half} 48, ${60 - half} ${yTop} Z`;
-});
+})
 
-/** 下腔晶体：随进度堆积增高，收口成锥形结晶 */
 const bottomSandPath = computed(() => {
-  const f = Math.max(0.04, props.progress);
-  if (props.uiPhase === 'idle') return 'M42 95 H78 Z';
-  const yTop = 95 - f * 27;
-  const half = 18 - (1 - f) * 9;
-  return `M${60 - half} ${yTop} Q60 ${yTop - 4} ${60 + half} ${yTop} L${60 + half} 95 H${60 - half} Z`;
-});
-
-const bloomStyle = computed(() => ({
-  background: 'radial-gradient(circle, color-mix(in srgb, var(--pomo-tint, var(--b3-theme-primary)) 20%, transparent) 0%, transparent 72%)',
-  filter: 'blur(6px)',
-}));
+  const area = capacity * fraction.value
+  const depth =
+    (2 * wideHalf - Math.sqrt((2 * wideHalf) ** 2 - 4 * slope * area))
+    / (2 * slope)
+  const half = wideHalf - slope * depth
+  const surface = 202 - depth
+  return `M${108 - half} ${surface} H${108 + half} L152 202 H64 Z`
+})
 </script>
 
 <style scoped>
+.sandfall-dial,
+.sandfall-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sandfall-svg,
 .sand-frame {
-  color: color-mix(in srgb, var(--b3-theme-on-background) 22%, transparent);
+  fill: none !important;
 }
 
-.sand-top {
-  fill: color-mix(in srgb, var(--pomo-tint, var(--b3-theme-primary)) 32%, transparent);
-  transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1), fill 1.2s linear;
+.sand-frame {
+  stroke: var(
+    --st-pomo-track,
+    color-mix(in srgb, var(--b3-theme-on-background) 12%, transparent)
+  );
+  stroke-width: 1.5;
+  stroke-linejoin: round;
 }
 
-.sand-bottom {
-  fill: var(--pomo-tint, var(--b3-theme-primary));
-  filter: drop-shadow(0 -2px 7px color-mix(in srgb, var(--pomo-tint, var(--b3-theme-primary)) 45%, transparent));
-  transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1), fill 1.2s linear;
+.sand-fill {
+  stroke: none;
+  transition: d 240ms linear;
 }
 
-.sand-stream {
-  animation: st-pomo-sandfall 0.9s linear infinite;
+.sand-fill--top {
+  fill: color-mix(
+    in srgb,
+    var(--st-pomo-accent, var(--b3-theme-primary)) 24%,
+    transparent
+  );
 }
 
-.sand-bloom-ring {
-  transform-origin: 60px 80px;
-  animation: st-pomo-bloom var(--st-pomo-bloom-duration) cubic-bezier(0.16, 1, 0.3, 1) infinite;
+.sand-fill--bottom {
+  fill: color-mix(
+    in srgb,
+    var(--st-pomo-accent, var(--b3-theme-primary)) 48%,
+    transparent
+  );
+}
+
+.sand-cursor {
+  transition: transform 240ms linear;
+}
+
+.sand-tab {
+  fill: var(--st-pomo-accent, var(--b3-theme-primary));
+  stroke: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-pomo-anim-soft {
+    transition: none !important;
+  }
 }
 </style>

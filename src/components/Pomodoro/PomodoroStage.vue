@@ -1,279 +1,245 @@
 <template>
   <div
-    class="sy-pomo-stage st-pomo-heat-channel relative w-44 h-44 flex items-center justify-center select-none"
+    class="sy-pomo-stage"
     :data-pomo-phase="stagePhase"
     :data-pomo-motion="intensity"
-    :style="stageStyle"
+    :style="digitStyle"
     role="timer"
-    :aria-label="t('pomodoroAriaTimer', { time: displayText })"
-    @wheel.prevent="onWheel"
+    :aria-label="minuteAnnouncement"
   >
-    <!-- 无障碍播报：只在分钟粒度变化时宣告，避免逐秒刷屏 -->
-    <span class="sr-only" aria-live="polite" aria-atomic="true">
-      {{ t('pomodoroAriaTimer', { time: minuteAnnouncement }) }}
-    </span>
-    <!-- 环境粒尘（仅运行态，且尊重动效强度与系统偏好） -->
-    <div
-      v-if="dustCount > 0 && active"
-      class="absolute inset-0 pointer-events-none overflow-hidden rounded-full"
-      aria-hidden="true"
+    <span
+      class="stage-sr-only"
+      aria-live="polite"
+      aria-atomic="true"
     >
-      <span
-        v-for="dust in dusts"
-        :key="dust.i"
-        class="st-pomo-anim st-pomo-dust absolute rounded-full"
-        :style="dust.style"
-      ></span>
-    </div>
+      {{ minuteAnnouncement }}
+    </span>
 
-    <!-- 叙事载体：三种形态彻底差异化 -->
     <AuroraDial
       v-if="form === 'zen'"
-      class="relative z-10 w-full h-full"
+      class="stage-dial"
       :progress="progress"
       :ui-phase="uiPhase"
       :frozen="frozen"
       :heat="heat"
       :expressive="intensity === 'expressive'"
+      :is-stopwatch="stopwatch"
     />
     <ChronoDial
       v-else-if="form === 'chrono'"
-      class="relative z-10 w-full h-full"
+      class="stage-dial"
       :progress="progress"
       :ui-phase="uiPhase"
       :frozen="frozen"
       :heat="heat"
+      :is-stopwatch="stopwatch"
     />
     <SandfallDial
       v-else
-      class="relative z-10 w-full h-full"
+      class="stage-dial"
       :progress="progress"
       :ui-phase="uiPhase"
       :frozen="frozen"
       :heat="heat"
+      :is-stopwatch="stopwatch"
     />
 
-    <!-- 中心数字与副标：三种形态共用同一套升维排版 -->
-    <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none select-text">
-      <span
-        class="font-tabular font-black leading-none tracking-[-0.02em] transition-colors"
-        :style="{
-          fontSize: '56px', color: textColor,
-        }"
-      >
-        {{ displayText }}
-      </span>
-      <span
-        class="text-xs mt-1.5 font-medium transition-opacity"
-        :style="{ color: subColor }"
-      >
-        {{ subtitle }}
-      </span>
+    <!-- 秒级视觉更新不进入读屏；三个载体共用同一数字层。 -->
+    <div
+      class="stage-face"
+      aria-hidden="true"
+    >
+      <span class="stage-time">{{ displayText }}</span>
+      <span class="stage-subtitle">{{ subtitle }}</span>
     </div>
 
-    <!-- 无障碍：不可见的进度条语义节点 -->
     <div
-      class="sr-only"
+      v-if="!stopwatch"
+      class="stage-sr-only"
       role="progressbar"
-      :aria-valuenow="Math.round(progress * 100)"
+      :aria-valuenow="percent"
       aria-valuemin="0"
       aria-valuemax="100"
       :aria-label="t('pomodoroFocusRingAria')"
     >
-      {{ t('pomodoroAriaProgress', { percent: Math.round(progress * 100) }) }}
+      {{ t('pomodoroAriaProgress', { percent }) }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { UiPhase } from '../../utils/pomodoro';
-import type { PomodoroFormKey } from './composables/forms';
-import { computed } from 'vue';
-import { t } from '../../i18n';
-import AuroraDial from './dials/AuroraDial.vue';
-import ChronoDial from './dials/ChronoDial.vue';
-import SandfallDial from './dials/SandfallDial.vue';
+import type { UiPhase } from '../../utils/pomodoro'
+import type { PomodoroFormKey } from './composables/forms'
+import { computed } from 'vue'
+import { t } from '../../i18n'
+import AuroraDial from './dials/AuroraDial.vue'
+import ChronoDial from './dials/ChronoDial.vue'
+import SandfallDial from './dials/SandfallDial.vue'
 
-const props = defineProps<{
-  form: PomodoroFormKey
-  uiPhase: UiPhase
-  progress: number
-  displayText: string
-  subtitle: string
-  heat: number
-  frozen: boolean
-  intensity: 'calm' | 'expressive'
-  allowAmbient: boolean
-  wheelEnabled: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    form: PomodoroFormKey
+    uiPhase: UiPhase
+    progress: number
+    displayText: string
+    subtitle: string
+    heat: number
+    frozen: boolean
+    intensity: 'calm' | 'expressive'
+    allowAmbient: boolean
+    wheelEnabled: boolean
+    isStopwatch?: boolean
+  }>(),
+  { isStopwatch: false },
+)
 
-const emit = defineEmits<{ (e: 'wheelAdjust', delta: number): void }>();
+// 保留调用契约，但表盘不再拦截滚轮或负责调时。
+defineEmits<{ (e: 'wheelAdjust', delta: number): void }>()
 
-/** 冻结态对外改用独立相位，走凝滞配色 */
-const stagePhase = computed(() => (props.frozen ? 'frozen' : props.uiPhase));
+const stagePhase = computed(() => (props.frozen ? 'frozen' : props.uiPhase))
+const stopwatch = computed(
+  () =>
+    props.isStopwatch
+    && props.uiPhase !== 'short-break'
+    && props.uiPhase !== 'long-break',
+)
+const percent = computed(() =>
+  Math.round(
+    (Number.isFinite(props.progress)
+      ? Math.max(0, Math.min(1, props.progress))
+      : 0) * 100,
+  ),
+)
 
-const active = computed(() => (
-  props.uiPhase === 'focus' || props.uiPhase === 'short-break' || props.uiPhase === 'long-break'
-))
-
-/** 主时间数字始终取语义文本色，绝不使用色温值，保证第三方主题下对比度 */
-const textColor = computed(() => {
-  if (props.frozen) return 'var(--st-pomo-frozen-text)'
-  return 'var(--b3-theme-on-background)'
-})
-
-/**
- * 无障碍播报粒度：只在分钟数变化时更新文本，避免逐秒向读屏软件刷屏
- */
+/** 所有相位统一分钟粒度；兼容 mm:ss（含 180:00）及 hh:mm:ss。 */
 const minuteAnnouncement = computed(() => {
-  if (props.uiPhase === 'idle' || props.uiPhase === 'focus') {
-    const tail = props.displayText.slice(-2);
-    // 只有整分（秒位为 00）时才给出新的播报值
-    return tail === '00' ? props.displayText : `${props.displayText.slice(0, -2)}00`;
-  }
-  return props.displayText;
-});
-
-const subColor = computed(() => {
-  if (props.frozen) return 'var(--st-pomo-frozen-text)'
-  if (props.uiPhase === 'short-break') return 'var(--st-pomo-break-text)'
-  if (props.uiPhase === 'long-break') return 'var(--st-pomo-longbreak-text)'
-  return 'var(--b3-theme-on-surface-light, var(--b3-theme-on-surface))'
+  const parts = props.displayText.trim().split(':').map(Number)
+  const seconds =
+    parts.length > 1
+    && parts.every((value) => Number.isFinite(value) && value >= 0)
+      ? parts.reduce((total, part) => total * 60 + part, 0)
+      : 0
+  const minutes = stopwatch.value
+    ? Math.floor(seconds / 60)
+    : Math.ceil(seconds / 60)
+  return t(
+    stopwatch.value
+      ? 'pomodoroAriaElapsedMinutes'
+      : 'pomodoroAriaRemainingMinutes',
+    {
+      phase: props.subtitle,
+      minutes,
+    },
+  )
 })
 
-const stageStyle = computed(() => ({
-  '--pomo-heat': String(props.heat),
-}))
-
-// ---- 环境粒尘：构造时算一次随机量，避免每次 render 抖动 ----
-interface Dust {
-  i: number
-  style: Record<string, string>
-}
-
-const DUST_SEED: ReadonlyArray<{ x: number, dx: number, delay: number, dur: number, size: number }> = [
-  {
-    x: 18,
-    dx: 10,
-    delay: -2.0,
-    dur: 24,
-    size: 1.9,
-  },
-  {
-    x: 34,
-    dx: -8,
-    delay: -8.5,
-    dur: 29,
-    size: 2.4,
-  },
-  {
-    x: 52,
-    dx: 12,
-    delay: -14.0,
-    dur: 22,
-    size: 1.6,
-  },
-  {
-    x: 68,
-    dx: -14,
-    delay: -5.5,
-    dur: 31,
-    size: 2.7,
-  },
-  {
-    x: 84,
-    dx: 7,
-    delay: -19.5,
-    dur: 26,
-    size: 2.1,
-  },
-  {
-    x: 26,
-    dx: 16,
-    delay: -11.0,
-    dur: 34,
-    size: 1.5,
-  },
-  {
-    x: 44,
-    dx: -6,
-    delay: -23.0,
-    dur: 25,
-    size: 2.3,
-  },
-  {
-    x: 60,
-    dx: 9,
-    delay: -16.5,
-    dur: 28,
-    size: 1.8,
-  },
-  {
-    x: 76,
-    dx: -11,
-    delay: -3.5,
-    dur: 32,
-    size: 2.5,
-  },
-  {
-    x: 12,
-    dx: 13,
-    delay: -27.0,
-    dur: 23,
-    size: 1.7,
-  },
-  {
-    x: 92,
-    dx: -9,
-    delay: -9.0,
-    dur: 30,
-    size: 2.2,
-  },
-  {
-    x: 38,
-    dx: 15,
-    delay: -21.5,
-    dur: 27,
-    size: 1.4,
-  },
-  {
-    x: 56,
-    dx: -13,
-    delay: -6.0,
-    dur: 33,
-    size: 2.6,
-  },
-  {
-    x: 72,
-    dx: 8,
-    delay: -25.5,
-    dur: 24,
-    size: 1.9,
-  },
-]
-
-const dustCount = computed(() => (props.allowAmbient && props.intensity === 'expressive' ? DUST_SEED.length : 0));
-
-const dusts = computed<Dust[]>(() => {
-  if (dustCount.value === 0) return [];
-  return DUST_SEED.map((d, i) => ({
-    i,
-    style: {
-      "left": `${d.x}%`,
-      "bottom": '10%',
-      "width": 'var(--st-pomo-dust-size)',
-      "height": 'var(--st-pomo-dust-size)',
-      "background": 'var(--pomo-tint, var(--b3-theme-primary))',
-      '--pomo-dx': `${d.dx}px`,
-      "animation": `st-pomo-dust-rise ${d.dur}s linear ${d.delay}s infinite`,
-    } as Record<string, string>,
-  }));
-});
-
-// ---- 滚轮微调：仅待机态生效 ----
-const onWheel = (e: WheelEvent) => {
-  if (!props.wheelEnabled) return
-  if (props.uiPhase !== 'idle') return
-  emit('wheelAdjust', e.deltaY < 0 ? -1 : 1)
-}
+/** 常规时间 64px；长分钟串按字符数和表盘可用宽度缩小，不挤压轨道。 */
+const digitStyle = computed(() => {
+  const length = Math.max(5, props.displayText.length)
+  return {
+    '--stage-digit-size': `${Math.min(64, 186 / (length * 0.58))}px`,
+    '--stage-digit-scale': `${Math.min(29.63, 86 / (length * 0.58))}cqi`,
+  }
+})
 </script>
+
+<style scoped>
+.sy-pomo-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(216px, 100%);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  min-width: 0;
+  margin-inline: auto;
+  container-type: inline-size;
+  color: var(--st-pomo-ink, var(--b3-theme-on-background));
+  user-select: none;
+}
+
+.sy-pomo-stage[data-pomo-phase='short-break'] {
+  --st-pomo-accent: var(--st-pomo-break-text, var(--b3-theme-primary));
+}
+
+.sy-pomo-stage[data-pomo-phase='long-break'] {
+  --st-pomo-accent: var(--st-pomo-longbreak-text, var(--b3-theme-primary));
+}
+
+.sy-pomo-stage[data-pomo-phase='frozen'] {
+  --st-pomo-accent: var(
+    --st-pomo-frozen-text,
+    var(--st-pomo-muted, var(--b3-theme-on-surface))
+  );
+}
+
+.stage-dial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.stage-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.stage-time {
+  max-width: 88%;
+  font-family: inherit;
+  font-size: var(--stage-digit-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@supports (font-size: 1cqi) {
+  .stage-time {
+    font-size: min(var(--stage-digit-size), var(--stage-digit-scale));
+  }
+}
+
+.stage-subtitle {
+  max-width: 76%;
+  overflow: hidden;
+  color: var(--st-pomo-muted, var(--b3-theme-on-surface));
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sy-pomo-stage[data-pomo-motion='calm'] :deep(.st-pomo-anim-soft) {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sy-pomo-stage :deep(.st-pomo-anim-soft) {
+    transition: none !important;
+  }
+}
+</style>

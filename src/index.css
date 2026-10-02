@@ -353,6 +353,79 @@ body[data-theme-mode="dark"],
   }
 }
 
+/* 番茄组件 Teleport 到 body，控件样式不能依赖 Vue 父级 scoped 选择器。 */
+.st-pomo-ui {
+  --st-pomo-ink: var(--b3-theme-on-background, #1d1d1f);
+  --st-pomo-surface: var(--b3-theme-background, #ffffff);
+  --st-pomo-muted: color-mix(in srgb, var(--st-pomo-ink) 72%, var(--st-pomo-surface));
+  --st-pomo-soft: color-mix(in srgb, var(--st-pomo-ink) 4%, var(--st-pomo-surface));
+  --st-pomo-track: color-mix(in srgb, var(--st-pomo-ink) 12%, var(--st-pomo-surface));
+  --st-pomo-line: color-mix(in srgb, var(--st-pomo-ink) 10%, var(--st-pomo-surface));
+  --st-pomo-accent: var(--b3-theme-primary, #c84c42);
+  --st-pomo-on-accent: var(--b3-theme-on-primary, #ffffff);
+  --st-pomo-radius: 12px;
+  color: var(--st-pomo-ink);
+  font-family: var(--b3-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.st-pomo-ui, .st-pomo-ui * { box-sizing: border-box; }
+.st-pomo-ui .st-pomo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--st-pomo-radius);
+  background: transparent;
+  color: var(--st-pomo-ink);
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color 120ms, color 120ms, transform 120ms;
+}
+.st-pomo-ui .st-pomo-button:hover { background: var(--st-pomo-soft); }
+.st-pomo-ui .st-pomo-button:active { transform: scale(.98); }
+.st-pomo-ui .st-pomo-button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.st-pomo-ui .st-pomo-button--primary {
+  min-height: 46px;
+  width: 100%;
+  background: var(--st-pomo-accent);
+  color: var(--st-pomo-on-accent);
+  font-weight: 600;
+}
+.st-pomo-ui .st-pomo-button--primary:hover {
+  background: color-mix(in srgb, var(--st-pomo-accent) 88%, var(--st-pomo-ink));
+}
+.st-pomo-ui .st-pomo-button--secondary { background: var(--st-pomo-soft); }
+.st-pomo-ui .st-pomo-button--quiet { color: var(--st-pomo-muted); font-size: 12px; }
+.st-pomo-ui .st-pomo-button--danger { color: var(--st-danger); }
+.st-pomo-ui :is(button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--st-pomo-accent);
+  outline-offset: 3px;
+}
+.st-pomo-ui .st-pomo-input {
+  width: 100%; min-width: 0; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--st-pomo-line); background: var(--st-pomo-surface);
+  color: var(--st-pomo-ink); font: inherit;
+}
+.st-pomo-ui .st-pomo-input::placeholder { color: var(--st-pomo-muted); opacity: 1; }
+.st-pomo-ui .st-pomo-inset {
+  padding: 12px; border-radius: 14px; background: var(--st-pomo-soft);
+}
+.st-pomo-ui .st-pomo-help { margin: 0; font-size: 12px; color: var(--st-pomo-muted); }
+.st-pomo-ui .st-pomo-error { margin: 0; font-size: 12px; color: var(--st-danger); }
+@media (pointer: coarse) {
+  .st-pomo-ui .st-pomo-button { min-height: 44px; }
+  .st-pomo-ui .st-pomo-input { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-pomo-ui .st-pomo-anim-soft { transition-duration: 1ms !important; }
+}
+
 @layer base {
   /* Reset default button styles inside dashboard to prevent host SiYuan theme interference */
   .time-spent-dashboard button {

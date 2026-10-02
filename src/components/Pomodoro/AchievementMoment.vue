@@ -1,124 +1,108 @@
 <template>
-  <Teleport to="body">
-    <div
-      v-if="visible && !reduced"
-      class="fixed inset-0 z-[10005] flex items-center justify-center p-6"
-      style="background: var(--st-surface-overlay, rgba(15, 23, 42, 0.55)); backdrop-filter: blur(4px);"
-      role="status"
-      aria-live="polite"
+  <div
+    v-if="visible"
+    class="pomo-completion st-pomo-inset st-pomo-anim-soft"
+    role="status"
+    aria-live="polite"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      style="fill: none !important"
+      stroke="currentColor"
+      stroke-width="1.75"
+      aria-hidden="true"
+    >
+      <template v-if="status === 'error'">
+        <circle
+          cx="12"
+          cy="12"
+          r="9"
+        />
+        <path d="M12 7v6m0 3v1" />
+      </template>
+      <template v-else>
+        <path d="M6 3h12v18l-6-4-6 4z" />
+        <path
+          v-if="status === 'saved'"
+          d="m9 10 2 2 4-4"
+        />
+      </template>
+    </svg>
+    <div>
+      <strong>{{
+        t(
+          status === 'error'
+            ? 'pomodoroRecordFailed'
+            : 'pomodoroSessionComplete',
+        )
+      }}</strong>
+      <p class="st-pomo-help">
+        {{ message }}
+      </p>
+    </div>
+    <button
+      type="button"
+      class="st-pomo-button st-pomo-button--quiet"
+      :aria-label="t('pomodoroDismiss')"
       @click="$emit('done')"
     >
-      <div
-        class="st-pomo-anim relative flex flex-col items-center gap-2 px-8 py-7 rounded-3xl text-center"
-        :style="cardStyle"
-        :class="closing ? 'st-pomo-moment-out' : 'st-pomo-moment-in'"
-      >
-        <!-- 达成迸发涟漪 -->
-        <span
-          class="st-pomo-anim absolute inset-0 rounded-3xl pointer-events-none"
-          :style="bloomStyle"
-          aria-hidden="true"
-        ></span>
-
-        <span
-          class="relative w-12 h-12 rounded-full flex items-center justify-center"
-          :style="orbStyle"
-          aria-hidden="true"
-        >
-          <svg
-            class="w-6 h-6"
-            style="fill: none !important;"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2.2"
-          >
-            <polyline
-              points="20 6 9 17 4 12"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </span>
-
-        <span
-          class="relative text-sm font-black tracking-wide"
-          style="color: var(--st-text-primary);"
-        >
-          {{ t('pomodoroMomentTitle') }}
-        </span>
-        <span
-          class="relative text-xs font-medium"
-          style="color: var(--st-text-secondary);"
-        >
-          {{ t('pomodoroMomentSub', {
-            min: minutes, n: cycleCompleted, total: cycleSize,
-          }) }}
-        </span>
-        <span
-          v-if="cycleComplete"
-          class="relative text-xs font-bold"
-          style="color: var(--st-pomo-longbreak-text);"
-        >
-          {{ t('pomodoroLongBreakTitle') }}
-        </span>
-      </div>
-    </div>
-  </Teleport>
+      ×
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { t } from '../../i18n';
+import { computed } from 'vue'
+import {
+  formatDurationI18n,
+  t,
+} from '../../i18n'
 
 const props = defineProps<{
   visible: boolean
   minutes: number
-  cycleCompleted: number
-  cycleSize: number
-  cycleComplete: boolean
-  reduced: boolean
+  status: 'saving' | 'saved' | 'error' | 'ignored' | null
 }>()
-
-const emit = defineEmits<{ (e: 'done'): void }>();
-
-const closing = ref(false);
-let hideTimer: any = null;
-
-watch(() => props.visible, (v) => {
-  if (hideTimer) {
-    clearTimeout(hideTimer)
-    hideTimer = null
+defineEmits<{ (e: 'done'): void }>()
+const message = computed(() => {
+  if (props.status === 'error') return t('pomodoroRecordFailedHint')
+  if (props.status === 'saving') return t('pomodoroRecordSaving')
+  if (props.status === 'saved') {
+    return t('pomodoroRecordSaved', {
+      time: formatDurationI18n(props.minutes * 60),
+    })
   }
-  if (!v) {
-    closing.value = false
-    return
-  }
-  closing.value = false
-  // 2 秒后自动消散，不打断后续操作
-  hideTimer = setTimeout(() => {
-    closing.value = true
-    hideTimer = setTimeout(() => {
-      closing.value = false
-      emit('done')
-    }, 400)
-  }, 2000)
+  if (props.status === 'ignored') return t('pomodoroRecordTooShort')
+  return t('pomodoroRestHint')
 })
-
-
-const cardStyle = computed(() => ({
-  background: 'color-mix(in srgb, var(--st-bg-elevated) 96%, transparent)',
-  border: '1px solid var(--st-pomo-active-border)',
-  boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.45)',
-}))
-
-const orbStyle = computed(() => ({
-  background: 'var(--st-pomo-active-bg)',
-  color: 'var(--st-pomo-active-text)',
-  boxShadow: '0 0 24px color-mix(in srgb, var(--st-pomo-active-text) 35%, transparent)',
-}))
-
-const bloomStyle = computed(() => ({
-  animation: 'st-pomo-bloom var(--st-pomo-bloom-duration) cubic-bezier(0.16, 1, 0.3, 1) 1',
-  background: 'radial-gradient(circle, color-mix(in srgb, var(--st-pomo-active-text) 22%, transparent) 0%, transparent 70%)',
-}))
 </script>
+
+<style scoped>
+.pomo-completion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pomo-completion > svg {
+  width: 23px;
+  height: 23px;
+  flex-shrink: 0;
+  color: var(--st-pomo-accent);
+}
+.pomo-completion > div {
+  flex: 1;
+  min-width: 0;
+}
+.pomo-completion strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pomo-completion p {
+  margin-top: 2px;
+}
+.pomo-completion > button {
+  padding: 4px 8px;
+  font-size: 20px;
+}
+</style>

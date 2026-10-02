@@ -1,95 +1,161 @@
 <template>
-  <div
-    class="flex items-center justify-center gap-1.5"
-    :aria-label="`${t('pomodoroCycleProgress', {
-      n: completed, total: size,
-    })}`"
-  >
-    <span
-      v-for="i in size"
-      :key="i"
-      class="relative flex items-center justify-center"
-      :class="i === size ? '' : 'after:content-[\'\'] after:w-2 after:h-px after:mx-0.5 after:bg-current after:opacity-20'"
-      :style="slotStyle(i)"
-      :title="slotTitle(i)"
+  <div class="cycle-rail">
+    <div
+      class="cycle-row"
+      aria-hidden="true"
     >
-      <!-- 番茄位：实心=已完成，呼吸光环=下一个，空轨=待完成 -->
-      <svg
-        class="w-3 h-3"
-        style="fill: none !important;"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-        aria-hidden="true"
-      >
-        <circle
-          cx="12"
-          cy="12"
-          r="8.5"
-          :fill="i <= completed ? 'currentColor' : 'none'"
-        />
-        <path
-          v-if="i <= completed"
-          d="M8.5 12.2l2.4 2.4 4.6-4.8"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          style="stroke: var(--b3-theme-surface);"
-        />
-      </svg>
-    </span>
-    <!-- 语义播报：图形本身 aria-hidden，改由文本承担 -->
+      <span class="cycle-summary">{{ summary }}</span>
+      <span class="cycle-dots">
+        <span
+          v-for="i in total"
+          :key="i"
+          class="cycle-dot"
+          :class="{
+            'cycle-dot--done': i <= done,
+            'cycle-dot--active': active && i === done + 1,
+          }"
+        ></span>
+      </span>
+      <span
+        v-if="hint"
+        class="cycle-hint"
+      >{{ hint }}</span>
+    </div>
     <span
-      class="sr-only"
+      class="cycle-sr-only"
       aria-live="polite"
+      aria-atomic="true"
     >
-      {{ t('pomodoroAriaCycle', {
-        n: completed, total: size,
-      }) }}
+      {{ announcement }}
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { t } from '../../i18n';
+import { computed } from 'vue'
+import { t } from '../../i18n'
 
-const props = defineProps<{
-  completed: number
-  size: number
-  /** 满轮后下一次即为长休息 */
-  longBreakNext: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    completed: number
+    size: number
+    /** 满轮后下一次即为长休息。 */
+    longBreakNext: boolean
+    /** 仅实际专注中传 true；待机、暂停和休息不暗示轮次正在运行。 */
+    active?: boolean
+  }>(),
+  { active: false },
+)
 
-const slotState = (i: number) => {
-  if (i <= props.completed) return 'done' as const
-  if (i === props.completed + 1) return 'next' as const
-  return 'todo' as const
-}
-
-const slotColor = computed(() => {
-  if (props.longBreakNext) return 'var(--st-pomo-longbreak-text)'
-  return 'var(--st-pomo-active-text)'
-})
-
-const slotStyle = (i: number) => {
-  const st = slotState(i)
-  if (st === 'done') return { color: slotColor.value }
-  if (st === 'next') {
-    return {
-      color: slotColor.value,
-      animation: 'st-pomo-frozen-frost 2.4s ease-in-out infinite',
-      opacity: '0.9',
-    }
+const total = computed(() =>
+  Number.isFinite(props.size) ? Math.max(0, Math.floor(props.size)) : 0,
+)
+const done = computed(() =>
+  Number.isFinite(props.completed)
+    ? Math.max(0, Math.min(total.value, Math.floor(props.completed)))
+    : 0,
+)
+const summary = computed(() =>
+  t('pomodoroCycleCompletedSummary', {
+    n: done.value,
+    total: total.value,
+  }),
+)
+const hint = computed(() => {
+  if (props.active && done.value < total.value) {
+    return t('pomodoroCycleRunning', { n: done.value + 1 })
   }
-  return { color: 'color-mix(in srgb, var(--b3-theme-on-background) 22%, transparent)' }
-}
-
-const slotTitle = (i: number) => {
-  const st = slotState(i)
-  if (st === 'done') return t('pomodoroCycleSlotDone')
-  if (st === 'next') return t('pomodoroCycleSlotNext')
-  return t('pomodoroCycleSlotTodo')
-}
-
+  if (props.longBreakNext) return t('pomodoroCycleLongBreakNext')
+  if (done.value < total.value)
+    return t('pomodoroCycleUpNext', { n: done.value + 1 })
+  return ''
+})
+const announcement = computed(() =>
+  [summary.value, hint.value].filter(Boolean).join(' · '),
+)
 </script>
+
+<style scoped>
+.cycle-rail {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.cycle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 20px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.cycle-summary {
+  flex-shrink: 0;
+  color: var(--st-pomo-ink, var(--b3-theme-on-background));
+  font-variant-numeric: tabular-nums;
+}
+
+.cycle-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px;
+  overflow: hidden;
+}
+
+.cycle-dot {
+  box-sizing: border-box;
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border: 1px solid
+    var(
+      --st-pomo-track,
+      color-mix(in srgb, var(--b3-theme-on-background) 18%, transparent)
+    );
+  border-radius: 50%;
+}
+
+.cycle-dot--done {
+  border-color: var(--st-pomo-accent, var(--b3-theme-primary));
+  background: var(--st-pomo-accent, var(--b3-theme-primary));
+}
+
+.cycle-dot--active {
+  border-color: var(--st-pomo-accent, var(--b3-theme-primary));
+  outline: 1px solid var(--st-pomo-accent, var(--b3-theme-primary));
+  outline-offset: 2px;
+}
+
+.cycle-hint {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--st-pomo-muted, var(--b3-theme-on-surface));
+  text-overflow: ellipsis;
+}
+
+@container (max-width: 300px) {
+  .cycle-hint {
+    display: none;
+  }
+}
+
+.cycle-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>

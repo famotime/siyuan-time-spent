@@ -1,20 +1,20 @@
 <template>
-  <div class="sy-status-timer-root relative inline-flex items-center text-xs select-none">
-    <!-- 常驻状态栏灵动微胶囊 (Ambient Micro-Capsule) -->
+  <div class="sy-status-timer-root">
     <FocusCapsule
-      :ref="(el: any) => (anchorEl = el?.$el ?? el ?? null)"
+      :ref="setAnchor"
       :view="view"
+      :is-open="isOpen"
+      :intensity="intensity"
+      :notice="isOpen ? '' : capsuleNotice"
       @toggle="togglePopover"
     />
-
-    <!-- 弹出的番茄钟微控制面板 (Focus Popover) -->
     <FocusPanel
-      :plugin="plugin"
+      ref="panel"
       :pomodoro="pomodoro"
       :view="view"
       :anchor-el="anchorEl"
       :is-open="isOpen"
-      :active-form="currentThemeStyle"
+      :active-form="currentForm"
       :intensity="intensity"
       :allow-ambient="allowAmbient"
       :reduced="reduced"
@@ -23,44 +23,40 @@
       :smart-enabled="smartEnabled"
       :recommendation="recommendation"
       :note-draft="noteDraft"
-      :confirming-discard="isConfirmingDiscard"
+      :confirming-discard="confirmingDiscard"
       :presets="presets"
+      :today="todayView"
+      :completion-visible="completionVisible"
+      :completion-minutes="completionMinutes"
+      :record-status="recordStatus"
+      :appearance-error="appearanceError"
       @close="closePopover"
-      @switchForm="switchThemeStyle"
+      @switchForm="switchForm"
       @update:preferredMinutes="onMinutes"
-      @update:preferStopwatch="onStopwatchMode"
-      @adjustMinutes="adjustMinutes"
+      @update:preferStopwatch="pomodoro.preferStopwatch.value = $event"
       @start="handleStart"
-      @pause="onPause"
-      @resume="onResume"
-      @finish="onFinish"
-      @confirmDiscard="doDiscard"
-      @update:confirmingDiscard="onConfirmingDiscard"
-      @update:noteDraft="onNoteDraft"
+      @pause="pomodoro.pause()"
+      @resume="pomodoro.resume()"
+      @finish="pomodoro.finishEarly()"
+      @confirmDiscard="discard"
+      @update:confirmingDiscard="confirmingDiscard = $event"
+      @update:noteDraft="noteDraft = $event"
       @saveNote="saveNote"
-      @skipNote="skipNote"
+      @skipNote="noteDraft = ''"
       @dismissAfk="pomodoro.dismissAfkReturn()"
       @skipBreak="pomodoro.skipBreak()"
       @extendBreak="pomodoro.extendBreak($event)"
       @openDashboard="openDashboard"
-    />
-
-    <!-- 达成微时刻：整颗番茄落袋的仪式反馈 -->
-    <AchievementMoment
-      :visible="momentVisible"
-      :minutes="momentMinutes"
-      :cycle-completed="pomodoro.cycleCompleted.value"
-      :cycle-size="pomodoro.cycleSize.value"
-      :cycle-complete="momentCycleComplete"
-      :reduced="!allowMoment"
-      @done="onMomentDone"
+      @refreshToday="today.refresh()"
+      @dismissCompletion="dismissCompletion"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import type TimeSpentPlugin from '../../index';
-import type { PomodoroManager } from '../../utils/pomodoro';
+import type TimeSpentPlugin from '../../index'
+import type { PomodoroManager } from '../../utils/pomodoro'
+import type { PomodoroFormKey } from './composables/forms'
 import {
   computed,
   nextTick,
@@ -69,222 +65,265 @@ import {
   ref,
   watch,
 } from 'vue'
-import AchievementMoment from './AchievementMoment.vue';
-import { usePomodoroPresenter } from './composables/usePomodoroPresenter';
-import { usePomodoroShortcuts } from './composables/usePomodoroShortcuts';
-import { useReducedMotion } from './composables/useReducedMotion';
-import { POMODORO_PRESETS, useSmartDuration } from './composables/useSmartDuration';
-import FocusCapsule from './FocusCapsule.vue';
-import FocusPanel from './FocusPanel.vue';
+import { t } from '../../i18n'
+import { fetchDocTitle } from '../../utils/title-cache'
+import { usePomodoroPresenter } from './composables/usePomodoroPresenter'
+import { usePomodoroShortcuts } from './composables/usePomodoroShortcuts'
+import { useReducedMotion } from './composables/useReducedMotion'
+import {
+  POMODORO_PRESETS,
+  useSmartDuration,
+} from './composables/useSmartDuration'
+import { useTodayFocus } from './composables/useTodayFocus'
+import FocusCapsule from './FocusCapsule.vue'
+import FocusPanel from './FocusPanel.vue'
 
 const props = defineProps<{
   plugin: TimeSpentPlugin
   pomodoro: PomodoroManager
 }>()
-
-const anchorEl = ref<HTMLElement | null>(null);
-const isOpen = ref(false);
-const isConfirmingDiscard = ref(false);
-const noteDraft = ref('');
-
-// 当前交互形态风格：zen | chrono | hourglass（枚举值保持原样，仅展示标签更新）
-type FormKey = 'zen' | 'chrono' | 'hourglass';
-const currentThemeStyle = ref<FormKey>(props.plugin.settings?.pomodoroThemeStyle || 'zen');
-
-const presets = POMODORO_PRESETS;
-
-/**
- * plugin.settings 是普通对象，写入不会触发响应式。
- * 用版本号强制依赖配置的 computed 在热更新时重算。
- */
-const settingsVersion = ref(0);
+const anchorEl = ref<HTMLElement | null>(null)
+const panel = ref<{
+  closeExpanded: () => boolean
+  contains: (target: Node | null) => boolean
+} | null>(null)
+const isOpen = ref(false)
+const confirmingDiscard = ref(false)
+const noteDraft = ref('')
+const upcomingDocId = ref<string | null>(null)
+const currentForm = ref<PomodoroFormKey>(
+  props.plugin.settings?.pomodoroThemeStyle || 'zen',
+)
+const appearanceError = ref('')
+const presets = POMODORO_PRESETS
+const settingsVersion = ref(0)
 const settings = () => {
-  void settingsVersion.value;
-  return props.plugin.settings;
-};
-const motion = useReducedMotion(settings);
-const intensity = motion.intensity;
-const allowAmbient = motion.allowAmbient;
-const allowMoment = motion.allowMoment;
-const reduced = motion.reduced;
-
+  void settingsVersion.value
+  return props.plugin.settings
+}
+const {
+  intensity,
+  allowAmbient,
+  reduced,
+} = useReducedMotion(settings)
+const smartEnabled = computed(() => settings()?.pomodoroSmartDuration !== false)
+const interruptionEnabled = computed(
+  () => settings()?.pomodoroInterruptionLog !== false,
+)
+const wheelEnabled = computed(() => settings()?.pomodoroWheelAdjust !== false)
+const shortcutEnabled = computed(() => settings()?.pomodoroShortcut !== false)
 const view = usePomodoroPresenter(
   props.pomodoro,
   props.plugin,
-  computed(() => props.pomodoro.preferredMinutes.value),
-  computed(() => props.pomodoro.preferStopwatch.value),
+  props.pomodoro.preferredMinutes,
+  props.pomodoro.preferStopwatch,
+  upcomingDocId,
 )
-
-const smartEnabled = computed(() => settings()?.pomodoroSmartDuration !== false);
-const interruptionEnabled = computed(() => settings()?.pomodoroInterruptionLog !== false);
-const wheelEnabled = computed(() => settings()?.pomodoroWheelAdjust !== false);
-const shortcutEnabled = computed(() => settings()?.pomodoroShortcut !== false);
-
-const smart = useSmartDuration(props.pomodoro, () => props.plugin.storageManager?.loadTodayLogs() ?? Promise.resolve([]));
-const recommendation = computed(() => (smartEnabled.value ? smart.recommendation.value : null));
-
-// ---- 会话意向：直接读写 Manager，供胶囊、表盘预览与快捷键共用 ----
-const onMinutes = (v: number) => {
-  props.pomodoro.preferredMinutes.value = Math.max(1, Math.min(180, v))
-}
-
-const onStopwatchMode = (v: boolean) => {
-  props.pomodoro.preferStopwatch.value = v
-}
-
-const adjustMinutes = (delta: number) => {
-  const cur = props.pomodoro.preferredMinutes.value || 25
-  onMinutes(cur + delta)
-}
-
-const switchThemeStyle = async (skin: FormKey) => {
-  currentThemeStyle.value = skin
-  if (props.plugin.settings) {
-    props.plugin.settings.pomodoroThemeStyle = skin
-    await props.plugin.saveSettings()
-  }
-}
-
-// 监听全局设置变更热更新
-const onSettingsChanged = (e: Event) => {
-  settingsVersion.value += 1
-  const detail = (e as CustomEvent).detail
-  if (detail?.pomodoroThemeStyle) {
-    currentThemeStyle.value = detail.pomodoroThemeStyle
-  }
-  if (detail?.pomodoroWorkMinutes && props.pomodoro.state.value === 'idle') {
-    props.pomodoro.preferredMinutes.value = detail.pomodoroWorkMinutes
-  }
-  if (detail?.pomodoroCycleSize) {
-    props.pomodoro.setCycleSize(detail.pomodoroCycleSize)
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('siyuan-time-spent:pomodoro-config-changed', onSettingsChanged)
-  smart.refresh()
+const smart = useSmartDuration(
+  props.pomodoro,
+  () => props.plugin.storageManager?.loadTodayLogs() ?? Promise.resolve([]),
+)
+const recommendation = computed(() =>
+  smartEnabled.value ? smart.recommendation.value : null,
+)
+const today = useTodayFocus((date) => {
+  if (!props.plugin.storageManager)
+    return Promise.reject(new Error('Storage unavailable'))
+  return props.plugin.storageManager.loadLogsForDate(date, { strict: true })
 })
+const todayView = computed(() => ({
+  status: today.status.value,
+  count: today.count.value,
+  durationSeconds: today.durationSeconds.value,
+  stale: today.stale.value,
+}))
+const recordStatus = computed(
+  () => props.pomodoro.lastRecord.value?.status ?? null,
+)
+const completionMinutes = computed(
+  () => (props.pomodoro.lastRecord.value?.durationSeconds ?? 0) / 60,
+)
+const completionVisible = ref(false)
+const capsuleNotice = ref('')
+let noticeTimer: ReturnType<typeof setTimeout> | undefined
+let midnightTimer: ReturnType<typeof setTimeout> | undefined
+let formSave: Promise<void> = Promise.resolve()
 
-onUnmounted(() => {
-  window.removeEventListener('siyuan-time-spent:pomodoro-config-changed', onSettingsChanged)
-})
-
-// ---- 达成微时刻 ----
-const momentVisible = ref(false);
-const momentMinutes = ref(0);
-const momentCycleComplete = ref(false);
-const lastSeenCompletion = ref(0);
-
-// 由 lastCompletion 变化驱动一次仪式反馈
-function checkCompletion() {
-  const c = props.pomodoro.lastCompletion.value
-  if (!c || c.at === lastSeenCompletion.value) return
-  lastSeenCompletion.value = c.at
-  if (!allowMoment.value || settings()?.pomodoroAchievementMoment === false) return
-  momentMinutes.value = c.minutes
-  momentCycleComplete.value = c.cycleDone
-  momentVisible.value = true
+function setAnchor(element: unknown) {
+  anchorEl.value = (element as { $el?: HTMLElement } | null)?.$el ?? null
 }
-
-watch(() => props.pomodoro.lastCompletion.value, checkCompletion);
-
-const onMomentDone = () => {
-  momentVisible.value = false
+function refreshNote() {
+  if (props.pomodoro.state.value !== 'idle') return
+  const id = props.plugin.timeTracker?.getCurrentDocId() || null
+  upcomingDocId.value = id
+  if (id) void fetchDocTitle(id).catch(() => undefined)
 }
-
-// ---- 面板开关 ----
-const closePopover = () => {
+function refreshData() {
+  refreshNote()
+  void today.refresh()
+  if (smartEnabled.value) void smart.refresh()
+}
+function scheduleMidnight() {
+  if (midnightTimer) clearTimeout(midnightTimer)
+  if (!isOpen.value) return
+  const next = new Date()
+  next.setHours(24, 0, 0, 50)
+  midnightTimer = setTimeout(() => {
+    refreshData()
+    scheduleMidnight()
+  }, next.getTime() - Date.now())
+}
+function onVisibilityChange() {
+  if (!document.hidden && isOpen.value) {
+    refreshData()
+    scheduleMidnight()
+  }
+}
+function onMinutes(value: number) {
+  if (!Number.isFinite(value)) return
+  props.pomodoro.preferredMinutes.value = Math.max(
+    1,
+    Math.min(180, Math.round(value)),
+  )
+}
+function closePopover(restoreFocus = true) {
   isOpen.value = false
-  isConfirmingDiscard.value = false
+  confirmingDiscard.value = false
+  if (midnightTimer) clearTimeout(midnightTimer)
+  if (restoreFocus)
+    void nextTick(() => anchorEl.value?.focus({ preventScroll: true }))
 }
-
-const togglePopover = () => {
-  if (isOpen.value) {
-    closePopover()
-    return
-  }
+function togglePopover() {
+  if (isOpen.value) return closePopover()
   isOpen.value = true
-  isConfirmingDiscard.value = false
-  // 打开时刷新今日投入，让推荐时长基于最新数据
-  void smart.refresh()
-  void nextTick()
+  confirmingDiscard.value = false
+  refreshData()
+  scheduleMidnight()
 }
-
-// ---- 操作转发 ----
-const handleStart = () => {
+function handleStart() {
+  refreshNote()
+  noteDraft.value = ''
   if (props.pomodoro.preferStopwatch.value) {
-    props.pomodoro.startStopwatch()
-  } else {
-    props.pomodoro.start(props.pomodoro.preferredMinutes.value || 25)
+    props.pomodoro.startStopwatch(upcomingDocId.value ?? undefined)
+  }
+  else {
+    props.pomodoro.start(
+      props.pomodoro.preferredMinutes.value,
+      upcomingDocId.value ?? undefined,
+    )
   }
 }
-
-const onPause = () => props.pomodoro.pause();
-const onResume = () => props.pomodoro.resume();
-const onFinish = () => props.pomodoro.finishEarly();
-const onConfirmingDiscard = (v: boolean) => {
-  isConfirmingDiscard.value = v
-}
-const doDiscard = () => {
+function discard() {
   props.pomodoro.discard()
-  isConfirmingDiscard.value = false
-}
-
-const onNoteDraft = (v: string) => {
-  noteDraft.value = v
-}
-const saveNote = () => {
-  if (noteDraft.value.trim()) {
-    props.pomodoro.recordInterruption(noteDraft.value)
-  }
+  confirmingDiscard.value = false
   noteDraft.value = ''
 }
-const skipNote = () => {
+function saveNote() {
+  if (!noteDraft.value.trim()) return
+  props.pomodoro.recordInterruption(noteDraft.value)
   noteDraft.value = ''
 }
-
-const openDashboard = () => {
-  closePopover()
+function dismissCompletion() {
+  completionVisible.value = false
+  capsuleNotice.value = ''
+}
+function openDashboard() {
+  closePopover(false)
   props.plugin.openDashboard()
 }
-
-// ---- 键盘驱动 ----
+function switchForm(form: PomodoroFormKey) {
+  const previous = currentForm.value
+  currentForm.value = form
+  appearanceError.value = ''
+  props.plugin.settings.pomodoroThemeStyle = form
+  formSave = formSave
+    .then(() => props.plugin.saveSettings())
+    .catch(() => {
+      if (currentForm.value === form) {
+        currentForm.value = previous
+        props.plugin.settings.pomodoroThemeStyle = previous
+        appearanceError.value = t('pomodoroAppearanceError')
+      }
+    })
+}
+function onSettingsChanged() {
+  settingsVersion.value += 1
+  const config = props.plugin.settings
+  if (config.pomodoroThemeStyle) currentForm.value = config.pomodoroThemeStyle
+  if (config.pomodoroWorkMinutes && props.pomodoro.state.value === 'idle')
+    onMinutes(config.pomodoroWorkMinutes)
+  if (config.pomodoroCycleSize)
+    props.pomodoro.setCycleSize(config.pomodoroCycleSize)
+}
+watch(
+  () => [props.pomodoro.lastRecord.value?.id, recordStatus.value],
+  () => {
+    const record = props.pomodoro.lastRecord.value
+    if (noticeTimer) clearTimeout(noticeTimer)
+    if (!record) {
+      dismissCompletion()
+      return
+    }
+    completionVisible.value =
+      record.status === 'error'
+      || settings()?.pomodoroAchievementMoment !== false
+    if (!completionVisible.value) return
+    capsuleNotice.value = t(
+      record.status === 'error'
+        ? 'pomodoroRecordFailed'
+        : 'pomodoroSessionComplete',
+    )
+    if (record.status !== 'error') {
+      noticeTimer = setTimeout(() => {
+        capsuleNotice.value = ''
+      }, 8000)
+    }
+  },
+)
+watch(
+  () => props.pomodoro.savedLogVersion.value,
+  () => {
+    if (isOpen.value) refreshData()
+  },
+)
+watch(
+  () => props.pomodoro.state.value,
+  (state) => {
+    if (state === 'idle') refreshNote()
+  },
+)
+onMounted(() => {
+  window.addEventListener(
+    'siyuan-time-spent:pomodoro-config-changed',
+    onSettingsChanged,
+  )
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+onUnmounted(() => {
+  window.removeEventListener(
+    'siyuan-time-spent:pomodoro-config-changed',
+    onSettingsChanged,
+  )
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  if (noticeTimer) clearTimeout(noticeTimer)
+  if (midnightTimer) clearTimeout(midnightTimer)
+})
 usePomodoroShortcuts(shortcutEnabled, isOpen, {
   onTogglePanel: togglePopover,
-  onClosePanel: closePopover,
+  isPanelTarget: (target) => panel.value?.contains(target) ?? false,
+  onClosePanel: () => {
+    if (!panel.value?.closeExpanded()) closePopover()
+  },
   onTogglePause: () => {
     if (props.pomodoro.state.value === 'running') props.pomodoro.pause()
     else if (props.pomodoro.state.value === 'paused') props.pomodoro.resume()
   },
 })
-
 </script>
 
 <style scoped>
-.text-primary {
-  color: var(--b3-theme-primary);
-}
-.text-secondary {
-  color: var(--b3-theme-on-surface);
-}
-.text-tertiary {
-  color: var(--b3-theme-on-surface-light, #94a3b8);
-}
-.bg-surface {
-  background-color: var(--b3-theme-surface);
-}
-.bg-subtle {
-  background-color: color-mix(in srgb, var(--b3-theme-on-background) 6%, transparent);
-}
-.bg-primary-subtle {
-  background-color: color-mix(in srgb, var(--b3-theme-primary) 14%, transparent);
-}
-.border-subtle {
-  border-color: color-mix(in srgb, var(--b3-theme-on-background) 12%, transparent);
-}
-
-/* 卡片进出场（关键帧由全局 st-pomo-fade-in 提供）*/
-.animate-fadeIn {
-  animation: st-pomo-fade-in 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.sy-status-timer-root {
+  display: inline-flex;
+  align-items: center;
 }
 </style>
