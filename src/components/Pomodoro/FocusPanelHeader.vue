@@ -87,10 +87,9 @@
 
 <script setup lang="ts">
 import type { PomodoroState, UiPhase } from '../../utils/pomodoro';
+import type { PomodoroFormKey } from './composables/forms';
 import { computed } from 'vue';
 import { t } from '../../i18n';
-
-export type PomodoroFormKey = 'zen' | 'chrono' | 'hourglass';
 
 const props = defineProps<{
   state: PomodoroState

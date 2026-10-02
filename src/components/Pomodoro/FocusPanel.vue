@@ -167,7 +167,7 @@ import type TimeSpentPlugin from '../../index';
 import type { PomodoroManager } from '../../utils/pomodoro';
 import type { PomodoroView } from './composables/usePomodoroPresenter';
 import type { DurationRecommendation } from './composables/useSmartDuration';
-import type { PomodoroFormKey } from './FocusPanelHeader.vue';
+import type { PomodoroFormKey } from './composables/forms';
 import {
   computed,
   nextTick,

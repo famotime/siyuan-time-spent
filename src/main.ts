@@ -4,13 +4,15 @@ import {
 import { createApp } from 'vue';
 import App from './App.vue';
 import Logger from './utils/logger';
+// 仅类型导入，编译后擦除，不会与 index.ts 形成运行时循环
+import type TimeSpentPlugin from './index';
 
-let plugin: Plugin | null = null;
+let plugin: TimeSpentPlugin | null = null;
 
-export function usePlugin(pluginProps?: Plugin): Plugin {
+export function usePlugin(pluginProps?: Plugin): TimeSpentPlugin {
   Logger.log('usePlugin', pluginProps, plugin);
   if (pluginProps) {
-    plugin = pluginProps;
+    plugin = pluginProps as TimeSpentPlugin;
   }
   if (!plugin && !pluginProps) {
     Logger.error('need bind plugin');
@@ -23,6 +25,7 @@ let overlayVm: any = null;
 let themeObserver: MutationObserver | null = null;
 
 export function init(pluginInstance: Plugin) {
+  plugin = pluginInstance as TimeSpentPlugin;
   // bind plugin hook
   usePlugin(pluginInstance);
 

@@ -93,7 +93,15 @@ const currentThemeStyle = ref<FormKey>(props.plugin.settings?.pomodoroThemeStyle
 
 const presets = POMODORO_PRESETS;
 
-const settings = () => props.plugin.settings;
+/**
+ * plugin.settings 是普通对象，写入不会触发响应式。
+ * 用版本号强制依赖配置的 computed 在热更新时重算。
+ */
+const settingsVersion = ref(0);
+const settings = () => {
+  void settingsVersion.value;
+  return props.plugin.settings;
+};
 const motion = useReducedMotion(settings);
 const intensity = motion.intensity;
 const allowAmbient = motion.allowAmbient;
@@ -139,6 +147,7 @@ const switchThemeStyle = async (skin: FormKey) => {
 
 // 监听全局设置变更热更新
 const onSettingsChanged = (e: Event) => {
+  settingsVersion.value += 1
   const detail = (e as CustomEvent).detail
   if (detail?.pomodoroThemeStyle) {
     currentThemeStyle.value = detail.pomodoroThemeStyle
@@ -196,6 +205,8 @@ const togglePopover = () => {
   }
   isOpen.value = true
   isConfirmingDiscard.value = false
+  // 打开时刷新今日投入，让推荐时长基于最新数据
+  void smart.refresh()
   void nextTick()
 }
 

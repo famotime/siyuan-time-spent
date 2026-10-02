@@ -18,7 +18,8 @@
     "release:minor": "node ./release.js --mode=minor",
     "release:major": "node ./release.js --mode=major",
     "build": "vite build",
-    "typecheck": "tsc --noEmit -p tsconfig.json --noUnusedLocals false --noUnusedParameters false"
+    "typecheck": "tsc --noEmit -p tsconfig.json --noUnusedLocals false --noUnusedParameters false",
+    "check:sfc": "node scripts/check-vue-scripts.mjs"
   },
   "dependencies": {
     "echarts": "^6.1.0",

@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import type { UiPhase } from '../../utils/pomodoro';
-import type { PomodoroFormKey } from './FocusPanelHeader.vue';
+import type { PomodoroFormKey } from './composables/forms';
 import { computed } from 'vue';
 import { t } from '../../i18n';
 import AuroraDial from './dials/AuroraDial.vue';
