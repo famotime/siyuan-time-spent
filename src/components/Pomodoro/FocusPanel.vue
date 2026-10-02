@@ -97,6 +97,7 @@
           :presets="presets"
           :recommendation="recommendation"
           :smart-enabled="smartEnabled"
+          :wheel-enabled="wheelEnabled"
           @update:isStopwatchMode="onStopwatchMode"
           @update:minutes="onMinutes"
           @applyRecommendation="onMinutes"

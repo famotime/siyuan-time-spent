@@ -70,25 +70,10 @@
         </button>
       </div>
 
-      <!-- 阻尼微调滑块与步进 -->
-      <div class="p-2 rounded-xl border border-subtle bg-surface flex flex-col gap-1.5">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-secondary font-medium">{{ t('pomodoroCustomDuration') }}</span>
-          <div class="flex items-center gap-1 font-mono font-bold">
-            <input
-              type="number"
-              :value="minutes"
-              min="1"
-              max="180"
-              class="w-12 text-center text-sm font-bold bg-subtle rounded-md border border-subtle focus:outline-none"
-              @input="onMinutesInput"
-              @change="onMinutesCommit"
-            />
-            <span class="text-secondary text-[12px]">{{ t('pomodoroMinutesUnit') }}</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
+      <!-- 微调：滑块与数字输入框收敛为一步进器，精细微调移到表盘滚轮上 -->
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs text-secondary font-medium">{{ t('pomodoroCustomDuration') }}</span>
+        <div class="flex items-center gap-1.5">
           <button
             type="button"
             class="p-1 rounded-lg border border-subtle hover:bg-subtle cursor-pointer shrink-0"
@@ -111,15 +96,9 @@
             </svg>
           </button>
 
-          <input
-            type="range"
-            :value="minutes"
-            min="5"
-            max="120"
-            step="5"
-            class="flex-1 cursor-pointer h-1.5 bg-subtle rounded-lg accent-current text-primary"
-            @input="onMinutesInput"
-          />
+          <span class="min-w-10 text-center font-mono text-sm font-bold font-tabular text-primary">
+            {{ minutes }}
+          </span>
 
           <button
             type="button"
@@ -148,7 +127,14 @@
               />
             </svg>
           </button>
+
+          <span class="text-[12px] text-secondary">{{ t('pomodoroMinutesUnit') }}</span>
         </div>
+      </div>
+
+      <!-- 滚轮微调提示：表盘上滚动即可按 5 分钟步进 -->
+      <div v-if="wheelEnabled" class="text-[12px] text-tertiary text-center">
+        {{ t('pomodoroWheelAdjust') }}
       </div>
     </template>
 
@@ -178,12 +164,13 @@ import type { DurationRecommendation } from '../composables/useSmartDuration';
 import { computed } from 'vue';
 import { t } from '../../../i18n';
 
-const props = defineProps<{
+defineProps<{
   isStopwatchMode: boolean
   minutes: number
   presets: ReadonlyArray<number>
   recommendation: DurationRecommendation | null
   smartEnabled: boolean
+  wheelEnabled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -211,21 +198,9 @@ const primaryBtnStyle = computed(() => ({
   boxShadow: '0 4px 12px color-mix(in srgb, var(--b3-theme-primary) 35%, transparent)',
 }))
 
-/** 夹紧到 1-180 分钟后上抛；输入过程中的中间态（如空串）不打断绑定 */
+/** 夹紧到 1-180 分钟后上抛，非法中间态（如空串）不打断绑定 */
 const emitMinutes = (raw: number) => {
-  if (!Number.isFinite(raw)) return
-  emit('update:minutes', Math.max(1, Math.min(180, Math.round(raw))))
-}
-
-const onMinutesInput = (e: Event) => {
-  emitMinutes(Number((e.target as HTMLInputElement).value))
-}
-
-const onMinutesCommit = (e: Event) => {
-  const el = e.target as HTMLInputElement
-  const raw = Number(el.value)
-  const safe = Number.isFinite(raw) ? Math.max(1, Math.min(180, Math.round(raw))) : props.minutes
-  el.value = String(safe)
-  emitMinutes(safe)
-}
+  if (!Number.isFinite(raw)) return;
+  emit('update:minutes', Math.max(1, Math.min(180, Math.round(raw))));
+};
 </script>

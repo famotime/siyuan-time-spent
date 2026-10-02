@@ -294,4 +294,72 @@ AI 总结与反思功能绝不能止步于一次性对话框：
 
 ---
 
+## 9. 番茄钟动效与无障碍专章（v1.1 增补，2026-10-02）
+
+番茄钟是本插件唯一"常驻 + 强氛围"的组件，其动效与无障碍规则单独成章，避免散落各处无法自查。
+
+### 9.1 色彩温度迁移通道 `--pomo-heat`
+
+唯一允许的"动态取色"机制。JS 每 500ms 只写入一个 `0..1` 的数字，**所有颜色由 CSS `color-mix` 一次成型**，禁止在脚本里逐帧算色值：
+
+```css
+@property --pomo-heat { syntax: '<number>'; inherits: true; initial-value: 0; }
+--pomo-heat-from: var(--b3-theme-primary, #6366f1);   /* 起点永远跟着宿主主题色 */
+--pomo-heat-to:   var(--st-pomo-*-text);              /* 终点按 data-pomo-phase 覆盖 */
+--pomo-tint: color-mix(in srgb, var(--pomo-heat-from), var(--pomo-heat-to) calc(var(--pomo-heat) * 100%));
+```
+
+**铁律：色温只用于进度环 / 光晕 / 粒尘，绝不用于文字。** 文字始终单独取 `--st-pomo-*-text`，否则第三方主题下对比度会塌。
+
+### 9.2 动效命名与降级铁律
+
+| 类名 | 用途 | 受降级管控 |
+| :--- | :--- | :--- |
+| `st-pomo-anim` | 任何循环 / 关键帧动画的宿主 | 是，`animation: none` |
+| `st-pomo-anim-soft` | 需要过渡但非核心的元素 | 是，`transition-duration: 120ms` |
+| `st-pomo-dust` | 环境粒尘单粒 | 是，`display: none` |
+| `st-pomo-heat-channel` | 挂 `--pomo-heat` 过渡的容器 | reduced-motion 下 `--pomo-heat: 0` |
+
+**新增番茄钟动画类必须带 `st-pomo-anim` 或 `st-pomo-anim-soft`**，未标注的类不受降级管控。降级是双通道：
+
+1. **配置级** — 设置项「动效与仪式感强度」切到 `calm`，由 `data-pomo-motion="calm"` 驱动；
+2. **系统级** — 用户 OS 开启「减少动态效果」，由 `@media (prefers-reduced-motion: reduce)` 驱动。
+
+### 9.3 表盘形态的可扩展契约
+
+三种形态（极光流体 / 精密机械 / 时空沙漏）共享同一个 props 契约，只替换叙事载体。新增第四形态时：
+
+- 在 `PomodoroFormKey` 加枚举值（**已持久化的旧值不许改，只加**）；
+- 在 `composables/forms.ts` 的 `POMODORO_FORM_LABEL_KEYS` 加展示标签键；
+- 在 `PomodoroStage.vue` 加一个分发分支。
+
+中心数字与副标由 `PomodoroStage` 统一渲染（56px / 800 / `-0.02em` / `tabular-nums`），dial 只画载体，**不要在 dial 里重复渲染数字**。
+
+### 9.4 无障碍底线
+
+- `role="timer"` 挂在表盘根节点，`aria-label` 给出可读描述；
+- **读屏播报收敛到分钟粒度**，绝不做 `aria-live` 挂在计时器根上导致逐秒刷屏；
+- 隐形 `role="progressbar"` 节点带 `aria-valuenow`；
+- 图标按钮必须有 `aria-label`，最小命中区 ≥ 24px；
+- 快捷键必须三重 guard：焦点在 `input/textarea/select`、`[contenteditable]`、`.protyle` 内时一律放行给宿主。
+
+### 9.5 离桌守卫的语义边界
+
+番茄运行期间复用 `TimeTracker` 的 `IdleWatcher`（同一实例、同一阈值，**不为番茄钟单设阈值**）。检测到长期无操作时：
+
+- **表盘凝滞**（进度停在快照、色温去饱和），但**墙钟计时继续跑**，保证休眠恢复对齐；
+- 归来时温和提示，`TimeLog.idleTime` **仅作记录**，`duration` 仍是完整墙钟时长。
+
+### 9.6 质量门禁
+
+本项目 `npm run typecheck` **不检查 `.vue` 内部**（`tsc` 只处理 `.ts`），Vite 的 esbuild 也只剥离类型，两者都抓不到 `<script setup>` 里的未定义标识符。因此新增了：
+
+```
+npm run check:sfc    # 抽出每个 SFC 的 script setup，用继承 tsconfig 的临时配置统一编译
+```
+
+改完番茄钟（或任何 `.vue`）后，三道门禁都要过：`npm run typecheck`、`npm run check:sfc`、`npm run build`。
+
+---
+
 > **结语**：遵循上述设计指导规范，不仅能确保“源时记”在视觉上的纯粹与高级，更能让思源笔记用户在每一次回看自己流淌的时间时，感受到专注与心流的力量。
