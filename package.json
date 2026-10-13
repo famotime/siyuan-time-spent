@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "vite build --watch",
     "release": "node ./release.js",
+    "release:changelog": "node ./release.js --mode=changelog",
     "release:manual": "node ./release.js --mode=manual",
     "release:patch": "node ./release.js --mode=patch",
     "release:minor": "node ./release.js --mode=minor",
@@ -22,8 +23,11 @@
     "check:sfc": "node scripts/check-vue-scripts.mjs",
     "test:pomodoro": "vitest run --config vitest.config.ts",
     "preview:pomodoro": "vite --config vite.pomodoro-preview.config.ts",
-    "test:pomodoro:browser": "playwright test --config playwright.pomodoro.config.ts"
+    "test:pomodoro:browser": "playwright test --config playwright.pomodoro.config.ts",
+    "changelog:extract": "node ./scripts/extract-changelog.mjs",
+    "preinstall": "npx --yes only-allow pnpm"
   },
+  "packageManager": "pnpm@10.18.3",
   "dependencies": {
     "echarts": "^6.1.0",
     "vue": "^3.3.8",
