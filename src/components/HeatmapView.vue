@@ -19,7 +19,7 @@
         <span class="w-3 h-3 rounded-xs sy-legend-1 inline-block" :title="t('heatmapRange1')"></span>
         <span class="w-3 h-3 rounded-xs sy-legend-2 inline-block" :title="t('heatmapRange2')"></span>
         <span class="w-3 h-3 rounded-xs sy-legend-3 inline-block" :title="t('heatmapRange3')"></span>
-        <span class="w-3 h-3 rounded-xs sy-legend-4 inline-block shadow-[0_0_6px_rgba(6,182,212,0.5)]" :title="t('heatmapRange4')"></span>
+        <span class="w-3 h-3 rounded-xs sy-legend-4 inline-block" :title="t('heatmapRange4')"></span>
         <span>{{ t('heatmapLegendMore') }}</span>
       </div>
     </div>
@@ -371,7 +371,7 @@ const maxStreakDays = computed(() => {
   color: var(--st-primary, #818cf8);
 }
 
-/* 热力图色阶 */
+/* 热力图色阶 (暗色模式基线，同一Indigo蓝紫色系由深暗到高亮) */
 .sy-legend-0 {
   background-color: var(--st-bg-subtle, rgba(148, 163, 184, 0.12));
   border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.08));
@@ -391,8 +391,37 @@ const maxStreakDays = computed(() => {
 }
 
 .sy-legend-4 {
-  background-color: #06b6d4;
-  box-shadow: 0 0 6px rgba(6, 182, 212, 0.6);
+  background-color: #818cf8;
+  box-shadow: 0 0 6px rgba(129, 140, 248, 0.6);
+}
+
+/* 亮色模式适配 (同色系由浅至深递进) */
+:root[data-theme-mode="light"] .sy-legend-0,
+[data-theme-mode="light"] .sy-legend-0 {
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme-mode="light"] .sy-legend-1,
+[data-theme-mode="light"] .sy-legend-1 {
+  background-color: #c7d2fe;
+  border: 1px solid #a5b4fc;
+}
+
+:root[data-theme-mode="light"] .sy-legend-2,
+[data-theme-mode="light"] .sy-legend-2 {
+  background-color: #818cf8;
+}
+
+:root[data-theme-mode="light"] .sy-legend-3,
+[data-theme-mode="light"] .sy-legend-3 {
+  background-color: #6366f1;
+}
+
+:root[data-theme-mode="light"] .sy-legend-4,
+[data-theme-mode="light"] .sy-legend-4 {
+  background-color: #4338ca;
+  box-shadow: 0 0 4px rgba(67, 56, 202, 0.35);
 }
 
 .sy-floating-tooltip {
