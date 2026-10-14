@@ -31,6 +31,18 @@
 
         <!-- Header Right Actions: Settings, Refresh & Close -->
         <div class="flex items-center gap-1.5 shrink-0">
+          <!-- 番茄钟快捷入口 -->
+          <SyTooltip :content="t('pomodoroTimerTitle')" placement="bottom">
+            <SyIconButton 
+              ref="pomodoroBtnRef"
+              icon="focus-ring" 
+              size="md" 
+              variant="secondary" 
+              :aria-label="t('pomodoroTimerTitle')" 
+              @click="handleOpenPomodoro" 
+            />
+          </SyTooltip>
+
           <!-- 刷新数据按钮 -->
           <SyTooltip :content="t('refreshDataTooltip')" shortcut="R" placement="bottom">
             <SyIconButton 
@@ -552,6 +564,13 @@
               </svg>
               <span>{{ t('aiSummaryBtn') }}</span>
             </button>
+            <SyIconButton 
+              icon="focus-ring" 
+              size="sm" 
+              variant="secondary" 
+              :aria-label="t('pomodoroTimerTitle')" 
+              @click="handleOpenPomodoro" 
+            />
             <SyIconButton 
               icon="settings" 
               size="sm" 
@@ -1365,6 +1384,19 @@ const handleRefreshData = async () => {
   }
   await loadDataForCurrentScope();
   showToast(t('refreshSuccess'));
+};
+
+// 番茄钟入口
+const pomodoroBtnRef = ref<any>(null);
+const handleOpenPomodoro = (event?: MouseEvent) => {
+  try {
+    const anchorEl = (pomodoroBtnRef.value?.$el || pomodoroBtnRef.value || event?.currentTarget) as HTMLElement;
+    if (plugin && (plugin as any).openPomodoro) {
+      (plugin as any).openPomodoro({ anchorEl });
+    }
+  } catch (err) {
+    console.error('Failed to open pomodoro from dashboard:', err);
+  }
 };
 
 // 打开设置

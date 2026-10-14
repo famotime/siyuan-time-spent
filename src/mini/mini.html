@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Mini</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 96px;
+      height: 48px;
+      overflow: hidden;
+      background: transparent !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .capsule-root {
+      width: 96px;
+      height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-radius: 12px;
+      -webkit-app-region: drag;
+      cursor: grab;
+      transition: background 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+      /* 半透明呼吸模式：无悬浮时 70% 透明度 */
+      opacity: 0.7;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .capsule-root:active {
+      cursor: grabbing;
+    }
+    .capsule-root:hover {
+      opacity: 1;
+    }
+
+    /* 暗色主题 */
+    body[data-theme="dark"] .capsule-root {
+      background: rgba(18, 20, 29, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+    body[data-theme="dark"] .capsule-root:hover {
+      background: rgba(18, 20, 29, 0.95);
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    }
+
+    /* 亮色主题 */
+    body[data-theme="light"] .capsule-root {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+    body[data-theme="light"] .capsule-root:hover {
+      background: rgba(255, 255, 255, 0.98);
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    }
+
+    /* 操作按钮栏：位于时间上方，平时隐藏，悬浮时平滑淡入 */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 18px;
+      margin-top: -2px;
+      margin-bottom: 1px;
+      opacity: 0;
+      transform: translateY(-2px);
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      -webkit-app-region: no-drag;
+    }
+    .capsule-root:hover .action-bar {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .btn-action {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 0;
+      color: rgba(148, 163, 184, 0.85);
+      transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+    }
+    .btn-action:hover {
+      background-color: rgba(148, 163, 184, 0.2);
+      transform: scale(1.1);
+    }
+    body[data-theme="dark"] .btn-action:hover {
+      color: #ffffff;
+    }
+    body[data-theme="light"] .btn-action:hover {
+      color: #0f172a;
+    }
+    .btn-action.is-pinned {
+      color: #6366f1 !important;
+    }
+
+    .btn-action svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* 时间数字显示：居中醒目 */
+    .time-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: color 0.2s ease, transform 0.15s ease;
+      color: #f1f5f9;
+    }
+    body[data-theme="light"] .time-display {
+      color: #1e293b;
+    }
+    /* 悬停时时间轻微向下位移以协调上方按钮 */
+    .capsule-root:hover .time-display {
+      transform: translateY(1px);
+    }
+
+    /* 相位色温 */
+    .phase-focus {
+      color: #f59e0b !important; /* 专注暖金色 */
+    }
+    .phase-break {
+      color: #06b6d4 !important; /* 休息清新青蓝 */
+    }
+    .phase-paused {
+      color: #94a3b8 !important; /* 暂停灰 */
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="capsule-root" id="capsuleRoot">
+    <div class="action-bar">
+      <!-- 📌 置顶按钮 -->
+      <button class="btn-action" id="pinBtn" title="置顶">
+        <svg viewBox="0 0 24 24">
+          <line x1="12" y1="17" x2="12" y2="22"></line>
+          <path d="M5 17h14v-2l-2-3V4a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v8l-2 3v2z"></path>
+        </svg>
+      </button>
+      <!-- ⤢ 还原按钮 -->
+      <button class="btn-action" id="restoreBtn" title="还原完整面板">
+        <svg viewBox="0 0 24 24">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      </button>
+      <!-- ✕ 关闭按钮 -->
+      <button class="btn-action" id="closeBtn" title="关闭小窗">
+        <svg viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="time-display phase-focus" id="timeDisplay">25:00</div>
+  </div>
+
+  <script>
+    const channel = new BroadcastChannel("siyuan-time-spent-pomodoro-mini");
+    const capsuleRoot = document.getElementById("capsuleRoot");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const pinBtn = document.getElementById("pinBtn");
+    const restoreBtn = document.getElementById("restoreBtn");
+    const closeBtn = document.getElementById("closeBtn");
+
+    let isPinned = true;
+
+    pinBtn.addEventListener("click", () => {
+      channel.postMessage({ type: "ACTION", action: "TOGGLE_PIN" });
+    });
+
+    restoreBtn.addEventListener("click", () => {
+      channel.postMessage({ type: "ACTION", action: "RESTORE" });
+    });
+
+    closeBtn.addEventListener("click", () => {
+      channel.postMessage({ type: "ACTION", action: "CLOSE" });
+    });
+
+    channel.onmessage = (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === "STATE_UPDATE") {
+        if (data.displayText) {
+          timeDisplay.textContent = data.displayText;
+        }
+
+        // 主题同步
+        document.body.setAttribute("data-theme", data.themeMode || "dark");
+
+        // 相位类名
+        timeDisplay.className = "time-display";
+        if (data.state === "paused") {
+          timeDisplay.classList.add("phase-paused");
+        } else if (data.uiPhase === "shortBreak" || data.uiPhase === "longBreak" || data.uiPhase === "short-break" || data.uiPhase === "long-break") {
+          timeDisplay.classList.add("phase-break");
+        } else {
+          timeDisplay.classList.add("phase-focus");
+        }
+
+        // 置顶高亮
+        isPinned = !!data.alwaysOnTop;
+        if (isPinned) {
+          pinBtn.classList.add("is-pinned");
+          pinBtn.title = "已置顶（点击取消）";
+        } else {
+          pinBtn.classList.remove("is-pinned");
+          pinBtn.title = "点击置顶";
+        }
+      }
+    };
+
+    // 初始化时请求父窗口推送当前状态
+    channel.postMessage({ type: "REQUEST_INIT" });
+  </script>
+</body>
+</html>

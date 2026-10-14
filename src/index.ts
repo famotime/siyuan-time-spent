@@ -13,6 +13,7 @@ import { TimeTracker } from './utils/tracker';
 import { StorageManager } from './utils/storage';
 import { SettingManager } from './utils/setting';
 import { PomodoroManager } from './utils/pomodoro';
+import { MiniWindowManager } from './utils/mini-window';
 import Logger from './utils/logger';
 import { DEFAULT_SETTINGS, PluginSettings } from './models/Settings';
 import type { SharedConfig } from './types/api-switch';
@@ -54,7 +55,10 @@ export default class TimeSpentPlugin extends Plugin {
   public storageManager: StorageManager;
   public settingManager: SettingManager;
   public pomodoroManager: PomodoroManager;
+  public miniWindowManager: MiniWindowManager;
   private _statusBarApp: any = null;
+  private _topBarPomodoroItem: any = null;
+  private _headlessHost: HTMLElement | null = null;
   public settings: PluginSettings = { ...DEFAULT_SETTINGS };
 
   // AI 旋钮 (siyuan-api-switch) 当前接管的配置与就绪事件监听
@@ -149,28 +153,44 @@ export default class TimeSpentPlugin extends Plugin {
     this.timeTracker = new TimeTracker(this, this.storageManager, idleSeconds, minBrowseSeconds);
     this.timeTracker.start();
 
-    // 8. 初始化番茄钟双模引擎与状态栏常驻胶囊
+    // 8. 初始化番茄钟双模引擎与极简悬浮小窗管理器
     this.pomodoroManager = new PomodoroManager(this);
-    if (this.settings.enableStatusBarTimer !== false) {
-      this.initStatusBarTimer();
+    this.miniWindowManager = new MiniWindowManager(this);
+    this.initStatusBarTimer();
+    if (this.settings.enableTopBarPomodoro !== false) {
+      this.initTopBarPomodoro();
     }
   }
 
-  private initStatusBarTimer() {
+  public initStatusBarTimer() {
     try {
-      const statusElement = document.createElement("div");
-      statusElement.classList.add("plugin-time-spent-status-item");
-      const statusItem = this.addStatusBar({
-        element: statusElement,
-        position: "right",
-      });
-      if (statusItem) {
+      if (this.settings.enableStatusBarTimer !== false) {
+        const statusElement = document.createElement("div");
+        statusElement.classList.add("plugin-time-spent-status-item");
+        const statusItem = this.addStatusBar({
+          element: statusElement,
+          position: "right",
+        });
+        if (statusItem) {
+          const app = createApp(StatusBarTimer, {
+            plugin: this,
+            pomodoro: this.pomodoroManager,
+          });
+          app.mount(statusItem);
+          this._statusBarApp = app;
+        }
+      } else {
+        // 无底栏常驻胶囊时，挂载隐藏宿主以保证 FocusPanel、快捷键与小窗联动正常
+        const host = document.createElement("div");
+        host.style.display = "none";
+        document.body.appendChild(host);
         const app = createApp(StatusBarTimer, {
           plugin: this,
           pomodoro: this.pomodoroManager,
         });
-        app.mount(statusItem);
+        app.mount(host);
         this._statusBarApp = app;
+        this._headlessHost = host;
       }
     } catch (e) {
       Logger.error("Failed to initialize status bar timer:", e);
@@ -178,6 +198,14 @@ export default class TimeSpentPlugin extends Plugin {
   }
 
   onunload() {
+    if (this.miniWindowManager) {
+      this.miniWindowManager.destroy();
+    }
+    this.removeTopBarPomodoro();
+    if (this._headlessHost && this._headlessHost.parentNode) {
+      this._headlessHost.parentNode.removeChild(this._headlessHost);
+      this._headlessHost = null;
+    }
     if (this._statusBarApp) {
       this._statusBarApp.unmount();
       this._statusBarApp = null;
@@ -256,6 +284,62 @@ export default class TimeSpentPlugin extends Plugin {
     } else {
       openOverlay();
     }
+  }
+
+  /**
+   * 初始化顶栏独立番茄钟图标
+   */
+  public initTopBarPomodoro() {
+    if (this._topBarPomodoroItem) return;
+    try {
+      this._topBarPomodoroItem = this.addTopBar({
+        icon: "iconFocus",
+        title: t("pomodoroTimerTitle"),
+        callback: () => {
+          this.togglePomodoro({ anchorEl: this._topBarPomodoroItem });
+        },
+      });
+    } catch (e) {
+      Logger.error("Failed to initialize top bar pomodoro:", e);
+    }
+  }
+
+  /**
+   * 移除顶栏独立番茄钟图标
+   */
+  public removeTopBarPomodoro() {
+    if (this._topBarPomodoroItem) {
+      try {
+        if (this._topBarPomodoroItem.parentNode) {
+          this._topBarPomodoroItem.parentNode.removeChild(this._topBarPomodoroItem);
+        }
+        const idx = this.topBarIcons?.indexOf(this._topBarPomodoroItem);
+        if (idx !== undefined && idx > -1) {
+          this.topBarIcons.splice(idx, 1);
+        }
+      } catch (e) {
+        Logger.error("Failed to remove top bar pomodoro:", e);
+      }
+      this._topBarPomodoroItem = null;
+    }
+  }
+
+  /**
+   * 打开番茄钟完整面板
+   */
+  public openPomodoro(options?: { anchorEl?: HTMLElement | null }) {
+    window.dispatchEvent(
+      new CustomEvent("siyuan-time-spent:open-pomodoro", { detail: options })
+    );
+  }
+
+  /**
+   * 切换番茄钟完整面板显隐
+   */
+  public togglePomodoro(options?: { anchorEl?: HTMLElement | null }) {
+    window.dispatchEvent(
+      new CustomEvent("siyuan-time-spent:toggle-pomodoro", { detail: options })
+    );
   }
 
   /**

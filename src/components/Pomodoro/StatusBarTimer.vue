@@ -54,6 +54,7 @@
       @skipBreak="pomodoro.skipBreak()"
       @extendBreak="pomodoro.extendBreak($event)"
       @openDashboard="openDashboard"
+      @minimize="handleMinimize"
       @refreshToday="today.refresh()"
       @dismissCompletion="dismissCompletion"
     />
@@ -157,9 +158,41 @@ let noticeTimer: ReturnType<typeof setTimeout> | undefined
 let pulseTimer: ReturnType<typeof setTimeout> | undefined
 let midnightTimer: ReturnType<typeof setTimeout> | undefined
 let formSave: Promise<void> = Promise.resolve()
+const defaultAnchorEl = ref<HTMLElement | null>(null)
 
 function setAnchor(element: unknown) {
-  anchorEl.value = (element as { $el?: HTMLElement } | null)?.$el ?? null
+  const el = (element as { $el?: HTMLElement } | null)?.$el ?? null
+  defaultAnchorEl.value = el
+  if (!anchorEl.value) {
+    anchorEl.value = el
+  }
+}
+
+function handleMinimize() {
+  closePopover(false)
+  props.plugin.miniWindowManager?.show()
+}
+
+function onOpenPomodoro(event: Event) {
+  const customEvent = event as CustomEvent<{ anchorEl?: HTMLElement | null }>
+  if (customEvent.detail?.anchorEl) {
+    anchorEl.value = customEvent.detail.anchorEl
+  } else if (!anchorEl.value) {
+    anchorEl.value = defaultAnchorEl.value
+  }
+  if (!isOpen.value) {
+    togglePopover()
+  }
+}
+
+function onTogglePomodoro(event: Event) {
+  const customEvent = event as CustomEvent<{ anchorEl?: HTMLElement | null }>
+  if (customEvent.detail?.anchorEl) {
+    anchorEl.value = customEvent.detail.anchorEl
+  } else if (!anchorEl.value) {
+    anchorEl.value = defaultAnchorEl.value
+  }
+  togglePopover()
 }
 function refreshNote() {
   if (props.pomodoro.state.value !== 'idle') return
@@ -321,12 +354,28 @@ onMounted(() => {
     'siyuan-time-spent:pomodoro-config-changed',
     onSettingsChanged,
   )
+  window.addEventListener(
+    'siyuan-time-spent:open-pomodoro',
+    onOpenPomodoro,
+  )
+  window.addEventListener(
+    'siyuan-time-spent:toggle-pomodoro',
+    onTogglePomodoro,
+  )
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 onUnmounted(() => {
   window.removeEventListener(
     'siyuan-time-spent:pomodoro-config-changed',
     onSettingsChanged,
+  )
+  window.removeEventListener(
+    'siyuan-time-spent:open-pomodoro',
+    onOpenPomodoro,
+  )
+  window.removeEventListener(
+    'siyuan-time-spent:toggle-pomodoro',
+    onTogglePomodoro,
   )
   document.removeEventListener('visibilitychange', onVisibilityChange)
   if (noticeTimer) clearTimeout(noticeTimer)

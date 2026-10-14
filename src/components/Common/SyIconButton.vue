@@ -79,6 +79,12 @@
           <line x1="6" y1="6" x2="18" y2="18" />
         </g>
 
+        <!-- PiP / Float Window / Minimize -->
+        <g v-else-if="icon === 'pip' || icon === 'minimize'">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <rect x="11" y="11" width="8" height="8" rx="1" fill="currentColor" fill-opacity="0.25" />
+        </g>
+
         <!-- Target (专注目标) -->
         <g v-else-if="icon === 'target'">
           <circle cx="12" cy="12" r="10" />

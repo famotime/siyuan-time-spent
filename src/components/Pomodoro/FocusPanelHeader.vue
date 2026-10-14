@@ -16,9 +16,18 @@
     </button>
     <div class="pomo-header__actions">
       <SyIconButton
+        class="pomo-header__minimize st-pomo-anim-soft"
+        icon="pip"
+        size="lg"
+        :title="t('pomodoroMinimize')"
+        :aria-label="t('pomodoroMinimize')"
+        @click="$emit('minimize')"
+      />
+      <SyIconButton
         class="pomo-header__close st-pomo-anim-soft"
         icon="close"
         size="lg"
+        :title="t('pomodoroClose')"
         :aria-label="t('pomodoroClose')"
         @click="$emit('close')"
       />
@@ -31,7 +40,7 @@ import iconUrl from '../../../icon.webp'
 import { t } from '../../i18n'
 import SyIconButton from '../Common/SyIconButton.vue'
 
-defineEmits<{ (e: 'openDashboard'): void, (e: 'close'): void }>()
+defineEmits<{ (e: 'openDashboard'): void, (e: 'close'): void, (e: 'minimize'): void }>()
 </script>
 
 <style scoped>
@@ -80,20 +89,23 @@ defineEmits<{ (e: 'openDashboard'): void, (e: 'close'): void }>()
   align-items: center;
   gap: 2px;
 }
-/* 关闭按钮与相邻的安静按钮同族：不用共享组件的实心底色，
+/* 最小化与关闭按钮与相邻的安静按钮同族：不用共享组件的实心底色，
    选择器带到 .st-pomo-ui 以保证压过 SyIconButton 的 secondary 底色。
    同时收回它的 transition-all，否则焦点环会被过渡拖成灰边。 */
+.st-pomo-ui .pomo-header__minimize,
 .st-pomo-ui .pomo-header__close {
   background-color: transparent;
   border-color: transparent;
   color: var(--st-pomo-muted);
   transition-property: background-color, color, transform;
 }
+.st-pomo-ui .pomo-header__minimize:hover,
 .st-pomo-ui .pomo-header__close:hover {
   background-color: var(--st-pomo-soft);
   color: var(--st-pomo-ink);
 }
 @media (pointer: coarse) {
+  .pomo-header__minimize,
   .pomo-header__close {
     min-width: 44px;
     min-height: 44px;

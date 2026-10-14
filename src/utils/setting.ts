@@ -674,6 +674,42 @@ export class SettingManager {
       ),
     });
 
+    // 1.15 顶栏番茄钟快捷图标
+    this.setting.addItem({
+      title: t("settingEnableTopBarPomodoroTitle"),
+      description: t("settingEnableTopBarPomodoroDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "enableTopBarPomodoro",
+        settings.enableTopBarPomodoro ?? true,
+        settings,
+        async (val) => {
+          settings.enableTopBarPomodoro = val;
+          if (val) {
+            this.plugin.initTopBarPomodoro();
+          } else {
+            this.plugin.removeTopBarPomodoro();
+          }
+        },
+      ),
+    });
+
+    // 1.16 极简小窗默认置顶
+    this.setting.addItem({
+      title: t("settingPomodoroMiniAlwaysOnTopTitle"),
+      description: t("settingPomodoroMiniAlwaysOnTopDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroMiniAlwaysOnTop",
+        settings.pomodoroMiniAlwaysOnTop ?? true,
+        settings,
+        async (val) => {
+          settings.pomodoroMiniAlwaysOnTop = val;
+          if (this.plugin.miniWindowManager) {
+            this.plugin.miniWindowManager.alwaysOnTop = val;
+          }
+        },
+      ),
+    });
+
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({

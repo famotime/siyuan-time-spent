@@ -456,5 +456,13 @@
   "mobileTabCalendar": "周期日历",
   "mobileTabStats": "统计热力",
   "deviceDesktop": "桌面端",
-  "deviceMobile": "移动端"
+  "deviceMobile": "移动端",
+  "pomodoroMinimize": "最小化为小窗",
+  "pomodoroRestore": "还原完整面板",
+  "pomodoroPin": "置顶显示",
+  "pomodoroUnpin": "取消置顶",
+  "settingEnableTopBarPomodoroTitle": "顶栏番茄钟快捷图标",
+  "settingEnableTopBarPomodoroDesc": "在思源笔记顶部工具栏显示独立的专注番茄钟快捷启动图标",
+  "settingPomodoroMiniAlwaysOnTopTitle": "极简小窗默认置顶",
+  "settingPomodoroMiniAlwaysOnTopDesc": "开启后，番茄钟迷你小窗将默认悬浮置顶在屏幕最前端"
 }

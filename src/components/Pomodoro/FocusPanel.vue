@@ -16,6 +16,7 @@
       >
         <FocusPanelHeader
           @open-dashboard="$emit('openDashboard')"
+          @minimize="$emit('minimize')"
           @close="$emit('close', true)"
         />
         <ConfettiCelebration
@@ -291,6 +292,7 @@ const emit = defineEmits<{
   (e: 'skipBreak'): void
   (e: 'extendBreak', minutes: number): void
   (e: 'openDashboard'): void
+  (e: 'minimize'): void
   (e: 'refreshToday'): void
   (e: 'dismissCompletion'): void
 }>()
