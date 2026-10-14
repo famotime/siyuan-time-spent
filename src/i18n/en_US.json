@@ -451,5 +451,10 @@
   "pomodoroCycleLongBreakNext": "Next · long break",
   "pomodoroPrevForm": "Previous dial theme",
   "pomodoroNextForm": "Next dial theme",
-  "pomodoroDurationSetting": "Duration setting"
+  "pomodoroDurationSetting": "Duration setting",
+  "mobileTabToday": "Today",
+  "mobileTabCalendar": "Calendar",
+  "mobileTabStats": "Analytics",
+  "deviceDesktop": "Desktop",
+  "deviceMobile": "Mobile"
 }

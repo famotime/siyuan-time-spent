@@ -1,6 +1,10 @@
 <template>
   <div v-if="isVisible" class="plugin-time-spent-overlay" @click.self="closeDashboard">
-    <div class="dashboard-modal-container shadow-2xl rounded-2xl overflow-hidden flex flex-col" @click.stop>
+    <div 
+      class="dashboard-modal-container shadow-2xl rounded-2xl overflow-hidden flex flex-col" 
+      :class="{ 'is-mobile': isMobileView }"
+      @click.stop
+    >
       <div class="modal-content flex-grow overflow-auto">
         <Dashboard @close="closeDashboard" />
       </div>
@@ -11,10 +15,24 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import Dashboard from './components/Dashboard.vue';
+import { usePlugin } from './main';
 
 const isVisible = ref(false);
+const isMobileView = ref(false);
+
+const checkMobileView = () => {
+  try {
+    const plugin = usePlugin();
+    if (plugin?.isMobile) {
+      isMobileView.value = true;
+      return;
+    }
+  } catch {}
+  isMobileView.value = window.innerWidth <= 768;
+};
 
 const openDashboard = () => {
+  checkMobileView();
   isVisible.value = true;
 };
 
@@ -33,10 +51,13 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 onMounted(() => {
+  checkMobileView();
+  window.addEventListener('resize', checkMobileView);
   window.addEventListener('keydown', handleKeyDown);
 });
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobileView);
   window.removeEventListener('keydown', handleKeyDown);
 });
 
@@ -73,5 +94,27 @@ defineExpose({
   border: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--st-border-subtle, rgba(255, 255, 255, 0.05));
   transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+@media (max-width: 768px) {
+  .dashboard-modal-container {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+.dashboard-modal-container.is-mobile {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  border-radius: 0 !important;
+  border: none !important;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 </style>

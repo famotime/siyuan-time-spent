@@ -11,7 +11,10 @@
     "windows",
     "linux",
     "darwin",
-    "docker"
+    "docker",
+    "android",
+    "ios",
+    "harmony"
   ],
   "frontends": [
     "desktop",

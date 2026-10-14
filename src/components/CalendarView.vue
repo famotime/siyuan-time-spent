@@ -2,9 +2,9 @@
   <div class="calendar-component isolate relative z-0 flex flex-col sy-calendar-container rounded-xl overflow-hidden shadow-xl">
     
     <!-- ==================== DAY VIEW ==================== -->
-    <div v-if="mode === 'day'" class="day-view-container grid grid-cols-1 lg:grid-cols-12 h-[680px]">
+    <div v-if="mode === 'day'" class="day-view-container grid grid-cols-1 lg:grid-cols-12 h-auto lg:h-[680px]">
       <!-- 24-Hour Vertical Grid Schedule (7-8 cols on lg) -->
-      <div class="lg:col-span-8 flex flex-col border-r sy-divider sy-grid-bg overflow-hidden">
+      <div class="lg:col-span-8 flex flex-col border-r sy-divider sy-grid-bg overflow-hidden h-[420px] lg:h-full">
         <div class="p-3 sy-section-header border-b sy-divider flex justify-between items-center text-xs sm:text-sm font-semibold sy-text-primary">
           <span class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
@@ -73,7 +73,7 @@
       </div>
 
       <!-- Right Column: Day Timeline & Doc Ranking (4-5 cols on lg) -->
-      <div class="lg:col-span-4 flex flex-col sy-card-bg overflow-hidden">
+      <div class="lg:col-span-4 flex flex-col sy-card-bg overflow-hidden max-h-[420px] lg:max-h-none lg:h-full">
         <div class="p-3 sy-section-header border-b sy-divider text-xs sm:text-sm font-semibold sy-text-primary flex justify-between items-center">
           <div class="flex items-center gap-2">
             <span>{{ t('calendarTodayList') }}</span>
@@ -134,6 +134,8 @@
                 </span>
                 <span v-else-if="log.type === 'offline'" class="text-xs px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 font-mono shrink-0 select-none">线下</span>
                 <span v-else-if="log.type === 'manual'" class="text-xs px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-mono shrink-0 select-none">补录</span>
+                <span v-if="log.device === 'mobile'" class="text-[10px] px-1 py-0.2 rounded bg-purple-500/15 text-purple-400 font-mono shrink-0 select-none" title="移动端">📱</span>
+                <span v-else-if="log.device === 'desktop'" class="text-[10px] px-1 py-0.2 rounded bg-blue-500/15 text-blue-400 font-mono shrink-0 select-none" title="桌面端">💻</span>
                 <span class="truncate">{{ docTitles[log.docId] || log.docId || t('timelineUnknownDoc') }}</span>
               </div>
               <div class="flex items-center gap-1.5 shrink-0 ml-2">
@@ -164,9 +166,9 @@
 
 
     <!-- ==================== WEEK VIEW ==================== -->
-    <div v-else-if="mode === 'week'" class="week-view-container flex flex-col h-[680px]">
+    <div v-else-if="mode === 'week'" class="week-view-container flex flex-col h-[560px] lg:h-[680px] overflow-x-auto">
       <!-- 7 Day Header -->
-      <div class="grid grid-cols-8 border-b sy-divider sy-section-header text-center text-xs font-semibold sy-text-secondary select-none">
+      <div class="grid grid-cols-8 border-b sy-divider sy-section-header text-center text-xs font-semibold sy-text-secondary select-none min-w-[620px] lg:min-w-0">
         <div class="col-span-1 p-2.5 border-r sy-divider flex items-center justify-center sy-text-tertiary">
           {{ t('calendarTime') }}
         </div>
@@ -184,7 +186,7 @@
 
       <!-- 7 Day 24h Grid Body -->
       <div class="flex-grow overflow-y-auto relative isolate sy-timeline-canvas" ref="weekScrollContainer">
-        <div class="grid grid-cols-8 relative" :style="{ height: `${24 * hourHeight}px` }">
+        <div class="grid grid-cols-8 relative min-w-[620px] lg:min-w-0" :style="{ height: `${24 * hourHeight}px` }">
           <!-- Time Labels Column -->
           <div class="col-span-1 relative border-r sy-divider sy-time-col-bg select-none">
             <div v-for="h in 24" :key="h"
@@ -244,16 +246,16 @@
 
 
     <!-- ==================== MONTH VIEW ==================== -->
-    <div v-else-if="mode === 'month'" class="month-view-container flex flex-col h-[680px] sy-card-bg">
+    <div v-else-if="mode === 'month'" class="month-view-container flex flex-col h-[560px] lg:h-[680px] overflow-x-auto sy-card-bg">
       <!-- Weekday Headers -->
-      <div class="grid grid-cols-7 border-b sy-divider sy-section-header text-center py-2 text-xs font-semibold sy-text-secondary">
+      <div class="grid grid-cols-7 border-b sy-divider sy-section-header text-center py-2 text-xs font-semibold sy-text-secondary min-w-[500px] lg:min-w-0">
         <div v-for="w in getWeekdayNames(currentLang)" :key="w" class="col-span-1">
           {{ w }}
         </div>
       </div>
 
       <!-- Month Calendar Matrix Grid -->
-      <div class="flex-grow grid grid-cols-7 grid-rows-6 gap-1 p-2 sy-month-matrix overflow-y-auto">
+      <div class="flex-grow grid grid-cols-7 grid-rows-6 gap-1 p-2 sy-month-matrix overflow-y-auto min-w-[500px] lg:min-w-0">
         <div v-for="cell in monthCells" :key="cell.key"
              class="month-cell rounded-lg p-2 flex flex-col justify-between border transition-all duration-150 relative cursor-pointer group select-none"
              :class="getCellClasses(cell)"
@@ -346,6 +348,7 @@ import type { TimeLog } from '../models/TimeLog';
 import { docTitles, fetchDocTitle } from '../utils/title-cache';
 import { sql } from '../api';
 import { t, formatDurationI18n, currentLang, getWeekdayNames } from '../i18n';
+import { openSiYuanDoc } from '../utils';
 
 const props = defineProps<{
   logs: TimeLog[];
@@ -437,9 +440,7 @@ const getDocColor = (docId: string): string => {
 
 // 打开思源笔记对应文档
 const openDoc = (docId: string) => {
-  if (!docId) return;
-  const url = `siyuan://blocks/${docId}`;
-  window.open(url);
+  openSiYuanDoc(docId);
 };
 
 // ==================== TOOLTIP & HOVER LINKING ====================

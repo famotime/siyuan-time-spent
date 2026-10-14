@@ -293,3 +293,71 @@ describe('manager save state without timing changes', () => {
     expect(timer.lastRecord.value).toBeNull()
   })
 })
+
+describe('multi-device storage sharding', () => {
+  it('aggregates logs from both desktop and mobile shard files deduplicating by id', async () => {
+    const desktopLogs = [
+      { id: '1', docId: 'doc1', startTime: 1000, endTime: 2000, duration: 1000, idleTime: 0, device: 'desktop' },
+      { id: '2', docId: 'doc2', startTime: 3000, endTime: 4000, duration: 1000, idleTime: 0, device: 'desktop' },
+    ]
+    const mobileLogs = [
+      { id: '2', docId: 'doc2', startTime: 3000, endTime: 4000, duration: 1000, idleTime: 0, device: 'mobile' }, // 重复ID
+      { id: '3', docId: 'doc3', startTime: 5000, endTime: 6000, duration: 1000, idleTime: 0, device: 'mobile' },
+    ]
+    const storage = new StorageManager({
+      loadData: vi.fn().mockImplementation(async (file: string) => {
+        if (file.includes('_mobile.json')) return mobileLogs
+        return desktopLogs
+      }),
+    } as any)
+
+    const logs = await storage.loadLogsForDate('2026-10-14')
+    expect(logs).toHaveLength(3)
+    expect(logs.map(l => l.id)).toEqual(['1', '2', '3'])
+  })
+
+  it('writes to mobile shard file when plugin.isMobile is true', async () => {
+    const saveData = vi.fn().mockResolvedValue(undefined)
+    const storage = new StorageManager({
+      isMobile: true,
+      loadData: vi.fn().mockResolvedValue([]),
+      saveData,
+    } as any)
+
+    const newLog = {
+      id: 'm1',
+      docId: 'doc-m',
+      startTime: new Date('2026-10-14T10:00:00').getTime(),
+      endTime: new Date('2026-10-14T10:25:00').getTime(),
+      duration: 1500,
+      idleTime: 0,
+    }
+    await storage.appendLog(newLog)
+
+    expect(saveData).toHaveBeenCalledWith(
+      '2026-10-14_mobile.json',
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'm1', device: 'mobile' })
+      ])
+    )
+  })
+
+  it('deletes log from mobile shard file if present', async () => {
+    const mobileLogs = [
+      { id: 'target-del', docId: 'doc1', startTime: 1000, endTime: 2000, duration: 1000, idleTime: 0, device: 'mobile' }
+    ]
+    const saveData = vi.fn().mockResolvedValue(undefined)
+    const storage = new StorageManager({
+      loadData: vi.fn().mockImplementation(async (file: string) => {
+        if (file.includes('_mobile.json')) return mobileLogs
+        return []
+      }),
+      saveData,
+    } as any)
+
+    const deleted = await storage.deleteLog('2026-10-14', 'target-del')
+    expect(deleted).toBe(true)
+    expect(saveData).toHaveBeenCalledWith('2026-10-14_mobile.json', [])
+  })
+})
+

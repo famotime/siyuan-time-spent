@@ -206,6 +206,7 @@ import SyTooltip from './Common/SyTooltip.vue';
 import SyIconButton from './Common/SyIconButton.vue';
 import { lsNotebooks, createDocWithMd } from '../api';
 import { t, currentLang } from '../i18n';
+import { openSiYuanDoc } from '../utils';
 
 const props = defineProps<{
   visible: boolean;
@@ -319,7 +320,7 @@ const saveAsSiyuanDoc = async () => {
     if (docId) {
       showMessage(t('aiModalSaveDocSuccess'), 3500, 'info');
       // 打开新建的文档
-      window.open(`siyuan://blocks/${docId}`);
+      openSiYuanDoc(docId);
     } else {
       showMessage(t('aiModalSaveDocFailed'), 3000, 'error');
     }

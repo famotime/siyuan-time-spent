@@ -17,7 +17,8 @@ export class TimeTracker {
     constructor(plugin: Plugin, storageManager: StorageManager, idleThresholdSeconds = 300, minBrowseThresholdSeconds = 5) {
         this.plugin = plugin;
         this.storageManager = storageManager;
-        this.idleWatcher = new IdleWatcher(idleThresholdSeconds, this.handleIdleStatusChange.bind(this));
+        const isMobile = (plugin as any)?.isMobile ?? false;
+        this.idleWatcher = new IdleWatcher(idleThresholdSeconds, this.handleIdleStatusChange.bind(this), 10, isMobile);
         this.minBrowseThresholdSeconds = minBrowseThresholdSeconds;
     }
 
@@ -76,6 +77,14 @@ export class TimeTracker {
 
     public detectInitialDocument() {
         try {
+            // 移动端优先安全探测
+            const mobileRootId = (window as any).siyuan?.mobile?.editor?.protyle?.block?.rootID;
+            if (mobileRootId && !this.currentDocId) {
+                Logger.log(`Captured initial active document on mobile start: ${mobileRootId}`);
+                this.switchDocument(mobileRootId);
+                return;
+            }
+
             const activeProtyle = document.querySelector('.layout__wnd--active .protyle:not(.fn__none)')
                 || document.querySelector('.protyle:not(.fn__none)');
             if (activeProtyle) {
@@ -154,6 +163,7 @@ export class TimeTracker {
             const isEligible = minThreshold <= 0 ? effectiveDuration > 0 : effectiveDuration >= minThreshold;
 
             if (isEligible) {
+                const isMobile = (this.plugin as any)?.isMobile ?? false;
                 const log: TimeLog = {
                     id: this.generateId(),
                     docId: this.currentDocId,
@@ -161,7 +171,8 @@ export class TimeTracker {
                     endTime: endTime,
                     duration: effectiveDuration,
                     idleTime: totalIdleSecs,
-                    type: 'passive'
+                    type: 'passive',
+                    device: isMobile ? 'mobile' : 'desktop'
                 };
                 
                 this.saveLog(log);

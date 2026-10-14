@@ -236,6 +236,7 @@ import {
   formatDurationI18n,
   t,
 } from '../../i18n'
+import { openSiYuanDoc } from '../../utils'
 import CycleRail from './CycleRail.vue'
 import FocusPanelHeader from './FocusPanelHeader.vue'
 import ConfettiCelebration from './ConfettiCelebration.vue'
@@ -406,7 +407,7 @@ function outsidePointer(event: PointerEvent) {
 }
 function openDoc() {
   if (props.view.docId.value)
-    window.open(`siyuan://blocks/${props.view.docId.value}`)
+    openSiYuanDoc(props.view.docId.value)
   emit('close', false)
 }
 watch(

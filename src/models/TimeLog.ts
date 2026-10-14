@@ -14,6 +14,7 @@ export interface TimeLog {
     pomodoroTargetMin?: number;// 番茄钟预设目标时长（分钟）
     note?: string;             // 归因说明或线下活动备注
     tags?: string[];           // 自定义分类标签
+    device?: 'desktop' | 'mobile'; // 数据采集来源设备：桌面端或移动端
 }
 
 export interface DocumentMeta {

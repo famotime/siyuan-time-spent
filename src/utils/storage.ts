@@ -28,10 +28,26 @@ export class StorageManager {
   }
 
   public async loadLogsForDate(dateStr: string, options?: { strict?: boolean }): Promise<TimeLog[]> {
-    const filename = `${dateStr}.json`
-    const logs = await this.loadLogsByFile(filename, options)
-    this.cache.set(dateStr, logs)
-    return logs
+    const primaryFile = `${dateStr}.json`
+    const mobileFile = `${dateStr}_mobile.json`
+    
+    // 并行读取主文件与移动端分片文件
+    const [primaryLogs, mobileLogs] = await Promise.all([
+      this.loadLogsByFile(primaryFile, options),
+      this.loadLogsByFile(mobileFile, options)
+    ])
+
+    const logMap = new Map<string, TimeLog>()
+    for (const log of primaryLogs) {
+      if (log && log.id) logMap.set(log.id, log)
+    }
+    for (const log of mobileLogs) {
+      if (log && log.id) logMap.set(log.id, log)
+    }
+
+    const merged = Array.from(logMap.values()).sort((a, b) => a.startTime - b.startTime)
+    this.cache.set(dateStr, merged)
+    return merged
   }
 
   /**
@@ -119,8 +135,12 @@ export class StorageManager {
   }
 
   public async appendLog(log: TimeLog): Promise<void> {
+    const isMobile = (this.plugin as any)?.isMobile ?? false
+    if (!log.device) {
+      log.device = isMobile ? 'mobile' : 'desktop'
+    }
     const dateStr = this.getDateStringFromTimestamp(log.startTime)
-    const filename = `${dateStr}.json`
+    const filename = isMobile ? `${dateStr}_mobile.json` : `${dateStr}.json`
     const logs = await this.loadLogsByFile(filename, { strict: true })
     const updatedLogs = [...logs, log]
     const result: unknown = await this.plugin.saveData(filename, updatedLogs)
@@ -129,7 +149,15 @@ export class StorageManager {
       && typeof result.code === 'number' && result.code !== 0) {
       throw new Error(`Failed to save data to ${filename}: code ${result.code}`)
     }
-    this.cache.set(dateStr, updatedLogs)
+    
+    // 更新内存缓存并去重排序
+    const currentCached = this.cache.get(dateStr) || []
+    const map = new Map<string, TimeLog>()
+    for (const item of currentCached) {
+      if (item?.id) map.set(item.id, item)
+    }
+    map.set(log.id, log)
+    this.cache.set(dateStr, Array.from(map.values()).sort((a, b) => a.startTime - b.startTime))
   }
 
   public async loadLogsByFile(filename: string, options?: { strict?: boolean }): Promise<TimeLog[]> {
@@ -157,16 +185,39 @@ export class StorageManager {
   }
 
   public async saveLogsForDate(dateStr: string, logs: TimeLog[]): Promise<void> {
-    const filename = `${dateStr}.json`
+    const isMobile = (this.plugin as any)?.isMobile ?? false
+    const filename = isMobile ? `${dateStr}_mobile.json` : `${dateStr}.json`
     this.cache.set(dateStr, logs)
     await this.plugin.saveData(filename, logs)
   }
 
   public async deleteLog(dateStr: string, logId: string): Promise<boolean> {
-    const logs = await this.loadLogsForDate(dateStr)
-    const filtered = logs.filter((l) => l.id !== logId)
-    if (filtered.length !== logs.length) {
-      await this.saveLogsForDate(dateStr, filtered)
+    const primaryFile = `${dateStr}.json`
+    const mobileFile = `${dateStr}_mobile.json`
+    const [primaryLogs, mobileLogs] = await Promise.all([
+      this.loadLogsByFile(primaryFile),
+      this.loadLogsByFile(mobileFile)
+    ])
+    let deleted = false
+    const filteredPrimary = primaryLogs.filter((l) => l.id !== logId)
+    if (filteredPrimary.length !== primaryLogs.length) {
+      await this.plugin.saveData(primaryFile, filteredPrimary)
+      deleted = true
+    }
+    const filteredMobile = mobileLogs.filter((l) => l.id !== logId)
+    if (filteredMobile.length !== mobileLogs.length) {
+      await this.plugin.saveData(mobileFile, filteredMobile)
+      deleted = true
+    }
+    if (deleted) {
+      const map = new Map<string, TimeLog>()
+      for (const item of filteredPrimary) {
+        if (item?.id) map.set(item.id, item)
+      }
+      for (const item of filteredMobile) {
+        if (item?.id) map.set(item.id, item)
+      }
+      this.cache.set(dateStr, Array.from(map.values()).sort((a, b) => a.startTime - b.startTime))
       return true
     }
     return false

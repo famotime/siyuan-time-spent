@@ -212,7 +212,7 @@
   "statAvgSessionPrefix": "单会话均长 ",
   "statIdleDeducted": "闲置扣除时长",
   "statIdleDeductedDesc": "精准剥离无操作挂机",
-  "statTopFocus": "主攻专注重心",
+  "statTopFocus": "专注重心",
   "statTopShare": "占比",
   "statNoActivity": "暂无活动",
   "hintDrilldownYear": "点击任意方格可下钻至当天的日视图",
@@ -451,5 +451,10 @@
   "pomodoroCycleLongBreakNext": "接下来 · 长休息",
   "pomodoroPrevForm": "上一个外观",
   "pomodoroNextForm": "下一个外观",
-  "pomodoroDurationSetting": "时长设置"
+  "pomodoroDurationSetting": "时长设置",
+  "mobileTabToday": "今日概览",
+  "mobileTabCalendar": "周期日历",
+  "mobileTabStats": "统计热力",
+  "deviceDesktop": "桌面端",
+  "deviceMobile": "移动端"
 }

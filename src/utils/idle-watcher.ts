@@ -11,11 +11,13 @@ export class IdleWatcher {
     private readonly activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'touchmove', 'touchend'];
     private boundActivityHandler: () => void;
     private afkThresholdMs: number = 600 * 1000; // 默认 10 分钟触发离桌归因询问
+    private isMobile: boolean = false;
 
-    constructor(thresholdSeconds: number, onStatusChange: IdleStatusCallback, afkThresholdMinutes: number = 10) {
+    constructor(thresholdSeconds: number, onStatusChange: IdleStatusCallback, afkThresholdMinutes: number = 10, isMobile: boolean = false) {
         this.threshold = thresholdSeconds * 1000;
         this.afkThresholdMs = Math.max(1, afkThresholdMinutes) * 60 * 1000;
         this.onStatusChange = onStatusChange;
+        this.isMobile = isMobile;
         this.lastActivity = Date.now();
         this.boundActivityHandler = this.handleActivity.bind(this);
     }
@@ -26,6 +28,10 @@ export class IdleWatcher {
 
     public setAfkThreshold(minutes: number) {
         this.afkThresholdMs = Math.max(1, minutes) * 60 * 1000;
+    }
+
+    public setIsMobile(isMobile: boolean) {
+        this.isMobile = isMobile;
     }
 
     public getIsIdle(): boolean {
@@ -73,8 +79,8 @@ export class IdleWatcher {
             const idleDurationMs = Date.now() - this.idleStartTime;
             this.onStatusChange(false, idleDurationMs);
 
-            // 若闲置时长达到归因门槛，广播离桌唤醒事件供界面归因
-            if (idleDurationMs >= this.afkThresholdMs) {
+            // 若闲置时长达到归因门槛，且非移动端时，广播离桌唤醒事件供界面归因
+            if (!this.isMobile && idleDurationMs >= this.afkThresholdMs) {
                 try {
                     window.dispatchEvent(new CustomEvent('siyuan-time-spent:afk-detected', {
                         detail: {

@@ -1,8 +1,10 @@
 <template>
-  <div class="time-spent-dashboard isolate relative z-0 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5" :data-theme-mode="isDarkMode ? 'dark' : 'light'">
+  <div class="time-spent-dashboard isolate relative z-0 p-4 sm:p-6 min-h-full flex flex-col gap-4 sm:gap-5" :class="{ 'is-mobile-dashboard': isMobileView }" :data-theme-mode="isDarkMode ? 'dark' : 'light'">
     
-    <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
-    <header class="flex flex-col gap-3.5 pb-3.5 sy-header-border">
+    <!-- ==================== DESKTOP LAYOUT ==================== -->
+    <template v-if="!isMobileView">
+      <!-- ==================== TOP NAVIGATION & HEADER ==================== -->
+      <header class="flex flex-col gap-3.5 pb-3.5 sy-header-border">
       
       <!-- Top Row: Brand, Tracking Status & Actions -->
       <div class="flex justify-between items-center w-full">
@@ -512,6 +514,286 @@
         @delete-log="handleDeleteLog"
       />
     </section>
+    </template>
+
+    <!-- ==================== MOBILE LAYOUT ==================== -->
+    <template v-else>
+      <div class="mobile-layout flex flex-col flex-1 min-h-0 w-full gap-3">
+        <!-- 移动端顶部标题与轻量操作栏 -->
+        <header class="mobile-header flex items-center justify-between pb-2.5 border-b sy-header-border shrink-0">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 flex items-center justify-center shrink-0">
+              <img :src="iconUrl" :alt="t('title')" class="w-full h-full object-contain drop-shadow-sm select-none" />
+            </div>
+            <div class="flex flex-col min-w-0">
+              <h1 class="text-base font-bold sy-text-primary truncate leading-tight">
+                {{ t('title') }}
+              </h1>
+              <span class="text-[10px] sy-text-secondary truncate">
+                {{ t('brandSubtitle') }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1 shrink-0">
+            <SyIconButton 
+              icon="refresh" 
+              size="sm" 
+              variant="secondary" 
+              :aria-label="t('refreshDataAria')" 
+              @click="handleRefreshData" 
+            />
+            <button 
+              @click="openAiSummaryModal" 
+              class="h-7 px-2.5 inline-flex items-center gap-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[11px] font-bold rounded-lg shadow-sm active:scale-95 transition-transform"
+            >
+              <svg class="w-3 h-3 text-purple-200 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>{{ t('aiSummaryBtn') }}</span>
+            </button>
+            <SyIconButton 
+              icon="settings" 
+              size="sm" 
+              variant="secondary" 
+              :aria-label="t('openSettingAria')" 
+              @click="handleOpenSetting" 
+            />
+            <SyIconButton 
+              icon="close" 
+              size="sm" 
+              variant="ghost" 
+              :aria-label="t('closeDashboardAria')" 
+              @click="emit('close')" 
+            />
+          </div>
+        </header>
+
+        <!-- 移动端 Tab 1: 【今日概览】 -->
+        <main v-if="mobileTab === 'today'" class="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto">
+          <!-- 紧凑番茄钟卡片 -->
+          <MobilePomodoroCard />
+
+          <!-- 今日核心 KPI 胶囊卡片 -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="sy-card p-3 rounded-xl shadow-xs">
+              <div class="text-[11px] sy-text-secondary mb-0.5 flex items-center justify-between">
+                <span>{{ t('statTotalDuration') }}</span>
+                <span class="text-indigo-500 font-mono text-[10px]">Today</span>
+              </div>
+              <div class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-500">
+                {{ formatDuration(totalFocusSeconds) }}
+              </div>
+            </div>
+
+            <div class="sy-card p-3 rounded-xl shadow-xs">
+              <div class="text-[11px] sy-text-secondary mb-0.5 flex items-center justify-between">
+                <span>{{ t('statSessions') }}</span>
+                <span class="text-emerald-500 font-mono text-[10px]">Count</span>
+              </div>
+              <div class="text-lg font-black text-emerald-500">
+                {{ activeLogs.length }} <span class="text-xs font-normal sy-text-secondary">{{ t('statSessionUnit') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 专注目标简要卡片 (如已设定) -->
+          <div v-if="focusGoal" class="focus-goal-hero-card rounded-xl p-3 flex items-center justify-between gap-2 shadow-xs">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-xs font-bold text-indigo-400 shrink-0">🎯 {{ t('focusGoalHeroBadge') }}:</span>
+              <span class="text-xs font-semibold sy-text-primary truncate">{{ focusGoal }}</span>
+            </div>
+            <button 
+              @click="startEditingGoal" 
+              class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium shrink-0 px-2 py-0.5 rounded bg-indigo-500/10 cursor-pointer"
+            >
+              {{ t('edit') }}
+            </button>
+          </div>
+
+          <!-- 今日时间明细与时间轴 -->
+          <div class="flex-1 flex flex-col min-h-0 pt-1">
+            <CalendarView
+              :logs="activeLogs" 
+              :day-map="scopeDayMap" 
+              mode="day" 
+              :current-date="currentDate" 
+              @select-date="handleSelectDate" 
+              @switch-mode="handleCalendarSwitchMode"
+              @open-manual-log="isManualLogModalVisible = true"
+              @delete-log="handleDeleteLog"
+            />
+          </div>
+        </main>
+
+        <!-- 移动端 Tab 2: 【周期日历】 -->
+        <main v-else-if="mobileTab === 'calendar'" class="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto">
+          <!-- 周期导航与视图切换 -->
+          <div class="flex items-center justify-between gap-2 p-2 rounded-xl sy-pill-group shrink-0">
+            <div class="flex items-center gap-1">
+              <button 
+                @click="navigatePeriod(-1)" 
+                class="w-7 h-7 flex items-center justify-center sy-text-secondary hover:sy-text-primary rounded-lg transition-colors cursor-pointer"
+                :aria-label="t('navPrevPeriod')"
+              >
+                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <button 
+                @click="jumpToToday" 
+                class="px-2 h-7 text-xs font-semibold sy-text-primary hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors border-x sy-divider cursor-pointer"
+              >
+                {{ todayButtonLabel }}
+              </button>
+
+              <button 
+                @click="navigatePeriod(1)" 
+                class="w-7 h-7 flex items-center justify-center sy-text-secondary hover:sy-text-primary rounded-lg transition-colors cursor-pointer"
+                :aria-label="t('navNextPeriod')"
+              >
+                <svg class="w-4 h-4 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <span class="text-xs font-mono font-medium sy-text-primary ml-1 truncate max-w-[130px]">
+                {{ currentPeriodLabel }}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <button 
+                @click="switchMode('week')" 
+                class="h-7 px-2.5 text-xs rounded-lg transition-all font-medium cursor-pointer"
+                :class="calendarMode === 'week' ? 'bg-indigo-600 text-white font-bold' : 'sy-text-secondary'"
+              >
+                {{ t('viewWeek') }}
+              </button>
+              <button 
+                @click="switchMode('month')" 
+                class="h-7 px-2.5 text-xs rounded-lg transition-all font-medium cursor-pointer"
+                :class="calendarMode === 'month' ? 'bg-indigo-600 text-white font-bold' : 'sy-text-secondary'"
+              >
+                {{ t('viewMonth') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- CalendarView (周 / 月) -->
+          <div class="flex-1 min-h-[380px]">
+            <CalendarView
+              :logs="activeLogs" 
+              :day-map="scopeDayMap" 
+              :mode="calendarMode === 'year' ? 'week' : calendarMode" 
+              :current-date="currentDate" 
+              @select-date="handleSelectDate" 
+              @switch-mode="handleCalendarSwitchMode"
+              @open-manual-log="isManualLogModalVisible = true"
+              @delete-log="handleDeleteLog"
+            />
+          </div>
+        </main>
+
+        <!-- 移动端 Tab 3: 【统计热力】 -->
+        <main v-else class="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto">
+          <!-- 统计概览指标 -->
+          <div class="grid grid-cols-2 gap-2.5 shrink-0">
+            <div class="sy-card p-3 rounded-xl shadow-xs">
+              <div class="text-[11px] sy-text-secondary mb-0.5">
+                {{ modeName }} {{ t('statTotalDuration') }}
+              </div>
+              <div class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-500">
+                {{ formatDuration(totalFocusSeconds) }}
+              </div>
+              <div class="text-[10px] sy-text-secondary mt-0.5 truncate">
+                {{ scopeFocusSubtitle }}
+              </div>
+            </div>
+
+            <div class="sy-card p-3 rounded-xl shadow-xs">
+              <div class="text-[11px] sy-text-secondary mb-0.5">
+                {{ averageMetricLabel }}
+              </div>
+              <div class="text-lg font-black text-cyan-600 dark:text-cyan-400">
+                {{ formatDuration(averageFocusSeconds) }}
+              </div>
+              <div class="text-[10px] sy-text-secondary mt-0.5 truncate">
+                {{ averageMetricSubtitle }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts 图表 -->
+          <div class="charts-container">
+            <Charts 
+              :logs="activeLogs" 
+              :scope-type="calendarMode" 
+              :scope-date-title="currentPeriodLabel" 
+              :day-map="scopeDayMap" 
+              :day-labels="scopeDayLabels" 
+            />
+          </div>
+
+          <!-- 年度热力图 -->
+          <div class="sy-card rounded-xl p-3 shadow-xs flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold sy-text-primary flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                <span>{{ t('tabHeatmap') }} ({{ currentDate.getFullYear() }})</span>
+              </h3>
+            </div>
+            <div class="overflow-x-auto pb-1">
+              <HeatmapView
+                :year="currentDate.getFullYear()"
+                :day-map="scopeDayMap"
+                @select-date="handleSelectDate"
+              />
+            </div>
+          </div>
+        </main>
+
+        <!-- 移动端常驻底部 Tab 导航栏 -->
+        <nav class="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around py-1.5 px-3 backdrop-blur-md">
+          <button 
+            @click="handleMobileTabSwitch('today')" 
+            class="flex flex-col items-center gap-0.5 flex-1 py-1 rounded-xl transition-colors cursor-pointer"
+            :class="mobileTab === 'today' ? 'text-indigo-500 font-bold' : 'sy-text-secondary hover:sy-text-primary'"
+          >
+            <svg class="w-5 h-5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span class="text-[11px] leading-tight">{{ t('mobileTabToday') }}</span>
+          </button>
+
+          <button 
+            @click="handleMobileTabSwitch('calendar')" 
+            class="flex flex-col items-center gap-0.5 flex-1 py-1 rounded-xl transition-colors cursor-pointer"
+            :class="mobileTab === 'calendar' ? 'text-indigo-500 font-bold' : 'sy-text-secondary hover:sy-text-primary'"
+          >
+            <svg class="w-5 h-5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="text-[11px] leading-tight">{{ t('mobileTabCalendar') }}</span>
+          </button>
+
+          <button 
+            @click="handleMobileTabSwitch('stats')" 
+            class="flex flex-col items-center gap-0.5 flex-1 py-1 rounded-xl transition-colors cursor-pointer"
+            :class="mobileTab === 'stats' ? 'text-indigo-500 font-bold' : 'sy-text-secondary hover:sy-text-primary'"
+          >
+            <svg class="w-5 h-5 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span class="text-[11px] leading-tight">{{ t('mobileTabStats') }}</span>
+          </button>
+        </nav>
+      </div>
+    </template>
 
     <!-- Toast Notification (直观且防污染) -->
     <div 
@@ -566,6 +848,7 @@ import Charts from './Charts.vue';
 import AiSummaryModal from './AiSummaryModal.vue';
 import ManualLogModal from './ManualLogModal.vue';
 import AfkPromptModal from './AfkPromptModal.vue';
+import MobilePomodoroCard from './Pomodoro/MobilePomodoroCard.vue';
 import SyTooltip from './Common/SyTooltip.vue';
 import SyIconButton from './Common/SyIconButton.vue';
 import type { TimeLog } from '../models/TimeLog';
@@ -690,6 +973,36 @@ const currentDate = ref<Date>(new Date());
 const activeLogs = ref<TimeLog[]>([]);
 const scopeDayMap = ref<Record<string, TimeLog[]>>({});
 const toastMessage = ref<string>('');
+
+// 移动端多栏导航与自适应
+const isMobileView = ref(false);
+const mobileTab = ref<'today' | 'calendar' | 'stats'>('today');
+
+const checkMobileView = () => {
+  try {
+    if (plugin?.isMobile) {
+      isMobileView.value = true;
+      return;
+    }
+  } catch {}
+  isMobileView.value = window.innerWidth <= 768;
+};
+
+const handleMobileTabSwitch = (tab: 'today' | 'calendar' | 'stats') => {
+  mobileTab.value = tab;
+  if (tab === 'today') {
+    calendarMode.value = 'day';
+    currentDate.value = new Date();
+    loadDataForCurrentScope();
+  } else if (tab === 'calendar') {
+    if (calendarMode.value === 'day' || calendarMode.value === 'year') {
+      calendarMode.value = 'week';
+    }
+    loadDataForCurrentScope();
+  } else if (tab === 'stats') {
+    loadDataForCurrentScope();
+  }
+};
 
 // 数据导出下拉状态
 const isExportMenuOpen = ref<boolean>(false);
@@ -1095,6 +1408,9 @@ const jumpToToday = () => {
 const handleSelectDate = (d: Date) => {
   currentDate.value = new Date(d);
   calendarMode.value = 'day';
+  if (isMobileView.value) {
+    mobileTab.value = 'today';
+  }
   loadDataForCurrentScope();
 };
 
@@ -1223,6 +1539,8 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
 };
 
 onMounted(async () => {
+  checkMobileView();
+  window.addEventListener('resize', checkMobileView);
   window.addEventListener('keydown', handleGlobalKeyDown);
   window.addEventListener('siyuan-time-spent:afk-detected', onAfkDetected);
   detectThemeMode();
@@ -1231,6 +1549,11 @@ onMounted(async () => {
   });
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme-mode', 'class'] });
   themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme-mode', 'class'] });
+
+  if (isMobileView.value) {
+    calendarMode.value = 'day';
+    currentDate.value = new Date();
+  }
 
   loadDataForCurrentScope();
   // 载入持久化的专注目标
@@ -1247,6 +1570,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobileView);
   window.removeEventListener('keydown', handleGlobalKeyDown);
   window.removeEventListener('siyuan-time-spent:afk-detected', onAfkDetected);
   if (themeObserver) {
@@ -1432,5 +1756,27 @@ watch([calendarMode, currentDate], () => {
 :deep(svg),
 svg.sy-wire-icon {
   fill: none !important;
+}
+
+/* 移动端专属适配 */
+.is-mobile-dashboard {
+  padding: 0.75rem 0.75rem calc(4.5rem + env(safe-area-inset-bottom, 0px)) 0.75rem !important;
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+.mobile-bottom-nav {
+  padding-bottom: calc(0.375rem + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+  background-color: var(--st-bg-surface, var(--b3-theme-background, #161b22));
+  border-top: 1px solid var(--st-border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+:root[data-theme-mode="light"] .mobile-bottom-nav,
+.theme--light .mobile-bottom-nav,
+[data-theme-mode="light"] .mobile-bottom-nav {
+  background-color: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
 }
 </style>

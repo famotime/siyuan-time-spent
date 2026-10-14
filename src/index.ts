@@ -244,7 +244,7 @@ export default class TimeSpentPlugin extends Plugin {
    * 打开源时记看板（根据设置在页签或弹窗中打开）
    */
   public async openDashboard() {
-    if (this.settings.openInTab) {
+    if (this.settings.openInTab && !this.isMobile) {
       await openTab({
         app: this.app,
         custom: {
