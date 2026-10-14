@@ -488,18 +488,6 @@
             <template v-else-if="calendarMode === 'week'">{{ t('hintDrilldownWeek') }}</template>
             <template v-else>{{ t('hintClickDoc') }}</template>
           </span>
-          <button 
-            v-if="calendarMode !== 'year'"
-            @click="isManualLogModalVisible = true"
-            class="h-7 px-2.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 hover:border-indigo-500/50 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
-            :title="t('manualLogModalTitle')"
-          >
-            <svg class="w-3.5 h-3.5 sy-wire-icon text-indigo-500" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span>{{ t('manualLogAddBtn') }}</span>
-          </button>
         </div>
       </div>
 
