@@ -146,6 +146,23 @@ describe('quiet state controls', () => {
     expect(wrapper.emitted('update:breathing')?.at(-1)).toEqual([true])
     expect(vi.getTimerCount()).toBeGreaterThan(0)
   })
+  it('renders start break and skip break buttons when break is pending', async () => {
+    const wrapper = render(BreakPanel, {
+      kind: 'short',
+      remainingText: '05:00',
+      cycleSize: 4,
+      reduced: false,
+      pending: true,
+    })
+    expect(wrapper.text()).toContain('开始休息')
+    expect(wrapper.text()).toContain('跳过休息')
+    const startBtn = wrapper.get('.st-pomo-button--primary')
+    await startBtn.trigger('click')
+    expect(wrapper.emitted('startBreak')).toBeTruthy()
+    const skipBtn = wrapper.get('.st-pomo-button--quiet')
+    await skipBtn.trigger('click')
+    expect(wrapper.emitted('skip')).toBeTruthy()
+  })
   it('completion is an inline status, never a full-screen overlay', () => {
     const wrapper = render(AchievementMoment, {
       visible: true,

@@ -18,6 +18,11 @@
           @open-dashboard="$emit('openDashboard')"
           @close="$emit('close', true)"
         />
+        <ConfettiCelebration
+          v-if="showConfetti"
+          :reduced="reduced"
+          @complete="showConfetti = false"
+        />
         <button
           class="pomo-document"
           type="button"
@@ -151,7 +156,9 @@
             :remaining-text="view.displayText.value"
             :cycle-size="view.cycleSize.value"
             :reduced="reduced"
+            :pending="view.isBreakPending.value"
             :session-summary="breakSummary"
+            @startBreak="$emit('startBreak')"
             @skip="$emit('skipBreak')"
             @extend="$emit('extendBreak', $event)"
             @update:breathing="isBreathing = $event"
@@ -231,6 +238,7 @@ import {
 } from '../../i18n'
 import CycleRail from './CycleRail.vue'
 import FocusPanelHeader from './FocusPanelHeader.vue'
+import ConfettiCelebration from './ConfettiCelebration.vue'
 import BreakPanel from './panels/BreakPanel.vue'
 import ReadyPanel from './panels/ReadyPanel.vue'
 import RunningPanel from './panels/RunningPanel.vue'
@@ -278,6 +286,7 @@ const emit = defineEmits<{
   (e: 'saveNote'): void
   (e: 'skipNote'): void
   (e: 'dismissAfk'): void
+  (e: 'startBreak'): void
   (e: 'skipBreak'): void
   (e: 'extendBreak', minutes: number): void
   (e: 'openDashboard'): void
@@ -289,7 +298,23 @@ const readyPanel = ref<{ closeExpanded: () => boolean } | null>(null)
 const runningPanel = ref<{ closeExpanded: () => boolean } | null>(null)
 const breakPanel = ref<{ closeExpanded: () => boolean } | null>(null)
 const isBreathing = ref(false)
+const showConfetti = ref(false)
+const hasCelebratedThisBreak = ref(false)
 const FORM_KEYS: PomodoroFormKey[] = ['zen', 'chrono', 'hourglass']
+
+watch(
+  () => [props.isOpen, props.view.isBreakPending.value] as const,
+  ([open, pending]) => {
+    if (open && pending && !hasCelebratedThisBreak.value) {
+      showConfetti.value = true
+      hasCelebratedThisBreak.value = true
+    } else if (!pending) {
+      hasCelebratedThisBreak.value = false
+      showConfetti.value = false
+    }
+  },
+  { immediate: true },
+)
 
 const breakSummary = computed(() => {
   const last = props.pomodoro.lastRecord.value

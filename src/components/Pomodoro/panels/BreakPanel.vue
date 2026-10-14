@@ -12,30 +12,50 @@
           {{ reduced ? t('pomodoroBreathStatic') : breathLabel }}
         </span>
         <span v-else>
-          {{ sessionSummary || t(kind === 'long' ? 'pomodoroRestLongHint' : 'pomodoroRestHint') }}
+          {{ sessionSummary || (pending ? t('pomodoroBreakPendingSubtitle') : t(kind === 'long' ? 'pomodoroRestLongHint' : 'pomodoroRestHint')) }}
         </span>
       </p>
       <div class="pomo-break__actions">
-        <button
-          type="button"
-          class="st-pomo-button st-pomo-button--quiet"
-          @click="$emit('extend', 5)"
-        >
-          {{ t('pomodoroExtendBreak') }}
-        </button>
-        <button
-          ref="coachButton"
-          type="button"
-          class="st-pomo-button st-pomo-button--quiet"
-          :class="{ 'st-pomo-button--active': isBreathing }"
-          :aria-pressed="isBreathing"
-          @click="toggleBreathing"
-        >
-          {{ isBreathing ? t('pomodoroBreathStop') : t('pomodoroBreathCoachTitle') }}
-        </button>
+        <template v-if="pending">
+          <button
+            type="button"
+            class="st-pomo-button st-pomo-button--quiet"
+            @click="onSkip"
+          >
+            {{ t('pomodoroSkipBreak') }}
+          </button>
+        </template>
+        <template v-else>
+          <button
+            type="button"
+            class="st-pomo-button st-pomo-button--quiet"
+            @click="$emit('extend', 5)"
+          >
+            {{ t('pomodoroExtendBreak') }}
+          </button>
+          <button
+            ref="coachButton"
+            type="button"
+            class="st-pomo-button st-pomo-button--quiet"
+            :class="{ 'st-pomo-button--active': isBreathing }"
+            :aria-pressed="isBreathing"
+            @click="toggleBreathing"
+          >
+            {{ isBreathing ? t('pomodoroBreathStop') : t('pomodoroBreathCoachTitle') }}
+          </button>
+        </template>
       </div>
     </div>
     <button
+      v-if="pending"
+      type="button"
+      class="st-pomo-button st-pomo-button--primary st-pomo-anim-soft"
+      @click="$emit('startBreak')"
+    >
+      {{ t('pomodoroStartBreak') }}
+    </button>
+    <button
+      v-else
       type="button"
       class="st-pomo-button st-pomo-button--primary st-pomo-anim-soft"
       @click="onSkip"
@@ -61,13 +81,15 @@ const props = withDefaults(
     remainingText: string
     cycleSize: number
     reduced: boolean
+    pending?: boolean
     sessionSummary?: string
   }>(),
-  { sessionSummary: '' },
+  { sessionSummary: '', pending: false },
 )
 
 const emit = defineEmits<{
   (e: 'skip'): void
+  (e: 'startBreak'): void
   (e: 'extend', minutes: number): void
   (e: 'update:breathing', value: boolean): void
 }>()

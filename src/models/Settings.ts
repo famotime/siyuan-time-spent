@@ -22,6 +22,7 @@ export interface PluginSettings {
   pomodoroAchievementMoment?: boolean;    // 番茄达成时播放全屏微时刻
   pomodoroShortcut?: boolean;             // 键盘快捷键 Alt+P / Space / Esc
   pomodoroWheelAdjust?: boolean;          // 待机时表盘滚轮以 5 分钟步进微调时长
+  pomodoroAutoStartBreak?: boolean;       // 专注完成是否自动开始休息（默认 false，关闭时进入就绪等待手动开启）
 
   // 离桌归因设置
   enableAfkPrompt?: boolean;         // 离桌唤醒后是否弹窗询问归因
@@ -63,6 +64,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   pomodoroAchievementMoment: true,
   pomodoroShortcut: true,
   pomodoroWheelAdjust: true,
+  pomodoroAutoStartBreak: false,
   enableAfkPrompt: false,
   afkPromptThresholdMinutes: 10,
   enableDailyNoteArchiving: false,

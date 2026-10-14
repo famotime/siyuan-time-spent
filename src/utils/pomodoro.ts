@@ -57,6 +57,7 @@ export class PomodoroManager {
   public cycleSize = ref<number>(4)
   public cycleCompleted = ref<number>(0)
   public breakKind = ref<BreakKind>('short')
+  public isBreakPending = ref<boolean>(false)
 
   // —— 离桌守卫 ——
   // afkIdleSeconds 为「当前这一段」离桌时长，驱动"离开中"徽；
@@ -212,7 +213,7 @@ export class PomodoroManager {
   }
 
   /**
-   * 提前完成并记录有效时长，随后转入休息
+   * 提前完成并记录有效时长，随后直接回到待机就绪状态（不强制进入休息）
    */
   public finishEarly() {
     if (this.state.value === 'running' || this.state.value === 'paused') {
@@ -226,7 +227,20 @@ export class PomodoroManager {
         minutes: Math.round(actualDuration / 60),
         cycleDone: this.cycleCompleted.value >= this.cycleSize.value,
       }
-      this.enterBreak()
+      this.stopTimer()
+      this.state.value = 'idle'
+      this.isStopwatch.value = false
+      this.isBreakPending.value = false
+      const defaultWork = this.plugin.settings?.pomodoroWorkMinutes || 25
+      this.remainingSeconds.value = defaultWork * 60
+      this.totalSeconds.value = defaultWork * 60
+      this.elapsedSeconds.value = 0
+      this.afkFrozen.value = false
+      this.afkIdleSeconds.value = 0
+      this.afkReturn.value = null
+      this.sessionIdleAccumSec = 0
+      this.pausedElapsedMs = 0
+      this.sampleTimeBasis()
     }
   }
 
@@ -273,6 +287,7 @@ export class PomodoroManager {
     if (wasLong) {
       this.cycleCompleted.value = 0
     }
+    this.isBreakPending.value = false
     this.reset()
   }
 
@@ -322,6 +337,7 @@ export class PomodoroManager {
    */
   public computeRawProgress(): number {
     if (this.state.value === 'break') {
+      if (this.isBreakPending.value) return 0
       const total = this.breakTotalSeconds.value || 300
       return Math.max(0, Math.min(1, 1 - this.breakRemainingSeconds.value / total))
     }
@@ -377,12 +393,12 @@ export class PomodoroManager {
     this.recordPomodoroSession(duration, false)
 
     // 播放提示音
-    if (this.plugin.settings.pomodoroSound !== false) {
+    if (this.plugin.settings?.pomodoroSound !== false) {
       playPomodoroCompleteChord()
     }
 
     // 提示完成
-    if (this.plugin.settings.pomodoroNotification !== false) {
+    if (this.plugin.settings?.pomodoroNotification !== false) {
       showMessage(t('pomodoroCompletedMsg'), 8000, 'info')
     }
 
@@ -392,12 +408,17 @@ export class PomodoroManager {
       cycleDone: this.cycleCompleted.value >= this.cycleSize.value,
     }
 
-    this.enterBreak()
+    const autoStart = this.plugin.settings?.pomodoroAutoStartBreak === true
+    if (autoStart) {
+      this.enterBreak()
+    } else {
+      this.prepareBreak()
+    }
   }
 
   private handleBreakComplete() {
     this.stopTimer()
-    if (this.plugin.settings.pomodoroSound !== false) {
+    if (this.plugin.settings?.pomodoroSound !== false) {
       playBreakCompleteChord()
     }
 
@@ -408,6 +429,43 @@ export class PomodoroManager {
       showMessage(t('pomodoroBreakEnded'), 6000, 'info')
     }
     this.reset()
+  }
+
+  /**
+   * 专注完成后准备休息（未开启自动休息时挂起，等待用户主动点击开始）
+   */
+  public prepareBreak() {
+    this.stopTimer()
+    const isLong = this.cycleCompleted.value >= this.cycleSize.value
+    this.breakKind.value = isLong ? 'long' : 'short'
+    const breakMin = isLong
+      ? (this.plugin.settings?.pomodoroLongBreakMinutes || 15)
+      : (this.plugin.settings?.pomodoroBreakMinutes || 5)
+
+    this.breakMinutes.value = breakMin
+    this.breakTotalSeconds.value = breakMin * 60
+    this.breakRemainingSeconds.value = breakMin * 60
+    this.state.value = 'break'
+    this.isBreakPending.value = true
+    this.afkFrozen.value = false
+    this.afkIdleSeconds.value = 0
+    this.sampleTimeBasis()
+    Logger.log(`Pomodoro break prepared (waiting for manual start): ${breakMin}m`)
+  }
+
+  /**
+   * 主动启动休息倒计时
+   */
+  public startBreakCountdown() {
+    if (this.state.value === 'break' && this.isBreakPending.value) {
+      this.isBreakPending.value = false
+      const breakMin = this.breakMinutes.value || 5
+      this.sessionStartTime = Date.now()
+      this.targetEndTime = this.sessionStartTime + this.breakRemainingSeconds.value * 1000
+      this.timerId = setInterval(() => this.tickBreak(), 500)
+      this.sampleTimeBasis()
+      Logger.log(`Pomodoro break started: ${breakMin}m`)
+    }
   }
 
   /**
@@ -426,6 +484,7 @@ export class PomodoroManager {
   }
 
   private applyBreakWindow(breakMin: number) {
+    this.isBreakPending.value = false
     this.breakMinutes.value = breakMin
     this.breakTotalSeconds.value = breakMin * 60
     this.breakRemainingSeconds.value = breakMin * 60
@@ -521,6 +580,7 @@ export class PomodoroManager {
   private wallElapsedMs(): number {
     if (this.state.value === 'idle') return 0
     if (this.state.value === 'break') {
+      if (this.isBreakPending.value) return 0
       const breakTotalMs = this.breakTotalSeconds.value * 1000
       return Math.max(0, Date.now() - (this.targetEndTime - breakTotalMs))
     }
@@ -564,7 +624,7 @@ export class PomodoroManager {
     }
     return {
       elapsedMs: this.wallElapsedMs(),
-      live: this.state.value !== 'idle' && this.state.value !== 'paused',
+      live: this.state.value !== 'idle' && this.state.value !== 'paused' && !this.isBreakPending.value,
       totalMs: this.totalMs(),
       sweep,
     }
@@ -648,6 +708,7 @@ export class PomodoroManager {
     this.stopTimer()
     this.state.value = 'idle'
     this.isStopwatch.value = false
+    this.isBreakPending.value = false
     this.breakKind.value = 'short'
     const defaultWork = this.plugin.settings?.pomodoroWorkMinutes || 25
     this.remainingSeconds.value = defaultWork * 60

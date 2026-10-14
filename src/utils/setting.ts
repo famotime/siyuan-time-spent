@@ -660,6 +660,20 @@ export class SettingManager {
       ),
     });
 
+    // 1.14 专注完成自动开始休息
+    this.setting.addItem({
+      title: t("settingPomodoroAutoStartBreakTitle"),
+      description: t("settingPomodoroAutoStartBreakDesc"),
+      createActionElement: () => this.buildSwitchSetting(
+        "pomodoroAutoStartBreak",
+        settings.pomodoroAutoStartBreak ?? false,
+        settings,
+        async (val) => {
+          settings.pomodoroAutoStartBreak = val;
+        },
+      ),
+    });
+
     // ================= 2. AI 服务设置项 =================
     // 2.1 API 提供商
     this.setting.addItem({
@@ -978,6 +992,7 @@ export class SettingManager {
           "pomodoroAchievementMoment",
           "pomodoroShortcut",
           "pomodoroWheelAdjust",
+          "pomodoroAutoStartBreak",
         ],
         open: true,
       },

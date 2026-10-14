@@ -187,7 +187,7 @@ describe('storage acknowledgements', () => {
 })
 
 describe('manager save state without timing changes', () => {
-  function manager(save: (log: TimeLog) => Promise<void>) {
+  function manager(save: (log: TimeLog) => Promise<void>, customSettings: Record<string, unknown> = {}) {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-02T12:00:00'))
     const plugin = {
@@ -196,6 +196,7 @@ describe('manager save state without timing changes', () => {
         pomodoroSound: false,
         pomodoroNotification: false,
         pomodoroAfkGuardian: false,
+        ...customSettings,
       },
       timeTracker: {
         getCurrentDocId: () => 'note',
@@ -215,13 +216,13 @@ describe('manager save state without timing changes', () => {
     expect(timer.lastRecord.value?.status).toBe('ignored')
     expect(save).not.toHaveBeenCalled()
   })
-  it('enters break immediately but only counts a record after saving', async () => {
+  it('returns to idle immediately but only counts a record after saving', async () => {
     const pending = deferred<void>()
     const timer = manager(() => pending.promise)
     timer.start(25)
     vi.advanceTimersByTime(10000)
     timer.finishEarly()
-    expect(timer.state.value).toBe('break')
+    expect(timer.state.value).toBe('idle')
     expect(timer.lastRecord.value?.status).toBe('saving')
     expect(timer.savedLogVersion.value).toBe(0)
     pending.resolve()
@@ -230,13 +231,38 @@ describe('manager save state without timing changes', () => {
     expect(timer.lastRecord.value?.status).toBe('saved')
     expect(timer.savedLogVersion.value).toBe(1)
   })
+  it('prepares break without auto-ticking when pomodoroAutoStartBreak is false', () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    const timer = manager(save, { pomodoroAutoStartBreak: false })
+    timer.start(25)
+    vi.advanceTimersByTime(25 * 60 * 1000)
+    expect(timer.state.value).toBe('break')
+    expect(timer.isBreakPending.value).toBe(true)
+    // 尚未开始倒计时
+    vi.advanceTimersByTime(10000)
+    expect(timer.breakRemainingSeconds.value).toBe(5 * 60)
+    // 手动启动休息倒计时
+    timer.startBreakCountdown()
+    expect(timer.isBreakPending.value).toBe(false)
+    vi.advanceTimersByTime(1000)
+    expect(timer.breakRemainingSeconds.value).toBeLessThan(5 * 60)
+  })
+  it('automatically starts break when pomodoroAutoStartBreak is true', () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    const timer = manager(save, { pomodoroAutoStartBreak: true })
+    timer.start(25)
+    vi.advanceTimersByTime(25 * 60 * 1000)
+    expect(timer.state.value).toBe('break')
+    expect(timer.isBreakPending.value).toBe(false)
+    vi.advanceTimersByTime(1000)
+    expect(timer.breakRemainingSeconds.value).toBeLessThan(5 * 60)
+  })
   it('keeps a late success from taking over a new session', async () => {
     const pending = deferred<void>()
     const timer = manager(() => pending.promise)
     timer.start(25)
     vi.advanceTimersByTime(10000)
     timer.finishEarly()
-    timer.skipBreak()
     timer.start(15)
     pending.resolve()
     await pending.promise

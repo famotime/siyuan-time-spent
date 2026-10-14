@@ -46,6 +46,7 @@ export interface PomodoroView {
   docId: ComputedRef<string | null>
   cycleCompleted: ComputedRef<number>
   cycleSize: ComputedRef<number>
+  isBreakPending: ComputedRef<boolean>
 }
 
 function pad(n: number): string {
@@ -118,6 +119,9 @@ export function usePomodoroPresenter(
         : t('pomodoroReadyHint')
     }
     if (s === 'break') {
+      if (pomodoro.isBreakPending.value) {
+        return t('pomodoroBreakPendingSubtitle')
+      }
       return pomodoro.breakKind.value === 'long'
         ? t('pomodoroLongBreakTitle')
         : t('pomodoroInBreak')
@@ -145,6 +149,9 @@ export function usePomodoroPresenter(
       return `${displayText.value} (${t('pomodoroPause')})`
     }
     if (s === 'break') {
+      if (pomodoro.isBreakPending.value) {
+        return `${t('pomodoroStartBreak')} ${displayText.value}`
+      }
       const label =
         pomodoro.breakKind.value === 'long'
           ? t('pomodoroLongBreakTitle')
@@ -163,6 +170,9 @@ export function usePomodoroPresenter(
       return `${t('pomodoroTimerTitle')}: ${displayText.value} · 点击管理`
     }
     if (s === 'break') {
+      if (pomodoro.isBreakPending.value) {
+        return `${t('pomodoroTimerTitle')}: ${t('pomodoroBreakPendingSubtitle')}`
+      }
       return `${t('pomodoroBreakSession')}: ${displayText.value} · 点击查看`
     }
     return `${t('pomodoroTimerTitle')} · 点击开启专注`
@@ -205,6 +215,7 @@ export function usePomodoroPresenter(
     docId,
     cycleCompleted: computed(() => pomodoro.cycleCompleted.value),
     cycleSize: computed(() => pomodoro.cycleSize.value),
+    isBreakPending: computed(() => pomodoro.isBreakPending.value),
   }
 }
 

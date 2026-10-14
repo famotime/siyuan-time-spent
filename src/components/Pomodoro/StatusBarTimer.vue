@@ -50,6 +50,7 @@
       @saveNote="saveNote"
       @skipNote="noteDraft = ''"
       @dismissAfk="pomodoro.dismissAfkReturn()"
+      @startBreak="pomodoro.startBreakCountdown()"
       @skipBreak="pomodoro.skipBreak()"
       @extendBreak="pomodoro.extendBreak($event)"
       @openDashboard="openDashboard"
