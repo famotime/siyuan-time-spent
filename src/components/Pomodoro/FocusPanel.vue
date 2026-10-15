@@ -18,6 +18,7 @@
           @open-dashboard="$emit('openDashboard')"
           @minimize="$emit('minimize')"
           @close="$emit('close', true)"
+          @drag-start="handleHeaderDragStart"
         />
         <ConfettiCelebration
           v-if="showConfetti"
@@ -347,8 +348,87 @@ const positionStyle = ref<Record<string, string>>({
 })
 let observer: ResizeObserver | undefined
 
+const customPosition = ref<{ left: number; top: number } | null>(null)
+let isDraggingPanel = false
+let dragStartPointerX = 0
+let dragStartPointerY = 0
+let dragStartLeft = 0
+let dragStartTop = 0
+
+function handleHeaderDragStart(e: PointerEvent) {
+  if (e.button !== 0 && e.button !== undefined) return
+  if (!cardEl.value) return
+  const rect = cardEl.value.getBoundingClientRect()
+  isDraggingPanel = true
+  dragStartPointerX = e.clientX
+  dragStartPointerY = e.clientY
+  dragStartLeft = rect.left
+  dragStartTop = rect.top
+
+  window.addEventListener('pointermove', onPanelPointerMove)
+  window.addEventListener('pointerup', onPanelPointerUp)
+  window.addEventListener('pointercancel', onPanelPointerUp)
+}
+
+function onPanelPointerMove(e: PointerEvent) {
+  if (!isDraggingPanel || !cardEl.value) return
+  e.preventDefault()
+  const deltaX = e.clientX - dragStartPointerX
+  const deltaY = e.clientY - dragStartPointerY
+  const rect = cardEl.value.getBoundingClientRect()
+  const width = rect.width || 360
+  const height = rect.height || 400
+  const minX = 8
+  const minY = 8
+  const maxX = Math.max(minX, window.innerWidth - width - 8)
+  const maxY = Math.max(minY, window.innerHeight - height - 8)
+
+  const newLeft = Math.max(minX, Math.min(maxX, Math.round(dragStartLeft + deltaX)))
+  const newTop = Math.max(minY, Math.min(maxY, Math.round(dragStartTop + deltaY)))
+
+  customPosition.value = { left: newLeft, top: newTop }
+  positionStyle.value = {
+    left: `${newLeft}px`,
+    top: `${newTop}px`,
+    width: `${width}px`,
+    maxHeight: `calc(100vh - 16px)`,
+    bottom: 'auto',
+    right: 'auto',
+  }
+}
+
+function onPanelPointerUp() {
+  if (!isDraggingPanel) return
+  isDraggingPanel = false
+  window.removeEventListener('pointermove', onPanelPointerMove)
+  window.removeEventListener('pointerup', onPanelPointerUp)
+  window.removeEventListener('pointercancel', onPanelPointerUp)
+}
+
 function reposition() {
-  if (!props.isOpen || !props.anchorEl) return
+  if (!props.isOpen) return
+  if (customPosition.value && cardEl.value) {
+    const rect = cardEl.value.getBoundingClientRect()
+    const width = rect.width || 360
+    const height = rect.height || 400
+    const minX = 8
+    const minY = 8
+    const maxX = Math.max(minX, window.innerWidth - width - 8)
+    const maxY = Math.max(minY, window.innerHeight - height - 8)
+    const left = Math.max(minX, Math.min(maxX, customPosition.value.left))
+    const top = Math.max(minY, Math.min(maxY, customPosition.value.top))
+    customPosition.value = { left, top }
+    positionStyle.value = {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${Math.min(360, window.innerWidth - 16)}px`,
+      maxHeight: `calc(100vh - 16px)`,
+      bottom: 'auto',
+      right: 'auto',
+    }
+    return
+  }
+  if (!props.anchorEl) return
   const anchor = props.anchorEl.getBoundingClientRect()
   const viewport = window.visualViewport
   const width = viewport?.width ?? window.innerWidth
@@ -374,10 +454,12 @@ function reposition() {
     ? {
         ...base,
         bottom: `${offsetY + height - anchor.top + 8}px`,
+        top: 'auto',
       }
     : {
         ...base,
         top: `${anchor.bottom + 8}px`,
+        bottom: 'auto',
       }
 }
 function focusPanel() {
@@ -398,6 +480,7 @@ function onKeydown(event: KeyboardEvent) {
   if (!closeExpanded()) emit('close', true)
 }
 function outsidePointer(event: PointerEvent) {
+  if (isDraggingPanel) return
   if (!props.isOpen || !(event.target instanceof Node)) return
   if (
     cardEl.value?.contains(event.target)
@@ -460,6 +543,9 @@ onUnmounted(() => {
   window.removeEventListener('resize', reposition)
   window.visualViewport?.removeEventListener('resize', reposition)
   window.visualViewport?.removeEventListener('scroll', reposition)
+  window.removeEventListener('pointermove', onPanelPointerMove)
+  window.removeEventListener('pointerup', onPanelPointerUp)
+  window.removeEventListener('pointercancel', onPanelPointerUp)
 })
 defineExpose({
   closeExpanded,

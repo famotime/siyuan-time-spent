@@ -46,12 +46,15 @@
                    @mousemove="updateBlockTooltip($event)"
                    @mouseleave="handleBlockMouseLeave">
                 <div class="px-2.5 py-1 flex items-center justify-between text-white drop-shadow font-semibold text-xs truncate">
-                  <span class="truncate">{{ block.title || t('calendarLoading') }}</span>
+                  <span class="truncate flex items-center gap-1 min-w-0">
+                    <span v-if="hasPomodoroMark(block.log)" class="shrink-0 select-none text-xs leading-none" :title="t('pomodoro')">🍅</span>
+                    <span class="truncate">{{ block.title || t('calendarLoading') }}</span>
+                  </span>
                   <span class="text-xs opacity-90 font-mono ml-2 shrink-0 font-tabular">{{ formatDuration(block.log.duration) }}</span>
                 </div>
                 <div v-if="block.height >= 38" class="px-2.5 text-xs text-white/90 truncate opacity-0 group-hover:opacity-100 transition-opacity font-tabular">
                   {{ formatTime(block.log.startTime) }} - {{ formatTime(block.log.endTime) }}
-                  <span v-if="block.log.idleTime > 0" class="ml-1 text-amber-300 font-normal">(-{{ block.log.idleTime }}s {{ t('idleDeducted') }})</span>
+                  <span v-if="block.log.idleTime > 0" class="ml-1 text-amber-300 font-normal">(-{{ formatDuration(block.log.idleTime) }} {{ t('idleDeducted') }})</span>
                 </div>
               </div>
             </div>
@@ -126,13 +129,8 @@
             <div class="flex justify-between items-start mb-1">
               <div class="font-semibold text-xs sy-text-primary group-hover:text-indigo-400 transition-colors line-clamp-1 flex items-center gap-1.5 min-w-0">
                 <span class="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs" :style="{ backgroundColor: getDocColor(log.docId) }"></span>
-                <span v-if="log.isPomodoro || log.type === 'pomodoro'" class="shrink-0 select-none flex items-center" :title="t('pomodoro')">
-                  <svg class="w-3 h-3" style="fill: none !important; color: var(--st-pomo-active-text);" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <circle cx="12" cy="12" r="8.5" />
-                    <path d="M12 7.5v4.8l3.2 2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span v-else-if="log.type === 'offline'" class="text-xs px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 font-mono shrink-0 select-none">线下</span>
+                <span v-if="hasPomodoroMark(log)" class="shrink-0 select-none text-xs leading-none flex items-center" :title="t('pomodoro')">🍅</span>
+                <span v-if="log.type === 'offline'" class="text-xs px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-500 font-mono shrink-0 select-none">线下</span>
                 <span v-else-if="log.type === 'manual'" class="text-xs px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-500 font-mono shrink-0 select-none">补录</span>
                 <span v-if="log.device === 'mobile'" class="text-[10px] px-1 py-0.2 rounded bg-purple-500/15 text-purple-400 font-mono shrink-0 select-none" title="移动端">📱</span>
                 <span v-else-if="log.device === 'desktop'" class="text-[10px] px-1 py-0.2 rounded bg-blue-500/15 text-blue-400 font-mono shrink-0 select-none" title="桌面端">💻</span>
@@ -157,7 +155,7 @@
             <div class="flex justify-between items-center text-xs mt-1 sy-text-secondary">
               <span class="text-indigo-500 font-mono font-semibold font-tabular">{{ t('calendarFocus') }}: {{ formatDuration(log.duration) }}</span>
               <span v-if="log.note" class="text-xs text-indigo-400/80 font-mono truncate max-w-[120px]">{{ log.note }}</span>
-              <span v-else-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">{{ t('calendarIdleDeducted', { seconds: log.idleTime }) }}</span>
+              <span v-else-if="log.idleTime > 0" class="sy-text-tertiary text-xs font-tabular">{{ t('calendarIdleDeducted', { duration: formatDuration(log.idleTime), seconds: log.idleTime }) }}</span>
             </div>
           </div>
         </div>
@@ -224,8 +222,9 @@
                  @mouseenter="handleBlockMouseEnter($event, block.log)"
                  @mousemove="updateBlockTooltip($event)"
                  @mouseleave="handleBlockMouseLeave">
-              <div class="px-1.5 py-0.5 font-semibold text-white/95 truncate leading-tight drop-shadow-xs text-xs">
-                {{ block.title || t('calendarLoading') }}
+              <div class="px-1.5 py-0.5 font-semibold text-white/95 truncate leading-tight drop-shadow-xs text-xs flex items-center gap-1 min-w-0">
+                <span v-if="hasPomodoroMark(block.log)" class="shrink-0 select-none text-[11px] leading-none" :title="t('pomodoro')">🍅</span>
+                <span class="truncate">{{ block.title || t('calendarLoading') }}</span>
               </div>
               <div v-if="block.height >= 34" class="px-1.5 text-xs text-white/80 truncate opacity-0 group-hover:opacity-100 transition-opacity font-tabular">
                 {{ formatTime(block.log.startTime) }} ({{ formatDuration(block.log.duration) }})
@@ -305,8 +304,9 @@
           left: `${hoverTooltip.x}px`,
         }"
       >
-        <div class="font-bold text-xs sm:text-sm text-white line-clamp-2">
-          {{ hoverTooltip.title }}
+        <div class="font-bold text-xs sm:text-sm text-white line-clamp-2 flex items-center gap-1.5">
+          <span v-if="hoverTooltip.hasPomodoro" class="shrink-0 select-none text-sm leading-none" :title="t('pomodoro')">🍅</span>
+          <span class="line-clamp-2">{{ hoverTooltip.title }}</span>
         </div>
         <div v-if="hoverTooltip.notebook || hoverTooltip.path" class="text-xs text-gray-300 flex items-center gap-1.5 truncate">
           <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0 sy-wire-icon" style="fill: none !important;" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -394,6 +394,7 @@ const weekScrollContainer = ref<HTMLElement | null>(null);
 // Hover Tooltip State
 const hoverTooltip = ref({
   visible: false,
+  hasPomodoro: false,
   x: 0,
   y: 0,
   title: '',
@@ -424,6 +425,46 @@ const formatTime = (ts: number): string => {
 
 const formatDuration = (seconds: number) => {
   return formatDurationI18n(seconds, currentLang.value);
+};
+
+// Pomodoro 标记计算
+const isPomodoroLog = (log?: TimeLog | null): boolean => {
+  if (!log) return false;
+  return !!(
+    log.isPomodoro ||
+    log.type === 'pomodoro' ||
+    (log.note && (log.note.includes('番茄') || log.note.toLowerCase().includes('pomodoro')))
+  );
+};
+
+const docsWithCompletedPomodoro = computed(() => {
+  const set = new Set<string>();
+  if (Array.isArray(props.logs)) {
+    for (const l of props.logs) {
+      if (l.docId && isPomodoroLog(l)) {
+        set.add(l.docId);
+      }
+    }
+  }
+  if (props.dayMap) {
+    for (const list of Object.values(props.dayMap)) {
+      if (Array.isArray(list)) {
+        for (const l of list) {
+          if (l.docId && isPomodoroLog(l)) {
+            set.add(l.docId);
+          }
+        }
+      }
+    }
+  }
+  return set;
+});
+
+const hasPomodoroMark = (log?: TimeLog | null): boolean => {
+  if (!log) return false;
+  if (isPomodoroLog(log)) return true;
+  if (log.docId && docsWithCompletedPomodoro.value.has(log.docId)) return true;
+  return false;
 };
 
 // 莫兰迪色彩分配
@@ -466,12 +507,13 @@ const handleListMouseLeave = () => {
 
 const showBlockTooltip = async (event: MouseEvent, log: TimeLog) => {
   hoverTooltip.value.visible = true;
+  hoverTooltip.value.hasPomodoro = hasPomodoroMark(log);
   hoverTooltip.value.notebook = '';
   hoverTooltip.value.path = '';
   hoverTooltip.value.tags = [];
   hoverTooltip.value.title = docTitles.value[log.docId] || log.docId || t('unknownDoc');
   hoverTooltip.value.timeRange = `${formatTime(log.startTime)} - ${formatTime(log.endTime)}`;
-  const idleStr = log.idleTime > 0 ? ` (${t('calendarIdleDeducted', { seconds: log.idleTime })})` : '';
+  const idleStr = log.idleTime > 0 ? ` (${t('calendarIdleDeducted', { duration: formatDuration(log.idleTime), seconds: log.idleTime })})` : '';
   hoverTooltip.value.durationStr = `${t('calendarFocus')}: ${formatDuration(log.duration)}${idleStr}`;
 
   // 统计同一文档的累计时间与频次：周视图统计当周，日视图统计当日

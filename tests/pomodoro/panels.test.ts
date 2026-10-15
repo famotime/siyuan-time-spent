@@ -17,6 +17,8 @@ import { usePomodoroShortcuts } from '../../src/components/Pomodoro/composables/
 import BreakPanel from '../../src/components/Pomodoro/panels/BreakPanel.vue'
 import ReadyPanel from '../../src/components/Pomodoro/panels/ReadyPanel.vue'
 import RunningPanel from '../../src/components/Pomodoro/panels/RunningPanel.vue'
+import FocusPanelHeader from '../../src/components/Pomodoro/FocusPanelHeader.vue'
+import CalendarView from '../../src/components/CalendarView.vue'
 
 const wrappers: ReturnType<typeof mount>[] = []
 function render(component: any, props: Record<string, unknown>) {
@@ -259,5 +261,73 @@ describe('keyboard ownership', () => {
     )
     await nextTick()
     expect(pause).not.toHaveBeenCalled()
+  })
+})
+
+describe('FocusPanelHeader drag and actions', () => {
+  it('emits dragStart when pointerdown occurs on the header', async () => {
+    const wrapper = render(FocusPanelHeader, {})
+    const header = wrapper.get('header.pomo-header')
+    await header.trigger('pointerdown', { button: 0 })
+    expect(wrapper.emitted('dragStart')).toHaveLength(1)
+  })
+
+  it('does not emit dragStart when pointerdown occurs on buttons', async () => {
+    const wrapper = render(FocusPanelHeader, {})
+    const minimizeBtn = wrapper.get('.pomo-header__minimize')
+    await minimizeBtn.trigger('pointerdown', { button: 0 })
+    expect(wrapper.emitted('dragStart')).toBeUndefined()
+  })
+
+  it('emits minimize and close events on button click', async () => {
+    const wrapper = render(FocusPanelHeader, {})
+    const minimizeBtn = wrapper.get('.pomo-header__minimize')
+    await minimizeBtn.trigger('click')
+    expect(wrapper.emitted('minimize')).toHaveLength(1)
+
+    const closeBtn = wrapper.get('.pomo-header__close')
+    await closeBtn.trigger('click')
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+})
+
+describe('CalendarView Pomodoro mark and idle time formatting', () => {
+  it('shows pomodoro mark and formats idle time smartly', async () => {
+    const now = Date.now()
+    const log1 = {
+      id: 'log-1',
+      docId: 'doc-pomo',
+      startTime: now - 3600000,
+      endTime: now,
+      duration: 3000,
+      idleTime: 600, // 10 minutes
+      type: 'pomodoro' as const,
+      isPomodoro: true,
+    }
+    const log2 = {
+      id: 'log-2',
+      docId: 'doc-pomo', // Same doc, passive log
+      startTime: now - 7200000,
+      endTime: now - 3600000,
+      duration: 3600,
+      idleTime: 125, // 2 minutes 5 seconds
+      type: 'passive' as const,
+    }
+
+    const wrapper = render(CalendarView, {
+      logs: [log1, log2],
+      dayMap: {},
+      mode: 'day',
+      currentDate: new Date(now),
+    })
+
+    await nextTick()
+
+    const text = wrapper.text()
+    // Both should display Pomodoro mark 🍅
+    expect(text).toContain('🍅')
+    // Idle time should be formatted into minutes/seconds instead of raw seconds
+    expect(text).toContain('10分')
+    expect(text).not.toContain('600s')
   })
 })

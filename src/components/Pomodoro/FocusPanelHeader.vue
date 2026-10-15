@@ -1,10 +1,15 @@
 <template>
-  <header class="pomo-header">
+  <header
+    class="pomo-header"
+    :title="t('pomodoroDragHint')"
+    @pointerdown="onPointerDown"
+  >
     <button
       type="button"
       class="pomo-header__brand st-pomo-anim-soft"
       :title="t('title')"
       :aria-label="t('title')"
+      @pointerdown.stop
       @click="$emit('openDashboard')"
     >
       <img
@@ -14,7 +19,7 @@
       />
       <span class="pomo-header__title">{{ t('title') }}</span>
     </button>
-    <div class="pomo-header__actions">
+    <div class="pomo-header__actions" @pointerdown.stop>
       <SyIconButton
         class="pomo-header__minimize st-pomo-anim-soft"
         icon="pip"
@@ -40,7 +45,17 @@ import iconUrl from '../../../icon.webp'
 import { t } from '../../i18n'
 import SyIconButton from '../Common/SyIconButton.vue'
 
-defineEmits<{ (e: 'openDashboard'): void, (e: 'close'): void, (e: 'minimize'): void }>()
+const emit = defineEmits<{
+  (e: 'openDashboard'): void
+  (e: 'close'): void
+  (e: 'minimize'): void
+  (e: 'dragStart', event: PointerEvent): void
+}>()
+
+function onPointerDown(event: PointerEvent) {
+  if (event.button !== 0 && event.button !== undefined) return
+  emit('dragStart', event)
+}
 </script>
 
 <style scoped>
@@ -49,8 +64,20 @@ defineEmits<{ (e: 'openDashboard'): void, (e: 'close'): void, (e: 'minimize'): v
   align-items: center;
   justify-content: space-between;
   min-height: 36px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.pomo-header:active {
+  cursor: grabbing;
+}
+.pomo-header__brand,
+.pomo-header__actions {
+  cursor: default;
+  touch-action: auto;
 }
 .pomo-header__brand {
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
