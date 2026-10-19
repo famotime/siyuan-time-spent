@@ -465,5 +465,6 @@
   "settingEnableTopBarPomodoroDesc": "在思源笔记顶部工具栏显示独立的专注番茄钟快捷启动图标",
   "settingPomodoroMiniAlwaysOnTopTitle": "极简小窗默认置顶",
   "settingPomodoroMiniAlwaysOnTopDesc": "开启后，番茄钟迷你小窗将默认悬浮置顶在屏幕最前端",
-  "pomodoroDragHint": "按住拖动位置"
+  "pomodoroDragHint": "按住拖动位置",
+  "loadDataFailed": "加载数据失败，请重试"
 }

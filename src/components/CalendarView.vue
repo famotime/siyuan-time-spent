@@ -1,5 +1,8 @@
 <template>
-  <div class="calendar-component isolate relative z-0 flex flex-col sy-calendar-container rounded-xl overflow-hidden shadow-xl">
+  <div 
+    class="calendar-component isolate relative z-0 flex flex-col sy-calendar-container rounded-xl overflow-hidden shadow-xl transition-opacity duration-200"
+    :class="{ 'opacity-70 pointer-events-none select-none': isLoading }"
+  >
     
     <!-- ==================== DAY VIEW ==================== -->
     <div v-if="mode === 'day'" class="day-view-container grid grid-cols-1 lg:grid-cols-12 h-auto lg:h-[680px]">
@@ -350,12 +353,18 @@ import { sql } from '../api';
 import { t, formatDurationI18n, currentLang, getWeekdayNames } from '../i18n';
 import { openSiYuanDoc } from '../utils';
 
-const props = defineProps<{
-  logs: TimeLog[];
-  dayMap: Record<string, TimeLog[]>;
-  mode: 'day' | 'week' | 'month';
-  currentDate: Date;
-}>();
+const props = withDefaults(
+  defineProps<{
+    logs: TimeLog[];
+    dayMap: Record<string, TimeLog[]>;
+    mode: 'day' | 'week' | 'month';
+    currentDate: Date;
+    isLoading?: boolean;
+  }>(),
+  {
+    isLoading: false,
+  }
+);
 
 const emit = defineEmits<{
   (e: 'select-date', d: Date): void;

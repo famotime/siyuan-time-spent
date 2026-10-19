@@ -465,5 +465,6 @@
   "settingEnableTopBarPomodoroDesc": "Show standalone Pomodoro icon on SiYuan top bar",
   "settingPomodoroMiniAlwaysOnTopTitle": "Mini window always on top",
   "settingPomodoroMiniAlwaysOnTopDesc": "When enabled, Pomodoro mini window floats on top of other windows by default",
-  "pomodoroDragHint": "Drag to reposition"
+  "pomodoroDragHint": "Drag to reposition",
+  "loadDataFailed": "Failed to load data, please try again"
 }

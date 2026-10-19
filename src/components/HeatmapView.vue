@@ -3,9 +3,19 @@
     <!-- Header -->
     <div class="flex flex-wrap items-center justify-between gap-3 border-b sy-divider pb-3">
       <div class="flex items-center gap-2.5">
-        <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block shadow-[0_0_10px_rgba(6,182,212,0.6)]"></span>
-        <h3 class="text-xs sm:text-sm font-bold sy-text-primary tracking-wide">
-          {{ t('heatmapAnnualHeader', { year }) }}
+        <span 
+          class="w-3 h-3 rounded-full bg-cyan-500 inline-block shadow-[0_0_10px_rgba(6,182,212,0.6)]"
+          :class="{ 'animate-pulse': isLoading }"
+        ></span>
+        <h3 class="text-xs sm:text-sm font-bold sy-text-primary tracking-wide flex items-center gap-2">
+          <span>{{ t('heatmapAnnualHeader', { year }) }}</span>
+          <span v-if="isLoading" class="text-xs font-normal text-cyan-400 animate-pulse flex items-center gap-1 font-mono">
+            <svg class="animate-spin w-3 h-3 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ t('calendarLoading') }}</span>
+          </span>
         </h3>
         <span class="text-xs px-2.5 py-0.5 rounded-full sy-badge font-mono font-tabular">
           {{ t('heatmapActiveDays', { count: activeDaysCount }) }}
@@ -25,7 +35,10 @@
     </div>
 
     <!-- Matrix Scroll Container (仿 GitHub Contribution Graph) -->
-    <div class="overflow-x-auto pb-2 custom-scrollbar">
+    <div 
+      class="overflow-x-auto pb-2 custom-scrollbar transition-opacity duration-200"
+      :class="{ 'opacity-60 pointer-events-none select-none': isLoading }"
+    >
       <div class="min-w-[760px] flex flex-col gap-1.5">
         
         <!-- Month Labels Row -->
@@ -133,10 +146,12 @@ const props = withDefaults(
   defineProps<{
     year: number;
     dayMap: Record<string, TimeLog[]>;
+    isLoading?: boolean;
   }>(),
   {
     year: () => new Date().getFullYear(),
     dayMap: () => ({}),
+    isLoading: false,
   }
 );
 

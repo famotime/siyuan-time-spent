@@ -510,6 +510,7 @@
         v-if="calendarMode === 'year'"
         :year="currentDate.getFullYear()"
         :day-map="scopeDayMap"
+        :is-loading="isScopeLoading"
         @select-date="handleSelectDate"
       />
 
@@ -520,6 +521,7 @@
         :day-map="scopeDayMap" 
         :mode="calendarMode" 
         :current-date="currentDate" 
+        :is-loading="isScopeLoading"
         @select-date="handleSelectDate" 
         @switch-mode="handleCalendarSwitchMode"
         @open-manual-log="isManualLogModalVisible = true"
@@ -637,6 +639,7 @@
               :day-map="scopeDayMap" 
               mode="day" 
               :current-date="currentDate" 
+              :is-loading="isScopeLoading"
               @select-date="handleSelectDate" 
               @switch-mode="handleCalendarSwitchMode"
               @open-manual-log="isManualLogModalVisible = true"
@@ -707,6 +710,7 @@
               :day-map="scopeDayMap" 
               :mode="calendarMode === 'year' ? 'week' : calendarMode" 
               :current-date="currentDate" 
+              :is-loading="isScopeLoading"
               @select-date="handleSelectDate" 
               @switch-mode="handleCalendarSwitchMode"
               @open-manual-log="isManualLogModalVisible = true"
@@ -767,6 +771,7 @@
               <HeatmapView
                 :year="currentDate.getFullYear()"
                 :day-map="scopeDayMap"
+                :is-loading="isScopeLoading"
                 @select-date="handleSelectDate"
               />
             </div>
@@ -892,6 +897,10 @@ const isDarkMode = ref(true);
 // Manual Log Modal State
 const isManualLogModalVisible = ref(false);
 
+// 作用域数据加载状态与竞态请求标识
+const isScopeLoading = ref(false);
+let scopeRequestId = 0;
+
 const recentDocOptions = computed(() => {
   const map = new Map<string, string>();
   activeLogs.value.forEach(log => {
@@ -1010,16 +1019,24 @@ const checkMobileView = () => {
 const handleMobileTabSwitch = (tab: 'today' | 'calendar' | 'stats') => {
   mobileTab.value = tab;
   if (tab === 'today') {
+    if (calendarMode.value !== 'day') {
+      scopeDayMap.value = {};
+      activeLogs.value = [];
+    }
     calendarMode.value = 'day';
     currentDate.value = new Date();
-    loadDataForCurrentScope();
   } else if (tab === 'calendar') {
     if (calendarMode.value === 'day' || calendarMode.value === 'year') {
+      scopeDayMap.value = {};
+      activeLogs.value = [];
       calendarMode.value = 'week';
     }
-    loadDataForCurrentScope();
   } else if (tab === 'stats') {
-    loadDataForCurrentScope();
+    if (calendarMode.value !== 'year') {
+      scopeDayMap.value = {};
+      activeLogs.value = [];
+      calendarMode.value = 'year';
+    }
   }
 };
 
@@ -1340,41 +1357,68 @@ const loadDataForCurrentScope = async () => {
   if (!plugin || !(plugin as any).storageManager) return;
   const sm = (plugin as any).storageManager;
 
+  const currentReqId = ++scopeRequestId;
+  isScopeLoading.value = true;
+
   const d = currentDate.value;
   const year = d.getFullYear();
   const month = d.getMonth();
+  const mode = calendarMode.value;
 
-  if (calendarMode.value === 'day') {
-    const dateStr = formatDateKey(d);
-    const logs = await sm.loadLogsForDate(dateStr);
-    activeLogs.value = logs;
-    scopeDayMap.value = { [dateStr]: logs };
-  } else if (calendarMode.value === 'week') {
-    const dayOfWeek = d.getDay();
-    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
+  try {
+    let newLogs: TimeLog[] = [];
+    let newDayMap: Record<string, TimeLog[]> = {};
 
-    const res = await sm.loadLogsForWeek(monday);
-    activeLogs.value = res.allLogs;
-    scopeDayMap.value = res.dayMap;
-  } else if (calendarMode.value === 'month') {
-    const res = await sm.loadLogsForMonth(year, month + 1);
-    activeLogs.value = res.allLogs;
-    scopeDayMap.value = res.dayMap;
-  } else {
-    const res = await sm.loadLogsForYear(year);
-    activeLogs.value = res.allLogs;
-    scopeDayMap.value = res.dayMap;
-  }
+    if (mode === 'day') {
+      const dateStr = formatDateKey(d);
+      const logs = await sm.loadLogsForDate(dateStr);
+      newLogs = logs;
+      newDayMap = { [dateStr]: logs };
+    } else if (mode === 'week') {
+      const dayOfWeek = d.getDay();
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(d);
+      monday.setDate(d.getDate() + diffToMonday);
+      monday.setHours(0, 0, 0, 0);
 
-  // Pre-fetch titles
-  activeLogs.value.forEach(log => {
-    if (log.docId) {
-      fetchDocTitle(log.docId);
+      const res = await sm.loadLogsForWeek(monday);
+      newLogs = res.allLogs;
+      newDayMap = res.dayMap;
+    } else if (mode === 'month') {
+      const res = await sm.loadLogsForMonth(year, month + 1);
+      newLogs = res.allLogs;
+      newDayMap = res.dayMap;
+    } else {
+      const res = await sm.loadLogsForYear(year);
+      newLogs = res.allLogs;
+      newDayMap = res.dayMap;
     }
-  });
+
+    // 竞态守卫：如果期间用户触发了新的切换或翻页，则丢弃过期的异步响应
+    if (currentReqId !== scopeRequestId) {
+      return;
+    }
+
+    activeLogs.value = newLogs;
+    scopeDayMap.value = newDayMap;
+
+    // 智能去重并按需批量预取文档标题（避免海量 SQL 标题风暴）
+    const uniqueDocIds = Array.from(new Set(newLogs.map((l) => l.docId).filter(Boolean)));
+    for (const docId of uniqueDocIds) {
+      if (!docTitles.value[docId]) {
+        fetchDocTitle(docId);
+      }
+    }
+  } catch (err) {
+    Logger.error('Failed to load data for scope:', err);
+    if (currentReqId === scopeRequestId) {
+      showToast(t('loadDataFailed') || '加载数据失败，请重试');
+    }
+  } finally {
+    if (currentReqId === scopeRequestId) {
+      isScopeLoading.value = false;
+    }
+  }
 };
 
 // 刷新数据
@@ -1408,8 +1452,12 @@ const handleOpenSetting = () => {
 
 // Mode Switch
 const switchMode = (mode: 'day' | 'week' | 'month' | 'year') => {
+  if (calendarMode.value === mode) return;
+  // 模式改变时即刻清空旧数据，防止旧视图残留点亮部分格子（如只显示今天或10月）
+  scopeDayMap.value = {};
+  activeLogs.value = [];
   calendarMode.value = mode;
-  loadDataForCurrentScope();
+  // 由 watch([calendarMode, currentDate]) 触发 loadDataForCurrentScope
 };
 
 const handleCalendarSwitchMode = (mode: 'day' | 'week' | 'month' | 'year') => {
@@ -1429,21 +1477,31 @@ const navigatePeriod = (step: number) => {
     d.setFullYear(d.getFullYear() + step);
   }
   currentDate.value = d;
-  loadDataForCurrentScope();
+  // 由 watch 自动触发，移除手动重复调用
 };
 
 const jumpToToday = () => {
-  currentDate.value = new Date();
-  loadDataForCurrentScope();
+  const today = new Date();
+  if (
+    currentDate.value.getFullYear() === today.getFullYear() &&
+    currentDate.value.getMonth() === today.getMonth() &&
+    currentDate.value.getDate() === today.getDate()
+  ) {
+    // 已经处于今天，无需变更日期，但可执行一次刷新
+    loadDataForCurrentScope();
+    return;
+  }
+  currentDate.value = today;
+  // 由 watch 自动触发，移除手动重复调用
 };
 
 const handleSelectDate = (d: Date) => {
-  currentDate.value = new Date(d);
   calendarMode.value = 'day';
+  currentDate.value = new Date(d);
   if (isMobileView.value) {
     mobileTab.value = 'today';
   }
-  loadDataForCurrentScope();
+  // 由 watch 自动触发，移除手动重复调用
 };
 
 // ==================== DATA EXPORT ====================

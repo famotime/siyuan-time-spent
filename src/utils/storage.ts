@@ -1,6 +1,7 @@
 import { Plugin } from "siyuan"
 import { TimeLog } from "../models/TimeLog"
 import Logger from "./logger"
+import { readDir } from "../api"
 
 export class StorageManager {
   private plugin: Plugin
@@ -51,7 +52,40 @@ export class StorageManager {
   }
 
   /**
+   * 获取插件存储目录下所有已存在的日志日期集合（通过思源内核文件目录 API）
+   */
+  public async getExistingLogDates(): Promise<Set<string> | null> {
+    try {
+      const pluginName = this.plugin?.name || 'siyuan-time-spent'
+      const dirPath = `/data/storage/petal/${pluginName}`
+      const entries = await readDir(dirPath)
+      
+      if (Array.isArray(entries)) {
+        const dateSet = new Set<string>()
+        // 匹配 YYYY-MM-DD.json 或 YYYY-MM-DD_mobile.json
+        const dateRegex = /^(\d{4}-\d{2}-\d{2})(_mobile)?\.json$/
+        for (const entry of entries) {
+          if (entry && entry.name && !entry.isDir) {
+            const match = entry.name.match(dateRegex)
+            if (match && match[1]) {
+              dateSet.add(match[1])
+            }
+          }
+        }
+        return dateSet
+      }
+      
+      // 若 entries 为 null 或非数组（如插件首次安装尚无存储目录），返回空 Set 避免发起数百次无效 404 请求
+      return new Set<string>()
+    } catch (e) {
+      Logger.warn("Failed to read storage dir via readDir, fallback to direct scan", e)
+      return null
+    }
+  }
+
+  /**
    * Load logs for a specific range of days [startDateStr, endDateStr]
+   * 采用 readDir 目录感知与受控并发池（Concurrency Limit），彻底消除串行 I/O 阻塞
    */
   public async loadLogsForDateRange(startDateStr: string, endDateStr: string): Promise<{ allLogs: TimeLog[], dayMap: Record<string, TimeLog[]> }> {
     const start = new Date(startDateStr)
@@ -59,14 +93,65 @@ export class StorageManager {
     const dayMap: Record<string, TimeLog[]> = {}
     let allLogs: TimeLog[] = []
 
+    // 1. 生成完整的日期列表
+    const dateList: string[] = []
     const current = new Date(start)
     while (current.getTime() <= end.getTime()) {
-      const dateStr = this.formatDate(current)
-      const logs = await this.loadLogsForDate(dateStr)
-      dayMap[dateStr] = logs
-      allLogs = allLogs.concat(logs)
+      dateList.push(this.formatDate(current))
       current.setDate(current.getDate() + 1)
     }
+
+    // 2. 尝试读取目录以获取实际存在文件的日期集合
+    const existingDates = await this.getExistingLogDates()
+
+    // 3. 区分需要向内核读取的日期与可直接判定为空的日期
+    const datesToLoad: string[] = []
+    for (const dStr of dateList) {
+      if (this.cache.has(dStr)) {
+        // 命中内存缓存，无需发起 I/O
+        const cached = this.cache.get(dStr) || []
+        dayMap[dStr] = cached
+        allLogs = allLogs.concat(cached)
+      } else if (existingDates !== null && !existingDates.has(dStr)) {
+        // 存储目录中明确不存在该日期的文件，直接置空并存入缓存
+        dayMap[dStr] = []
+        this.cache.set(dStr, [])
+      } else {
+        // 需要从内核加载（确实存在文件，或 readDir 失败回退）
+        datesToLoad.push(dStr)
+      }
+    }
+
+    // 4. 受控并发加载（并发池大小 8，既高速又不会阻塞思源内核 IPC/连接通道）
+    if (datesToLoad.length > 0) {
+      const CONCURRENCY = 8
+      let currentIndex = 0
+
+      const worker = async () => {
+        while (currentIndex < datesToLoad.length) {
+          const idx = currentIndex++
+          const dStr = datesToLoad[idx]
+          try {
+            const logs = await this.loadLogsForDate(dStr)
+            dayMap[dStr] = logs
+            allLogs = allLogs.concat(logs)
+          } catch (err) {
+            Logger.error(`Failed to load logs for date ${dStr}`, err)
+            dayMap[dStr] = []
+          }
+        }
+      }
+
+      const workers = []
+      const workerCount = Math.min(CONCURRENCY, datesToLoad.length)
+      for (let i = 0; i < workerCount; i++) {
+        workers.push(worker())
+      }
+      await Promise.all(workers)
+    }
+
+    // 按起始时间稳定排序
+    allLogs.sort((a, b) => a.startTime - b.startTime)
 
     return {
       allLogs,
